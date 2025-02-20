@@ -1,2 +1,2 @@
-# fantasy_baseball-
+# fantasy_baseball
 Some nonsense
