@@ -173,3 +173,5 @@ cython_debug/
 # Other
 Research.docx
 .data
+Design.drawio
+Entities.drawio
