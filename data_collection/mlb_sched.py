@@ -6,6 +6,9 @@ from fantasy_baseball.functions import write_csv
 from fantasy_baseball.universal import MONTH_DCT
 
 
+# Link to the website -> https://www.mlb.com/schedule/2025-02-19
+
+
 def grab_mlb_sched(start_dt: str, end_dt: str) -> list:
     # Collect URL dates
     MLB_HEADERS = {'Connection': 'keep-alive', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'}
