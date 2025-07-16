@@ -1,5 +1,6 @@
 import os
 import csv
+import requests
 from datetime import datetime, timedelta
 from pybaseball import playerid_lookup
 
@@ -97,3 +98,100 @@ def update_player_map() -> list:
     write_csv(file_path=BB_DATA_LOCATION + 'player_map.csv', data=temp)
 
     return temp
+
+
+def json_parsing(obj, key):
+    """Recursively pull values of specified key from nested JSON."""
+    arr = []
+
+    def extract(obj, arr, key):
+        """Return all matching values in an object."""
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(v, (dict)) or (isinstance(v, (list)) and  v and isinstance(v[0], (list, dict))):
+                    extract(v, arr, key)
+                elif k == key:
+                    arr.append(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                extract(item, arr, key)
+        return arr
+
+    results = extract(obj, arr, key)
+    return results[0] if results else results
+
+
+# Collect Game Logs and Game stats.
+def get_pitcher_game_logs(playerId: int, year: int = 2025) -> list:
+    url = f"https://site.web.api.espn.com/apis/common/v3/sports/baseball/mlb/athletes/{playerId}/gamelog?region=us&lang=en&contentorigin=espn&season={year}&category=pitching"
+    response = requests.get(url, headers=ESPN_HEADERS).json()
+
+    if 'seasonTypes' in response:
+        games = response['seasonTypes'][0]['categories']
+
+    game_log = []
+    if games:
+
+        game_info = {}
+        for k, v in response['events'].items():
+            d = {i: v[i] for i in ('id', 'week', 'gameDate', 'score', 'homeTeamId', 'awayTeamId', 'homeTeamScore', 'awayTeamScore', 'gameResult')}
+            d['opponentId'] = v['opponent']['id']
+            d['opponentAbbreviation'] = v['opponent']['abbreviation']
+            d['teamId'] = v['team']['id']
+            d['teamAbbreviation'] = v['team']['abbreviation']
+            game_info[k] = d
+        
+        for i in games:
+            for j in i['events']:
+                d = dict(zip(['IP', 'H', 'R', 'ER', 'HR', 'BB', 'K', 'GB', 'FB', 'P', 'TBF', 'GSC', 'DEC', 'REL', 'ERA'], j['stats']))
+
+                for k, v in d.items():
+                    if k in ('IP', 'GSC', 'ERA'):
+                        d[k] = float(v)
+                    elif k in ('H', 'R', 'ER', 'HR', 'BB', 'K', 'GB', 'FB', 'P', 'TBF'):
+                        d[k] = int(v)
+                if d['IP'] == 0.0:
+                    d['IP'] = 1.0
+                d['WHIP'] = round((d['BB'] + d['H']) / d['IP'], 2)
+                d['K/9'] = round((d['K'] / d['IP']) * 9, 2)
+                
+                game_log.append(game_log.append({'playerId': playerId, 'year': year} | game_info[j['eventId']] | d))
+    return game_log
+
+
+def get_batter_game_logs(playerId: int, year: int = 2025) -> list:
+    url = f"https://site.web.api.espn.com/apis/common/v3/sports/baseball/mlb/athletes/{playerId}/gamelog?region=us&lang=en&contentorigin=espn&season={year}&category=batting"
+    response = requests.get(url, headers=ESPN_HEADERS).json()
+
+    games = []
+    if 'seasonTypes' in response:
+        games = response['seasonTypes'][0]['categories']
+
+    game_log = []
+    if games:
+        game_info = {}
+        for k, v in response['events'].items():
+            d = {i: v[i] for i in ('id', 'week', 'gameDate', 'score', 'homeTeamId', 'awayTeamId', 'homeTeamScore', 'awayTeamScore', 'gameResult')}
+            d['opponentId'] = v['opponent']['id']
+            d['opponentAbbreviation'] = v['opponent']['abbreviation']
+            d['teamId'] = v['team']['id']
+            d['teamAbbreviation'] = v['team']['abbreviation']
+            game_info[k] = d
+        
+        for i in games:
+            for j in i['events']:
+                d = dict(zip(['AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'BB', 'HBP', 'SO', 'SB', 'CS', 'AVG', 'OBP', 'SLG', 'OPS'], j['stats']))
+
+                for k, v in d.items():
+                    if k in ('AVG', 'OBP', 'SLG', 'OPS'):
+                        d[k] = float(v)
+                    else:
+                        d[k] = int(v)
+
+                game_log.append({'playerId': playerId, 'year': year} | game_info[j['eventId']] | d)
+    return game_log
+
+
+def remove_none(lst: list) -> list:
+    """i mean im sure theres a simpler way."""
+    return [i for i in lst if i != None]
