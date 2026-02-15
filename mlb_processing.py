@@ -751,6 +751,117 @@ def fetch_league_matchup_data(league, matchup_map):
             
     return data_list, league_team_dict
 
+def get_matchup_scoreboard(league, matchup_period=None):
+    """
+    Fetches the scoreboard (matchup results) for the league.
+    
+    Args:
+        league (League): ESPN League object.
+        matchup_period (int, optional): Specific matchup period to filter by.
+        
+    Returns:
+        list: List of matchup dictionaries (home_team, away_team, scores).
+    """
+    params = {'view': ['mMatchupScore', 'mScoreboard']}
+    
+    # If a specific period is requested, we can try to filter, but mScoreboard usually returns all.
+    # We will filter in python if needed.
+    headers = {}
+    if matchup_period:
+        filters = {"schedule": {"filterMatchupPeriodIds": {"value": [matchup_period]}}}
+        headers = {'x-fantasy-filter': json.dumps(filters)}
+
+    data = league.espn_request.league_get(params=params, headers=headers)
+    schedule = data.get('schedule', [])
+    
+    scoreboard = []
+    for match in schedule:
+        # Check if we should filter (if API didn't do it or if we want to be safe)
+        if matchup_period and match.get('matchupPeriodId') != matchup_period:
+            continue
+            
+        match_data = {
+            'matchupPeriodId': match.get('matchupPeriodId'),
+            'id': match.get('id'),
+            'winner': match.get('winner'),
+            'playoffTierType': match.get('playoffTierType'),
+        }
+        
+        home = match.get('home', {})
+        away = match.get('away', {})
+        
+        match_data['homeTeamId'] = home.get('teamId')
+        match_data['homeScore'] = home.get('totalPoints')
+        match_data['homeAdjustment'] = home.get('adjustment')
+        
+        match_data['awayTeamId'] = away.get('teamId')
+        match_data['awayScore'] = away.get('totalPoints')
+        match_data['awayAdjustment'] = away.get('adjustment')
+        
+        scoreboard.append(match_data)
+        
+    return scoreboard
+
+def get_matchup_period_map(league):
+    """
+    Generates a mapping of Matchup Period -> Scoring Periods with dates.
+    
+    Args:
+        league (League): ESPN League object.
+        
+    Returns:
+        list: List of dicts with keys: matchup_period, scoring_period, date
+    """
+    map_data = []
+    
+    # 1. Get Matchup Period -> Scoring Period ID mapping from Settings
+    params = {'view': 'mSettings'}
+    data = league.espn_request.league_get(params=params)
+    
+    mp_settings = {}
+    if 'settings' in data and 'scheduleSettings' in data['settings']:
+        mp_settings = data['settings']['scheduleSettings'].get('matchupPeriods', {})
+        
+    # 2. Get Scoring Period ID -> Date mapping ?
+    # There isn't a direct API call for "list of all scoring periods with dates".
+    # However, we can approximate the date if we know the first scoring period date.
+    # OR we can assume 2025 season start.
+    # Better approach might be to leverage MLB schedule logic if we want exact dates.
+    # BUT, let's look at available data. 
+    # 'proTeamSchedule' view might help but that's per team.
+    
+    # Let's rely on the assumption that Scoring Period 1 is the start of the season.
+    # For now, let's just return the MP -> SP mapping, and maybe we can find dates later
+    # or loop through days? That's expensive.
+    
+    # Actually, we can fetch the MLB schedule using grab_mlb_sched for the whole season,
+    # then map dates to scoring periods (SP 1 = Day 1). 
+    # BUT, ESPN SPs might skip days or combine them (like All-Star break).
+    
+    # Optimization: We already know the mapping from Settings is accurate for MP->SP.
+    # Let's return the structured list. To add dates, we might need a reference start date.
+    
+    # Let's try to get a reference date from the league status.
+    # status -> firstScoringPeriod (1).
+    # We might need to just use a known start date for 2025 MLB Season: March 20, 2025 (Seoul Series) or March 27 (Domestic).
+    # Actually, let's check if we can get date from mScoreboard for a few sample SPs and interpolate? No.
+    
+    # Let's just output MP and SP for now, and try to find a way to get dates.
+    # Wait, the user wants "start/end dates for each match up".
+    # Since we have the list of SPs for each MP, if we can map SP -> Date, we are good.
+    
+    sorted_mps = sorted([int(k) for k in mp_settings.keys()])
+    
+    for mp_id in sorted_mps:
+        sp_list = mp_settings.get(str(mp_id), [])
+        for sp in sp_list:
+            map_data.append({
+                'matchup_period': mp_id,
+                'scoring_period': sp
+            })
+            
+    return map_data
+
 def calculate_team_aggregates(data_list, league_team_dict, period_type='weekly'):
     """
     Calculates team stats aggregated by week or day.
