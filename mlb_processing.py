@@ -25,7 +25,7 @@ ESPN_HEADERS = {
 }
 
 # Data Storage
-DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.data_lake', '01_bronze', 'fantasy_baseball')
+DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.data_lake', '01_bronze', 'fantasy_baseball')
 
 def load_config(config_file="config.ini"):
     """
@@ -526,23 +526,26 @@ def get_league_transactions(league):
         # This method assumes espn_api has 'get_league_communication'
         if hasattr(league.espn_request, 'get_league_communication'):
             comm_data = league.espn_request.get_league_communication(league.year)
-            topics = comm_data.get('topics', [])
-            
-            for topic in topics:
-                if topic['type'] == 'ACTIVITY_TRANSACTIONS':
-                    date = datetime.fromtimestamp(topic['date']/1000)
-                    messages = topic.get('messages', [])
-                    for msg in messages:
-                        if msg['type'] in ('ROSTER_ADD', 'ROSTER_DROP', 'TRADE_ACCEPTED'):
-                            transaction_list.append({
-                                'date': date,
-                                'type': msg['type'],
-                                'targetId': msg.get('targetId'),
-                                'from': msg.get('from'),
-                                'to': msg.get('to')
-                            })
         else:
-            print("Warning: get_league_communication not found on espn_request. Skipping transactions.")
+            # Fallback: Try using league_get directly with extend
+            # This assumes league_get supports 'extend' or we construct the params
+            comm_data = league.espn_request.league_get(extend='/communication/', params={'view': 'kona_league_communication'})
+            
+        topics = comm_data.get('topics', [])
+        
+        for topic in topics:
+            if topic['type'] == 'ACTIVITY_TRANSACTIONS':
+                date = datetime.fromtimestamp(topic['date']/1000)
+                messages = topic.get('messages', [])
+                for msg in messages:
+                    if msg['type'] in ('ROSTER_ADD', 'ROSTER_DROP', 'TRADE_ACCEPTED'):
+                        transaction_list.append({
+                            'date': date,
+                            'type': msg['type'],
+                            'targetId': msg.get('targetId'),
+                            'from': msg.get('from'),
+                            'to': msg.get('to')
+                        })
             
     except Exception as e:
         print(f"Error fetching transactions: {e}")
@@ -662,7 +665,8 @@ def fetch_league_matchup_data(league, matchup_map):
     
     Args:
         league (League): ESPN League object.
-        matchup_map (dict): Mapping of matchup periods to scoring periods.
+        matchup_map (dict or list): Mapping of matchup periods to scoring periods, 
+                                    OR a simple list of scoring periods to fetch.
         
     Returns:
         list: List of dictionaries containing flattened player stats for matchups.
@@ -670,23 +674,37 @@ def fetch_league_matchup_data(league, matchup_map):
     league_team_dict = {i.team_id: i.team_abbrev for i in league.teams}
     data_list = []
     
+    # Normalize input: If list, treat as single batch without matchup filter
+    if isinstance(matchup_map, list) or isinstance(matchup_map, range):
+        # Create a dummy map where key is None (signal to skip filter)
+        matchup_map = {None: matchup_map}
+
     for matchup_period, scoring_period_lst in matchup_map.items():
         # Handle cases where scoring_period_lst is a tuple range, or list
         if isinstance(scoring_period_lst, tuple) and len(scoring_period_lst) == 2:
-             # Assuming range logic from notebook: (start, end) inclusive
-             # If it was just (14, 20) in the notebook representing logic for range
-             # NOTE: unique logic for range if tuple is present:
              scoring_periods = range(scoring_period_lst[0], scoring_period_lst[1] + 1)
         else:
              scoring_periods = scoring_period_lst
 
+        print(f"Processing (Matchup Filter: {matchup_period}) Sc. Periods: {scoring_periods}")
+        
         for scoring_period in scoring_periods:
             params = {'view': ['mMatchupScore', 'mScoreboard'], 'scoringPeriodId': scoring_period}
-            filters = {"schedule": {"filterMatchupPeriodIds": {"value": [matchup_period]}}}
-            headers = {'x-fantasy-filter': json.dumps(filters)}
             
-            data = league.espn_request.league_get(params=params, headers=headers)
+            # Only apply matchup filter if specific period provided
+            headers = {}
+            if matchup_period is not None:
+                filters = {"schedule": {"filterMatchupPeriodIds": {"value": [matchup_period]}}}
+                headers = {'x-fantasy-filter': json.dumps(filters)}
+            
+            try:
+                data = league.espn_request.league_get(params=params, headers=headers)
+            except Exception as e:
+                print(f"  Error fetching SP {scoring_period}: {e}")
+                continue
+                
             schedule = data.get('schedule', [])
+            records_found = 0
 
             for i in schedule:
                 for side in ('away', 'home'):
@@ -717,12 +735,20 @@ def fetch_league_matchup_data(league, matchup_map):
 
                         if player.get('stats'):
                             # Assuming stats[0] is the relevant one, as per notebook logic
-                            stats_dict = player['stats'][0].get('stats', {})
+                            stats_source = player['stats'][0]
+                            stats_dict = stats_source.get('stats', {})
+                            
+                            # Capture Points
+                            entry_data['points'] = stats_source.get('appliedTotal', 0)
+                            
                             for stat_id, stat_val in stats_dict.items():
                                 if int(stat_id) in STATS_MAP:
                                     entry_data[STATS_MAP[int(stat_id)]] = stat_val
                         
                         data_list.append(entry_data)
+                        records_found += 1
+            print(f"  SP {scoring_period}: Found {records_found} records")
+            
     return data_list, league_team_dict
 
 def calculate_team_aggregates(data_list, league_team_dict, period_type='weekly'):
