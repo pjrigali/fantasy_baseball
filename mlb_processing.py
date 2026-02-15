@@ -528,8 +528,13 @@ def get_league_transactions(league):
             comm_data = league.espn_request.get_league_communication(league.year)
         else:
             # Fallback: Try using league_get directly with extend
-            # This assumes league_get supports 'extend' or we construct the params
-            comm_data = league.espn_request.league_get(extend='/communication/', params={'view': 'kona_league_communication'})
+            # Note: 2025 API endpoint for communication might differ or be inactive pre-season.
+            # We fail gracefully if it returns 404.
+            try:
+                comm_data = league.espn_request.league_get(extend='/communication/', params={'view': 'kona_league_communication'})
+            except Exception:
+                # If path fails (e.g. 404), return empty
+                return []
             
         topics = comm_data.get('topics', [])
         
