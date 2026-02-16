@@ -14,7 +14,13 @@ from espn_api.baseball import League
 from espn_api.baseball.constant import POSITION_MAP, PRO_TEAM_MAP, STATS_MAP
 from statsmodels import regression
 import statsmodels.api as sm
-from fantasy_baseball.universal import MONTH_DCT
+import urllib.request
+import urllib.error
+
+MONTH_DCT = {
+    'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05',
+    'Jun': '06', 'Jul': '07', 'Aug': '08', 'Sep': '09',
+}
 
 # CONSTANTS
 # You might want to move these to a config file or constants file if they grow
@@ -867,6 +873,53 @@ def get_matchup_period_map(league):
             
     return map_data
 
+def get_draft_recap(league):
+    """
+    Fetches draft results for the league.
+    
+    Args:
+        league (League): ESPN League object.
+        
+    Returns:
+        list: List of dictionaries containing draft pick details.
+    """
+    draft_results = []
+    
+    # helper for maps
+    team_map = {t.team_id: t.team_name for t in league.teams}
+    player_map = getattr(league, 'player_map', {})
+    
+    params = {'view': 'mDraftDetail'}
+    try:
+        data = league.espn_request.league_get(params=params)
+        
+        if 'draftDetail' in data and 'picks' in data['draftDetail']:
+            picks = data['draftDetail']['picks']
+            
+            for pick in picks:
+                pid = pick.get('playerId')
+                tid = pick.get('teamId')
+                
+                player_name = player_map.get(pid, f"Unknown ID {pid}")
+                team_name = team_map.get(tid, f"Unknown Team {tid}")
+                
+                draft_results.append({
+                    'overall_pick': pick.get('overallPickNumber'),
+                    'round': pick.get('roundId'),
+                    'round_pick': pick.get('roundPickNumber'),
+                    'player_id': pid,
+                    'player_name': player_name,
+                    'team_id': tid,
+                    'team_name': team_name,
+                    'keeper': pick.get('keeper', False),
+                    'bid_amount': pick.get('bidAmount', 0)
+                })
+                
+    except Exception as e:
+        print(f"Error fetching draft recap: {e}")
+        
+    return draft_results
+
 def calculate_team_aggregates(data_list, league_team_dict, period_type='weekly'):
     """
     Calculates team stats aggregated by week or day.
@@ -1076,6 +1129,119 @@ def perform_pitcher_regression(player_id, years=[2023, 2024]):
         }
     except Exception as e:
         return {"error": str(e)}
+
+# --- MLB Stats API Functions ---
+
+MLB_STATS_API_URL = "https://statsapi.mlb.com/api/v1/stats"
+MLB_STATS_PAGE_SIZE = 50
+
+def fetch_mlb_stats_page(group: str, season: int, player_pool: str, offset: int) -> dict:
+    """
+    Fetch one page of stats from the MLB Stats API.
+
+    Args:
+        group (str): 'hitting' or 'pitching'.
+        season (int): MLB season year.
+        player_pool (str): 'ALL', 'QUALIFIED', or 'ROOKIES'.
+        offset (int): Pagination offset.
+
+    Returns:
+        dict: Parsed JSON response.
+    """
+    params = (
+        f"?stats=season&group={group}&season={season}"
+        f"&playerPool={player_pool}&limit={MLB_STATS_PAGE_SIZE}&offset={offset}"
+        f"&sortStat={'homeRuns' if group == 'hitting' else 'earnedRunAverage'}"
+        f"&order={'desc' if group == 'hitting' else 'asc'}"
+    )
+    url = MLB_STATS_API_URL + params
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except (urllib.error.URLError, TimeoutError) as e:
+            print(f"  [!] Attempt {attempt + 1} failed: {e}")
+            time.sleep(2 ** attempt)
+
+    raise RuntimeError(f"Failed to fetch {url} after 3 attempts")
+
+
+def flatten_mlb_stats_split(split: dict, rank_fallback: int) -> dict:
+    """
+    Flatten a single player split from the MLB Stats API into a flat dict.
+
+    Args:
+        split (dict): A single player split from the API response.
+        rank_fallback (int): Rank to use if not provided in the split.
+
+    Returns:
+        dict: Flat dictionary of player stats.
+    """
+    stat = split.get("stat", {})
+    player = split.get("player", {})
+    team = split.get("team", {})
+    league = split.get("league", {})
+    position = split.get("position", {})
+
+    row = {
+        "rank": split.get("rank", rank_fallback),
+        "player_id": player.get("id", ""),
+        "player_name": player.get("fullName", ""),
+        "team": team.get("name", ""),
+        "league": league.get("name", ""),
+        "position": position.get("abbreviation", ""),
+    }
+    row.update(stat)
+    return row
+
+
+def scrape_mlb_stats(group: str, season: int, player_pool: str = "ALL") -> list:
+    """
+    Scrape all pages for a stat group from the MLB Stats API.
+
+    Args:
+        group (str): 'hitting' or 'pitching'.
+        season (int): MLB season year.
+        player_pool (str): 'ALL', 'QUALIFIED', or 'ROOKIES'.
+
+    Returns:
+        list[dict]: List of flat player stat dictionaries.
+    """
+    all_rows = []
+    offset = 0
+    total = None
+
+    while True:
+        print(f"  Fetching {group} offset={offset}...", end=" ")
+        data = fetch_mlb_stats_page(group, season, player_pool, offset)
+
+        stats_block = data.get("stats", [{}])[0]
+        splits = stats_block.get("splits", [])
+        tied_limit = stats_block.get("splitsTiedWithLimit", [])
+
+        if total is None:
+            total = stats_block.get("totalSplits", 0)
+            print(f"(total players: {total})")
+        else:
+            print(f"({len(splits)} players)")
+
+        for i, split in enumerate(splits):
+            all_rows.append(flatten_mlb_stats_split(split, offset + i + 1))
+
+        # On the last page, add tied-with-limit players too
+        if offset + MLB_STATS_PAGE_SIZE >= total:
+            for i, split in enumerate(tied_limit):
+                all_rows.append(flatten_mlb_stats_split(split, offset + len(splits) + i + 1))
+            break
+
+        offset += MLB_STATS_PAGE_SIZE
+        time.sleep(0.3)  # polite delay
+
+    print(f"  [OK] Collected {len(all_rows)} {group} records")
+    return all_rows
+
 
 if __name__ == "__main__":
     # Test Block

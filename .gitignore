@@ -25,3 +25,10 @@ archive/
 diagrams/
 Research.docx
 .vscode/
+
+# Strategy (private)
+analyze_draft_strategy.py
+analyze_impact_categories.py
+analyze_keepers.py
+create_roster_history.py
+draft_strategy_2026.ipynb
