@@ -11,9 +11,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fantasy_baseball import mlb_processing as mp
 
 # Constants
-SEASON = 2025
-OUTPUT_FILE = os.path.join(mp.DATA_PATH, 'stats_mlb_daily_2025.csv')
-SEASON_START = date(2025, 3, 27) # Approximate start date for scoring period calculation
+SEASON = 2023
+OUTPUT_FILE = os.path.join(mp.DATA_PATH, f'stats_mlb_daily_{SEASON}.csv')
+SEASON_START = date(SEASON, 3, 27) # Approximate start date for scoring period calculation
 
 # Headers for requests
 HEADERS = {
