@@ -52,7 +52,7 @@ def main():
             df['awayTeamParams'] = df['awayTeamId'].map(team_map)
             
             os.makedirs(mp.DATA_PATH, exist_ok=True)
-            save_path = os.path.join(mp.DATA_PATH, "matchup_scoreboard_2025.csv")
+            save_path = os.path.join(mp.DATA_PATH, "scoreboard_espn_matchup_2025.csv")
             
             df.to_csv(save_path, index=False)
             print(f"Scoreboard saved to: {save_path}")

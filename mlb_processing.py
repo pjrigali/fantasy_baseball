@@ -602,6 +602,29 @@ def scrape_espn_historical_stats(years=[2024]):
         return final_df
     return pd.DataFrame()
 
+# --- Position Constants ---
+POSITION_SLOT_IDS = {
+    'C': [0], '1B': [1], '2B': [2], '3B': [3], 'SS': [4],
+    'OF': [5], 'DH': [12], 'SP': [14], 'RP': [15],
+}
+
+def get_all_free_agents_by_position(league, size=50):
+    """
+    Fetches free agents for every relevant position, grouped by position name.
+    
+    Args:
+        league (League): ESPN League object.
+        size (int): Number of free agents per position.
+        
+    Returns:
+        dict: Mapping of position name -> list of free agent dicts.
+    """
+    result = {}
+    for pos_name, slot_ids in POSITION_SLOT_IDS.items():
+        print(f"  Fetching free agents for {pos_name} (slots={slot_ids})...")
+        result[pos_name] = get_free_agents(league, position_ids=slot_ids, size=size)
+    return result
+
 # --- Analysis Functions ---
 
 def analyze_roster_batters(league, team_id=2):

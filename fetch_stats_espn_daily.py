@@ -63,7 +63,7 @@ def main():
                 df['team_abbrev'] = df['teamId'].map(team_map)
             
             os.makedirs(mp.DATA_PATH, exist_ok=True)
-            filename = f"daily_player_stats_{target_year}.csv"
+            filename = f"stats_espn_daily_{target_year}.csv"
             save_path = os.path.join(mp.DATA_PATH, filename)
             
             df.to_csv(save_path, index=False)

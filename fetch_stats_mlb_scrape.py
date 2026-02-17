@@ -79,13 +79,13 @@ def main():
     # -- Hitting ---------------------------------------------------------------
     print(">> Scraping HITTING stats...")
     hitting_rows = mp.scrape_mlb_stats("hitting", season, pool)
-    hitting_path = os.path.join(out_dir, f"mlb_hitting_{season}_{today}.csv")
+    hitting_path = os.path.join(out_dir, f"stats_mlb_season_hitting_{season}_{today}.csv")
     write_csv(hitting_rows, HITTING_COLS, hitting_path)
 
     # -- Pitching --------------------------------------------------------------
     print("\n>> Scraping PITCHING stats...")
     pitching_rows = mp.scrape_mlb_stats("pitching", season, pool)
-    pitching_path = os.path.join(out_dir, f"mlb_pitching_{season}_{today}.csv")
+    pitching_path = os.path.join(out_dir, f"stats_mlb_season_pitching_{season}_{today}.csv")
     write_csv(pitching_rows, PITCHING_COLS, pitching_path)
 
     print(f"\n=== Done! ===")

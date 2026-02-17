@@ -30,7 +30,7 @@ def main():
             
             # Save
             os.makedirs(mp.DATA_PATH, exist_ok=True)
-            save_path = os.path.join(mp.DATA_PATH, "draft_results_2025.csv")
+            save_path = os.path.join(mp.DATA_PATH, "draft_espn_season_2025.csv")
             df.to_csv(save_path, index=False)
             print(f"Saved draft results to {save_path}")
             print(df.head())

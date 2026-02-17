@@ -90,7 +90,7 @@ def main():
         print(f"  Matchup {mp_id:2d}: SP {sps[0]:3d}-{sps[-1]:3d} ({len(sps)} days)")
 
     # Load CSV
-    file_path = os.path.join(mp.DATA_PATH, "daily_player_stats_2025.csv")
+    file_path = os.path.join(mp.DATA_PATH, "stats_espn_daily_2025.csv")
     if not os.path.exists(file_path):
         print(f"Error: File not found at {file_path}")
         return

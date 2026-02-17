@@ -87,7 +87,7 @@ def main():
     
     # Save
     os.makedirs(mp.DATA_PATH, exist_ok=True)
-    save_path = os.path.join(mp.DATA_PATH, "matchup_period_map_2025.csv")
+    save_path = os.path.join(mp.DATA_PATH, "schedule_espn_matchup_2025.csv")
     final_df.to_csv(save_path, index=False)
     print(f"Mapping saved to {save_path}")
     print(final_df.head(10))

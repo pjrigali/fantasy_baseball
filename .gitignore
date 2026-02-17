@@ -25,6 +25,9 @@ archive/
 diagrams/
 Research.docx
 .vscode/
+dashboard_template.html
+ROADMAP.md
+urls.txt
 
 # Strategy (private)
 analyze_draft_strategy.py
