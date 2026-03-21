@@ -28,6 +28,7 @@ Research.docx
 dashboard_template.html
 ROADMAP.md
 urls.txt
+tmp/
 
 # Strategy (private)
 analyze_draft_strategy.py
