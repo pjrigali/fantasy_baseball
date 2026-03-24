@@ -1,15 +1,49 @@
 import pandas as pd
 import numpy as np
+import os
+import sys
 
-BASE_PATH = r'c:\Users\peter\Desktop\vscode\main\.data_lake\01_Bronze\fantasy_baseball'
-OUTPUT_PATH = r'c:\Users\peter\.gemini\antigravity\brain\ad8af236-c6c6-4f16-8110-5d46378f456d\roster_analysis_report.md'
+# Configuration
+SEASON = 2026
 WINDOW = 28
 TEAM_ABBREV = 'PJR'
 
+# Determine Paths dynamically
+# Assumes script is in fantasy_baseball/
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR) # main/
+BASE_PATH = os.path.join(PROJECT_ROOT, '.data_lake', '01_Bronze', 'fantasy_baseball')
+REPORT_DIR = os.path.join(SCRIPT_DIR, 'reports')
+
+# Create report directory if it doesn't exist
+if not os.path.exists(REPORT_DIR):
+    os.makedirs(REPORT_DIR)
+
+OUTPUT_PATH = os.path.join(REPORT_DIR, f'roster_analysis_report_{SEASON}.md')
+
+print(f"Running Analysis for {SEASON}")
+print(f"Data Path: {BASE_PATH}")
+
+# Define File Paths
+roster_path = os.path.join(BASE_PATH, f'roster_history_{SEASON}.csv')
+stats_path = os.path.join(BASE_PATH, f'stats_mlb_daily_{SEASON}.csv')
+map_path = os.path.join(BASE_PATH, 'player_map.csv')
+
+# Validation: Check if season data exists
+if not os.path.exists(roster_path) or not os.path.exists(stats_path):
+    print(f"\n[WARNING] Data files for {SEASON} not found.")
+    print(f"Expected:\n - {roster_path}\n - {stats_path}")
+    print("Skipping analysis (likely pre-season).")
+    sys.exit(0)
+
 print("Loading data...")
-roster_df = pd.read_csv(f'{BASE_PATH}\\roster_history_2025.csv')
-stats_df = pd.read_csv(f'{BASE_PATH}\\stats_mlb_daily_2025.csv')
-player_map_df = pd.read_csv(f'{BASE_PATH}\\player_map.csv')
+try:
+    roster_df = pd.read_csv(roster_path)
+    stats_df = pd.read_csv(stats_path)
+    player_map_df = pd.read_csv(map_path)
+except Exception as e:
+    print(f"Error loading data: {e}")
+    sys.exit(1)
 
 # Preprocess
 stats_df['date'] = pd.to_datetime(stats_df['date'])

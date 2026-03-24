@@ -5,9 +5,11 @@ import pandas as pd
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fantasy_baseball import mlb_processing as mp
+YEAR = 2026
+
 
 def main():
-    print("--- Fetching Draft Results for 2025 ---")
+    print(f"--- Fetching Draft Results for {YEAR} ---")
     
     # 1. Load config
     try:
@@ -17,7 +19,7 @@ def main():
         return
 
     # 2. Setup League
-    league = mp.setup_league(config, year=2025)
+    league = mp.setup_league(config, year=YEAR)
     print(f"League initialized: {league}")
 
     # 3. Fetch Draft Results
@@ -30,7 +32,7 @@ def main():
             
             # Save
             os.makedirs(mp.DATA_PATH, exist_ok=True)
-            save_path = os.path.join(mp.DATA_PATH, "draft_espn_season_2025.csv")
+            save_path = os.path.join(mp.DATA_PATH, f"draft_results_espn_{YEAR}.csv")
             df.to_csv(save_path, index=False)
             print(f"Saved draft results to {save_path}")
             print(df.head())

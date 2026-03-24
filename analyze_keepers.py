@@ -18,13 +18,8 @@ MY_TEAM_ID = 2  # Datalickmyballs (Peter Rigali)
 NUM_KEEPERS = 5
 
 # Keeper costs: player name -> round it costs to keep them
-MY_KEEPERS = {
-    'Logan Webb': 13,
-    'Bryce Harper': 4,
-    'Cody Bellinger': 18,
-    'Manny Machado': 2,
-    'Jazz Chisholm Jr.': 11,
-}
+# Dynamic loading from actual_keepers_2026.csv will be used instead.
+MY_OWNER = 'Pete'
 
 # PA/IP thresholds for 2025 Z-score inclusion
 MIN_PA = 200
@@ -214,6 +209,24 @@ def load_draft_costs():
     return {str(r['player_id']): int(r['round']) for _, r in ddf.iterrows()}
 
 
+
+def load_actual_keepers():
+    '''Load actual keepers (team_id -> {Player: round})'''
+    import os
+    import pandas as pd
+    import fantasy_baseball.mlb_processing as mp
+    
+    path = os.path.join(mp.DATA_PATH, f'actual_keepers_{DRAFT_YEAR}.csv')
+    if not os.path.exists(path):
+        return {}
+    kdf = pd.read_csv(path)
+    keepers = {}
+    for _, r in kdf.iterrows():
+        tid = int(r['team_id'])
+        if tid not in keepers: keepers[tid] = {}
+        keepers[tid][str(r['Player']).strip()] = int(r['2026 Round'])
+    return keepers
+
 def load_draft_order():
     """team_name -> first-round pick number."""
     path = os.path.join(mp.DATA_PATH, 'draft_order_2026.csv')
@@ -243,6 +256,7 @@ def main():
     adp_data = load_adp()
     draft_costs = load_draft_costs()
     draft_order = load_draft_order()
+    actual_keepers = load_actual_keepers()
     num_teams = len(team_map) if team_map else 10
 
     print(f"\n  {len(stats)} players w/ 2025 stats | {len(projections)} projections "
@@ -355,6 +369,7 @@ def main():
 
     for idx, row in all_players.iterrows():
         name = str(row['playerName'])
+        tid = row.get('teamId')
 
         # ADP
         adp = fuzzy_match(name, adp_data)
@@ -362,15 +377,18 @@ def main():
             all_players.at[idx, 'ADP_Rank'] = adp['avg']
             all_players.at[idx, 'ADP_Round'] = adp_to_round(adp['rank'], num_teams)
 
-        # Keeper cost (draft round from 2025)
-        pid_str = str(idx)
-        if pid_str in draft_costs:
-            all_players.at[idx, 'Keeper_Cost'] = draft_costs[pid_str]
-
-        # Override with user-provided keeper costs
-        matched_cost = fuzzy_match(name, MY_KEEPERS)
-        if matched_cost is not None:
-            all_players.at[idx, 'Keeper_Cost'] = matched_cost
+        found_in_actual = False
+        if pd.notna(tid):
+            tid_val = int(tid)
+            if tid_val in actual_keepers:
+                matched_cost = fuzzy_match(name, actual_keepers[tid_val])
+                if matched_cost is not None:
+                    all_players.at[idx, 'Keeper_Cost'] = matched_cost
+                    found_in_actual = True
+        if not found_in_actual:
+            pid_str = str(idx)
+            if pid_str in draft_costs:
+                all_players.at[idx, 'Keeper_Cost'] = draft_costs[pid_str]
 
     all_players['Surplus'] = all_players['Keeper_Cost'] - all_players['ADP_Round']
 
