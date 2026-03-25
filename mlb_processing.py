@@ -563,12 +563,13 @@ def get_league_transactions(league):
         
     return transaction_list
 
-def scrape_espn_historical_stats(years=[2024]):
+def scrape_espn_historical_stats(years=[2024], stat_types=['batting', 'pitching']):
     """
     Scrapes historical MLB player stats from ESPN.
     
     Args:
         years (list): List of years to scrape.
+        stat_types (list): List of stat types ('batting', 'pitching').
         
     Returns:
         pandas.DataFrame: Consolidated stats DataFrame.
@@ -576,29 +577,44 @@ def scrape_espn_historical_stats(years=[2024]):
     df_list = []
     
     for year in years:
-        print(f"Scraping stats for {year}...")
-        for i in range(1, 800, 40): # Loop through pages
-            url = f"https://www.espn.com/mlb/history/leaders/_/breakdown/season/year/{year}/start/{i}"
-            try:
-                response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
-                if response.status_code == 200:
-                    dfs = pd.read_html(io.StringIO(response.text))
-                    if dfs:
-                        curr_df = dfs[0]
-                        # Cleanup header: Identify row where column 0 is 'RK'
-                        # or just drop first row if it mimics header, but ESPN puts headers every X rows
-                        curr_df = curr_df[curr_df[0] != 'RK']
-                        curr_df['Year'] = year
-                        df_list.append(curr_df)
-                time.sleep(0.2)
-            except Exception as e:
-                # print(f"Error scraping {year} page {i}: {e}")
-                pass 
+        for stat_type in stat_types:
+            print(f"Scraping {stat_type} stats for {year}...")
+            if stat_type == 'batting':
+                base_url = f"https://www.espn.com/mlb/history/leaders/_/breakdown/season/year/{year}"
+            else:
+                base_url = f"https://www.espn.com/mlb/history/leaders/_/type/pitching/breakdown/season/year/{year}"
+                
+            for i in range(1, 800, 40): # Loop through pages
+                url = f"{base_url}/start/{i}"
+                try:
+                    response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+                    if response.status_code == 200:
+                        # header=1 aligns perfectly with ESPN's layout for stats
+                        dfs = pd.read_html(io.StringIO(response.text), header=1)
+                        if dfs:
+                            curr_df = dfs[0].copy()
+                            # Avoid appending empty dfs or dfs without a player mapping
+                            if curr_df.empty or 'PLAYER' not in curr_df.columns:
+                                break
+                            
+                            # Clean up intra-table headers ESPN injects periodically (it repeats the 'PLAYER' row)
+                            curr_df = curr_df[curr_df['PLAYER'] != 'PLAYER'].copy()
+                            if 'Unnamed: 0' in curr_df.columns:
+                                curr_df.rename(columns={'Unnamed: 0': 'RRANK'}, inplace=True)
+                            
+                            curr_df['YEAR'] = year
+                            curr_df['FILTER'] = stat_type
+                            df_list.append(curr_df)
+                            
+                            # If less than 40 rows returned, we reached the end of the query
+                            if len(curr_df) < 40:
+                                break
+                    time.sleep(0.5)
+                except Exception as e:
+                    break
                 
     if df_list:
         final_df = pd.concat(df_list, ignore_index=True)
-        # Rename columns if needed (ESPN tables often have numeric columns initially)
-        # We can try to assume standard columns or leave as is for exploration
         return final_df
     return pd.DataFrame()
 
