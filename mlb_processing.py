@@ -16,6 +16,8 @@ from statsmodels import regression
 import statsmodels.api as sm
 import urllib.request
 import urllib.error
+import re
+import unicodedata
 
 MONTH_DCT = {
     'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05',
@@ -28,6 +30,39 @@ ESPN_HEADERS = {
     'Connection': 'keep-alive',
     'Accept': 'application/json',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+}
+
+TEAM_SLUG_MAP = {
+    'Bal': 'orioles',
+    'Bos': 'redsox',
+    'LAA': 'angels',
+    'ChW': 'whitesox',
+    'Cle': 'guardians',
+    'Det': 'tigers',
+    'KC':  'royals',
+    'Mil': 'brewers',
+    'Min': 'twins',
+    'NYY': 'yankees',
+    'Oak': 'athletics',
+    'Sea': 'mariners',
+    'Tex': 'rangers',
+    'Tor': 'bluejays',
+    'Atl': 'braves',
+    'ChC': 'cubs',
+    'Cin': 'reds',
+    'Hou': 'astros',
+    'LAD': 'dodgers',
+    'Wsh': 'nationals',
+    'NYM': 'mets',
+    'Phi': 'phillies',
+    'Pit': 'pirates',
+    'StL': 'cardinals',
+    'SD':  'padres',
+    'SF':  'giants',
+    'Col': 'rockies',
+    'Mia': 'marlins',
+    'Ari': 'dbacks',
+    'TB':  'rays',
 }
 
 # Data Storage
@@ -563,6 +598,148 @@ def get_league_transactions(league):
         
     return transaction_list
 
+# Extended activity map — includes MOVED (188) and extra drop type (245)
+# that the default espn_api package does not cover.
+ACTIVITY_MAP = {
+    178: 'FA ADDED',
+    180: 'WAIVER ADDED',
+    179: 'DROPPED',
+    181: 'DROPPED',
+    245: 'DROPPED',
+    239: 'DROPPED',
+    244: 'TRADED',
+    188: 'MOVED',
+    'FA': 178,
+    'WAIVER': 180,
+    'TRADED': 244,
+}
+
+def get_recent_activity(league, size=1000, msg_type=None, max_pages=10):
+    """
+    Fetches recent league activity (adds, drops, trades, waivers, moves) by
+    calling the ESPN communication API directly. This bypasses the espn_api
+    library's limited recent_activity() method to include MOVED (188) and
+    the full set of drop types (179, 181, 239, 245).
+
+    Args:
+        league (League): ESPN League object (must be year >= 2019).
+        size (int): Number of activity topics per page (default 1000).
+        msg_type (str, optional): Filter to a specific type key from ACTIVITY_MAP
+                                   (e.g. 'FA', 'WAIVER', 'TRADED'). None returns all types.
+        max_pages (int): Maximum number of pages to paginate through (default 10).
+
+    Returns:
+        list: List of flat activity dictionaries with keys:
+              date, team_id, team_abbrev, team_name, player_id, player_name,
+              action_id, action, from, for, to
+    """
+    # Message type IDs to request — includes MOVED and all drop variants
+    msg_types = [178, 180, 179, 239, 181, 244, 245, 188]
+    if msg_type and msg_type in ACTIVITY_MAP:
+        msg_types = [ACTIVITY_MAP[msg_type]]
+
+    all_activity = []
+    offset = 0
+
+    for page in range(max_pages):
+        params = {'view': 'kona_league_communication'}
+        filters = {
+            "topics": {
+                "filterType": {"value": ["ACTIVITY_TRANSACTIONS"]},
+                "limit": size,
+                "limitPerMessageSet": {"value": 25},
+                "offset": offset,
+                "sortMessageDate": {"sortPriority": 1, "sortAsc": False},
+                "sortFor": {"sortPriority": 2, "sortAsc": False},
+                "filterIncludeMessageTypeIds": {"value": msg_types},
+            }
+        }
+        headers = {'x-fantasy-filter': json.dumps(filters)}
+
+        try:
+            data = league.espn_request.league_get(
+                extend='/communication/', params=params, headers=headers
+            )
+            topics = data.get('topics', [])
+        except Exception as e:
+            print(f"  Error fetching activity page {page + 1} (offset={offset}): {e}")
+            break
+
+        if not topics:
+            break
+
+        for topic in topics:
+            for msg in topic.get('messages', []):
+                msg_id = msg.get('messageTypeId')
+                action_label = ACTIVITY_MAP.get(msg_id, f'UNKNOWN ({msg_id})')
+
+                # Resolve player
+                target_id = msg.get('targetId')
+                player_name = league.player_map.get(target_id, f'Unknown ({target_id})')
+
+                # Resolve team based on message type
+                team_id = None
+                team_abbrev = ''
+                team_name = ''
+                try:
+                    if msg_id == 244:  # TRADED
+                        team_id = msg.get('from')
+                    elif msg_id in (188, 239):  # MOVED or specific DROP
+                        team_id = msg.get('for')
+                    else:
+                        team_id = msg.get('to')
+
+                    if team_id is not None:
+                        team_obj = league.get_team_data(team_id=team_id)
+                        team_abbrev = team_obj.team_abbrev
+                        team_name = team_obj.team_name
+                except Exception:
+                    pass
+
+                # Extract source/platform from creationInfo (detects Quick Lineup vs auto-set)
+                creation_info = msg.get('creationInfo', {})
+
+                # Map positions
+                pos_from = ''
+                pos_to = ''
+                if msg_id == 188:  # MOVED
+                    pos_from = POSITION_MAP.get(msg.get('from', -1), '')
+                    pos_to = POSITION_MAP.get(msg.get('to', -1), '')
+                elif msg_id == 239:  # DROPPED
+                    pos_from = POSITION_MAP.get(msg.get('from', -1), '')
+
+                all_activity.append({
+                    'date': datetime.fromtimestamp(msg['date'] / 1000).strftime('%Y-%m-%d %H:%M:%S'),
+                    'date_epoch': msg['date'],
+                    'team_id': team_id,
+                    'team_abbrev': team_abbrev,
+                    'team_name': team_name,
+                    'player_id': target_id,
+                    'player_name': player_name,
+                    'action_id': msg_id,
+                    'action': action_label,
+                    'msg_from': msg.get('from'),
+                    'msg_for': msg.get('for'),
+                    'msg_to': msg.get('to'),
+                    'position_from': pos_from,
+                    'position_to': pos_to,
+                    'source': creation_info.get('source', ''),
+                    'platform': creation_info.get('platform', ''),
+                    'topic_id': msg.get('topicId', ''),
+                })
+
+        print(f"  Page {page + 1}: fetched {len(topics)} topics ({len(all_activity)} total records)")
+
+        # If we got fewer topics than requested, we've reached the end
+        if len(topics) < size:
+            break
+
+        offset += size
+        time.sleep(0.3)  # polite delay
+
+    print(f"  [OK] Collected {len(all_activity)} total activity records")
+    return all_activity
+
 def scrape_espn_historical_stats(years=[2024], stat_types=['batting', 'pitching']):
     """
     Scrapes historical MLB player stats from ESPN.
@@ -642,6 +819,104 @@ def get_all_free_agents_by_position(league, size=50):
     return result
 
 # --- Analysis Functions ---
+
+def is_pitcher(player) -> bool:
+    """
+    Determines if a player is primarily a pitcher (and not also a hitter).
+    Handles two-way players appropriately (e.g. Ohtani keeps batter eligibility).
+    """
+    pitcher_keywords = {'SP', 'RP', 'P'}
+    
+    # Check primary position
+    if player.position in pitcher_keywords:
+        primary_is_p = True
+    elif hasattr(player, 'get') and callable(player.get) and player.get('player_position') in pitcher_keywords:
+        return True # For raw dictionary formats if used
+    else:
+        primary_is_p = False
+
+    # Check eligible slots via object or dict
+    if hasattr(player, 'eligibleSlots'):
+        slots = player.eligibleSlots
+    elif hasattr(player, 'get') and callable(player.get):
+        slots = player.get('player_eligible_slots', [])
+    else:
+        slots = []
+        
+    hitter_slots = {'C', '1B', '2B', '3B', 'SS', 'OF', 'LF', 'CF', 'RF', 'DH'}
+    
+    # If they can hit, they're not strictly and exclusively a pitcher for batting analysis
+    if any(s in hitter_slots for s in slots):
+        return False
+        
+    return primary_is_p or any(s in pitcher_keywords for s in slots)
+
+def get_top_fa_batters(league, size=200, min_ab=10):
+    """
+    Gets the top performing free agent batters, sorted by OPS.
+    """
+    fa_list = league.free_agents(size=size)
+    batters = []
+    
+    for p in fa_list:
+        if is_pitcher(p):
+            continue
+            
+        s = p.stats.get(0, {}).get('breakdown', {})
+        proj = p.stats.get(0, {}).get('projected_breakdown', {})
+        if not s or s.get('AB', 0) < min_ab:
+            continue
+            
+        batters.append({
+            'name': p.name,
+            'pos': p.position,
+            'team': p.proTeam,
+            'g': s.get('G', 0),
+            'ab': s.get('AB', 0),
+            'h': s.get('H', 0),
+            'hr': s.get('HR', 0),
+            'r': s.get('R', 0),
+            'rbi': s.get('RBI', 0),
+            'sb': s.get('SB', 0),
+            'avg': s.get('AVG', 0.0),
+            'ops': s.get('OPS', 0.0),
+            'proj_ops': proj.get('OPS', 0.0),
+        })
+        
+    return sorted(batters, key=lambda x: x['ops'], reverse=True)
+
+def get_top_fa_pitchers(league, size=200, min_ip=3.0):
+    """
+    Gets the top performing free agent pitchers, sorted by ERA (ascending).
+    """
+    fa_list = league.free_agents(size=size)
+    pitchers = []
+    
+    for p in fa_list:
+        if not is_pitcher(p) and 'SP' not in p.eligibleSlots and 'RP' not in p.eligibleSlots:
+            continue
+            
+        s = p.stats.get(0, {}).get('breakdown', {})
+        proj = p.stats.get(0, {}).get('projected_breakdown', {})
+        if not s or s.get('IP', 0) < min_ip:
+            continue
+            
+        pitchers.append({
+            'name': p.name,
+            'pos': p.position,
+            'team': p.proTeam,
+            'g': s.get('G', 0),
+            'gs': s.get('GS', 0),
+            'ip': s.get('IP', 0),
+            'w': s.get('W', 0),
+            'sv': s.get('SV', 0),
+            'era': s.get('ERA', 99.9),
+            'whip': s.get('WHIP', 9.9),
+            'k9': s.get('K/9', 0.0),
+            'proj_era': proj.get('ERA', 99.9),
+        })
+        
+    return sorted(pitchers, key=lambda x: x['era'])
 
 def analyze_roster_batters(league, team_id=2):
     """
@@ -1280,6 +1555,152 @@ def scrape_mlb_stats(group: str, season: int, player_pool: str = "ALL") -> list:
 
     print(f"  [OK] Collected {len(all_rows)} {group} records")
     return all_rows
+
+def normalize_player_name(name: str) -> str:
+    """
+    Normalizes a player name by removing accents and handling common suffixes.
+    
+    Args:
+        name (str): Original player name.
+        
+    Returns:
+        str: Normalized player name.
+    """
+    if not isinstance(name, str):
+        return ""
+    # Remove accents
+    nfkd_form = unicodedata.normalize('NFKD', name)
+    name = "".join([c for c in nfkd_form if not unicodedata.combining(c)])
+    # Lowercase and strip
+    name = name.lower().strip()
+    # Remove common suffixes like Jr., Sr., II, III, IV
+    name = re.sub(r'\s+(jr\.?|sr\.?|ii|iii|iv)$', '', name)
+    return name
+
+def match_player_name(lineup_name: str, roster_names: list) -> str:
+    """
+    Tries to match a name from a lineup to a list of roster names.
+    
+    Args:
+        lineup_name (str): Name from starting lineup.
+        roster_names (list): List of actual roster names.
+        
+    Returns:
+        str: The matched roster name or None.
+    """
+    norm_lineup = normalize_player_name(lineup_name)
+    
+    # Pre-normalize roster names
+    roster_map = {normalize_player_name(n): n for n in roster_names}
+    
+    # 1. Exact normalized match
+    if norm_lineup in roster_map:
+        return roster_map[norm_lineup]
+    
+    # 2. Check for substring matching or first initial + last name
+    for norm_roster, actual_roster in roster_map.items():
+        if norm_lineup in norm_roster or norm_roster in norm_lineup:
+            return actual_roster
+        
+        # Last name + first initial matching
+        lineup_parts = norm_lineup.split()
+        roster_parts = norm_roster.split()
+        if len(lineup_parts) >= 2 and len(roster_parts) >= 2:
+            if lineup_parts[-1] == roster_parts[-1] and lineup_parts[0][0] == roster_parts[0][0]:
+                return actual_roster
+                
+    return None
+
+
+def scrape_mlb_lineups(date_str: str) -> list:
+    """
+    Scrapes all starting lineups from the MLB.com league-wide starting-lineups page for a date.
+    URL: https://www.mlb.com/starting-lineups/{date_str}
+    
+    Args:
+        date_str (str): Date in 'YYYY-MM-DD' format.
+        
+    Returns:
+        list: List of dictionaries: date, player_name, batting_order, team_tricode
+    """
+    url = f"https://www.mlb.com/starting-lineups/{date_str}"
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=15)
+        if response.status_code != 200:
+            return []
+    except Exception as e:
+        print(f"Error fetching global lineups for {date_str}: {e}")
+        return []
+        
+    soup = BeautifulSoup(response.text, 'html.parser')
+    results = []
+    
+    # Each game is in a starting-lineups__game container
+    game_cards = soup.find_all('div', class_='starting-lineups__game')
+    
+    if not game_cards:
+        # Fallback to general cards if the specific class is missing (MLB changes things)
+        game_cards = soup.find_all('div', class_=re.compile(r'lineups?__game'))
+
+    for game in game_cards:
+        # Find team names to associate lineups
+        # Usually inside a.starting-lineups__team-name--link or similar
+        team_links = game.find_all('a', class_=re.compile(r'team-name'))
+        team_tricodes = [t.get_text(strip=True) for t in team_links] # e.g. ["HOU", "NYY"]
+        
+        # Find the two lineups (ordered lists)
+        lineup_lists = game.find_all('ol', class_='starting-lineups__team')
+        
+        for i, ol in enumerate(lineup_lists):
+            # i=0 is away, i=1 is home (usually)
+            # Find the team code associated with this lineup list if possible
+            # But the order matches team_tricodes (away then home)
+            current_team = team_tricodes[i] if i < len(team_tricodes) else "Unknown"
+            
+            players = ol.find_all('li', class_='starting-lineups__player')
+            for idx, li in enumerate(players, start=1):
+                link = li.find('a', class_='starting-lineups__player--link')
+                if link:
+                    player_name = link.get_text(strip=True)
+                    results.append({
+                        'date': date_str,
+                        'team_tricode': current_team,
+                        'player_name': player_name,
+                        'batting_order': idx,
+                    })
+    
+    # Fallback to generic <ol> if NO game cards found
+    if not results:
+        for ol in soup.find_all('ol'):
+            # Try to find a heading before this ol for the team
+            h = ol.find_previous(['h1', 'h2', 'h3', 'h4', 'span'], class_=re.compile(r'team'))
+            team_hint = h.get_text(strip=True) if h else "Unknown"
+            
+            p_list = ol.find_all('li')
+            for idx, li in enumerate(p_list, start=1):
+                link = li.find('a')
+                if link and '/player/' in link.get('href', ''):
+                    player_name = link.get_text(strip=True)
+                    results.append({
+                        'date': date_str,
+                        'team_tricode': team_hint,
+                        'player_name': player_name,
+                        'batting_order': idx,
+                    })
+
+    # Final deduplication
+    seen = set()
+    deduped = []
+    for r in results:
+        key = (r['date'], r['team_tricode'], r['player_name'], r['batting_order'])
+        if key not in seen:
+            seen.add(key)
+            deduped.append(r)
+            
+    return deduped
 
 
 if __name__ == "__main__":
