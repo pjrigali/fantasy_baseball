@@ -1638,56 +1638,47 @@ def scrape_mlb_lineups(date_str: str) -> list:
     soup = BeautifulSoup(response.text, 'html.parser')
     results = []
     
-    # Each game is in a starting-lineups__game container
-    game_cards = soup.find_all('div', class_='starting-lineups__game')
+    # Each game is in a starting-lineups__matchup container
+    matchups = soup.find_all('div', class_=re.compile(r'lineups?__matchup'))
     
-    if not game_cards:
-        # Fallback to general cards if the specific class is missing (MLB changes things)
-        game_cards = soup.find_all('div', class_=re.compile(r'lineups?__game'))
-
-    for game in game_cards:
+    for matchup in matchups:
         # Find team names to associate lineups
-        # Usually inside a.starting-lineups__team-name--link or similar
-        team_links = game.find_all('a', class_=re.compile(r'team-name'))
-        team_tricodes = [t.get_text(strip=True) for t in team_links] # e.g. ["HOU", "NYY"]
+        team_links = matchup.find_all('a', class_=re.compile(r'team-name'))
+        team_tricodes = [t.get_text(strip=True) for t in team_links]
         
-        # Find the two lineups (ordered lists)
-        lineup_lists = game.find_all('ol', class_='starting-lineups__team')
-        
+        # Find the full-name container (teams--sm)
+        teams_container = matchup.find('div', class_=re.compile(r'teams--sm'))
+        if not teams_container:
+            # Fallback if class names change
+            teams_container = matchup.find('div', class_=re.compile(r'teams'))
+            
+        if not teams_container:
+            continue
+            
+        lineup_lists = teams_container.find_all('ol')
         for i, ol in enumerate(lineup_lists):
-            # i=0 is away, i=1 is home (usually)
-            # Find the team code associated with this lineup list if possible
-            # But the order matches team_tricodes (away then home)
             current_team = team_tricodes[i] if i < len(team_tricodes) else "Unknown"
             
-            players = ol.find_all('li', class_='starting-lineups__player')
+            players = ol.find_all('li')
             for idx, li in enumerate(players, start=1):
-                link = li.find('a', class_='starting-lineups__player--link')
+                link = li.find('a')
                 if link:
                     player_name = link.get_text(strip=True)
+                    
+                    pos_span = li.find('span')
+                    position = ''
+                    if pos_span:
+                        pos_text = pos_span.get_text(strip=True)
+                        if ')' in pos_text:
+                            position = pos_text.split(')')[-1].strip()
+                        else:
+                            position = pos_text.strip()
+                    
                     results.append({
                         'date': date_str,
                         'team_tricode': current_team,
                         'player_name': player_name,
-                        'batting_order': idx,
-                    })
-    
-    # Fallback to generic <ol> if NO game cards found
-    if not results:
-        for ol in soup.find_all('ol'):
-            # Try to find a heading before this ol for the team
-            h = ol.find_previous(['h1', 'h2', 'h3', 'h4', 'span'], class_=re.compile(r'team'))
-            team_hint = h.get_text(strip=True) if h else "Unknown"
-            
-            p_list = ol.find_all('li')
-            for idx, li in enumerate(p_list, start=1):
-                link = li.find('a')
-                if link and '/player/' in link.get('href', ''):
-                    player_name = link.get_text(strip=True)
-                    results.append({
-                        'date': date_str,
-                        'team_tricode': team_hint,
-                        'player_name': player_name,
+                        'player_position': position,
                         'batting_order': idx,
                     })
 
