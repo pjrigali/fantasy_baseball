@@ -5,7 +5,7 @@ Scrapes today's MLB lineups via mlb_processing.scrape_mlb_lineups()
 and appends them to the Bronze data lake CSV.
 
 Output file:
-  .data_lake/01_bronze/fantasy_baseball/lineups_mlb_batters_<YEAR>.csv
+  data-lake/01_Bronze/fantasy_baseball/lineups_mlb_batters_<YEAR>.csv
 
 Primary keys (deduplication):
   batters  — (date, team_tricode, player_name, batting_order)
@@ -31,7 +31,7 @@ from fantasy_baseball import mlb_processing as mp
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-DATA_PATH = os.path.join(PROJECT_ROOT, '.data_lake', '01_bronze', 'fantasy_baseball')
+DATA_PATH = os.path.join(PROJECT_ROOT, 'data-lake', '01_Bronze', 'fantasy_baseball')
 
 BATTER_FIXED_COLS = ['date', 'team_tricode', 'batting_order', 'player_name', 'player_position']
 

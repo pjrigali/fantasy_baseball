@@ -143,8 +143,9 @@ def fetch_daily_stats(league, scoring_period_id, target_date_str):
                 # Acquisition type
                 acquisition_type = pool_entry.get('acquisitionType', '')
 
-                # Player type
-                player_type = 'pitcher' if lineup_slot_id in PITCHER_SLOT_IDS else 'batter'
+                # Player type — use eligible slots, not lineup slot, so IL pitchers
+                # are still classified as 'pitcher' (lineup_slot_id becomes IL on DL).
+                player_type = 'pitcher' if any(s in PITCHER_SLOT_IDS for s in eligible_raw) else 'batter'
 
                 row = {
                     'date': target_date_str,

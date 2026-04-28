@@ -1663,7 +1663,18 @@ def scrape_mlb_lineups(date_str: str) -> list:
             for idx, li in enumerate(players, start=1):
                 link = li.find('a')
                 if link:
-                    player_name = link.get_text(strip=True)
+                    # Prefer the URL slug for full names: /player/alex-bregman-608324
+                    # Fallback to display text which MLB.com abbreviates ("A Bregman").
+                    href = link.get('href', '')
+                    slug_match = re.match(r'/player/(.+)-\d+$', href)
+                    if slug_match:
+                        _parts = slug_match.group(1).split('-')
+                        _suffix_map = {'jr': 'Jr.', 'sr': 'Sr.', 'ii': 'II', 'iii': 'III', 'iv': 'IV'}
+                        player_name = ' '.join(
+                            _suffix_map.get(p, p.capitalize()) for p in _parts
+                        )
+                    else:
+                        player_name = link.get_text(strip=True)
                     
                     pos_span = li.find('span')
                     position = ''
