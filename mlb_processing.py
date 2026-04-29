@@ -66,7 +66,7 @@ TEAM_SLUG_MAP = {
 }
 
 # Data Storage
-DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.data_lake', '01_bronze', 'fantasy_baseball')
+DATA_PATH = r'C:\Users\peter.rigali\Desktop\data-lake\01_Bronze\fantasy_baseball'
 
 def load_config(config_file="config.ini"):
     """

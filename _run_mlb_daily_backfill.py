@@ -16,7 +16,7 @@ YEAR = 2026
 SEASON_START = date(2026, 3, 23)
 TODAY = date.today()
 HEADERS = {'User-Agent': 'Mozilla/5.0'}
-CSV_PATH = os.path.join(DATA_PATH, f'stats_mlb_daily_{YEAR}.csv')
+CSV_PATH = os.path.join(r'C:\Users\peter.rigali\Desktop\data-lake\01_Bronze\fantasy_baseball', f'stats_mlb_daily_{YEAR}.csv')
 
 
 def date_to_scoring_period(d):
