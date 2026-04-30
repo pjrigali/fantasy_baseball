@@ -81,10 +81,119 @@ def setup_league(config, year):
 # ---------------------------------------------------------------------------
 # Core: fetch daily stats for a single scoring period
 # ---------------------------------------------------------------------------
+def _build_roster_lookup(league, scoring_period_id):
+    """
+    Fetch the full roster for every team using the mRoster view, which includes
+    bench and IL pitchers that are absent from the mMatchupScore view.
+
+    Returns a dict keyed by (team_id, player_id) -> {lineupSlotId, lineupSlotName}.
+    Only pitcher entries (eligible slots contain SP/RP/P slot IDs) are stored;
+    batter bench/IL slots are already present in the matchup data.
+    """
+    params = {
+        'view': ['mRoster'],
+        'scoringPeriodId': scoring_period_id,
+    }
+    try:
+        data = league.espn_request.league_get(params=params, headers={})
+    except Exception:
+        return {}
+
+    lookup = {}
+    for team in data.get('teams', []):
+        team_id = team.get('id')
+        roster = team.get('roster', {})
+        for entry in roster.get('entries', []):
+            pool_entry = entry.get('playerPoolEntry', {})
+            player = pool_entry.get('player', {})
+            player_id = player.get('id')
+            eligible_raw = player.get('eligibleSlots', [])
+            if not any(s in PITCHER_SLOT_IDS for s in eligible_raw):
+                continue  # only care about pitchers here
+            lineup_slot_id = int(entry.get('lineupSlotId', -1))
+            lookup[(team_id, player_id)] = {
+                'lineup_slot_id': lineup_slot_id,
+                'lineup_slot_name': POSITION_MAP.get(lineup_slot_id, str(lineup_slot_id)),
+            }
+    return lookup
+
+
+def _extract_entry(
+    entry, team_id, team_info, scoring_period_id, target_date_str,
+    lineup_slot_override=None,
+):
+    """
+    Convert a single ESPN roster entry dict into a flat row-dict.
+    lineup_slot_override is used when the slot is sourced from the mRoster
+    view rather than the matchup view (bench/IL pitchers).
+    """
+    pool_entry = entry.get('playerPoolEntry', {})
+    player = pool_entry.get('player', {})
+
+    if lineup_slot_override is not None:
+        lineup_slot_id = lineup_slot_override['lineup_slot_id']
+        lineup_slot_name = lineup_slot_override['lineup_slot_name']
+    else:
+        lineup_slot_id = int(entry.get('lineupSlotId', -1))
+        lineup_slot_name = POSITION_MAP.get(lineup_slot_id, str(lineup_slot_id))
+
+    default_pos_id = player.get('defaultPositionId', -1)
+    default_pos = POSITION_MAP.get(default_pos_id - 1, str(default_pos_id))
+
+    eligible_raw = player.get('eligibleSlots', [])
+    eligible_names = [POSITION_MAP.get(s, str(s)) for s in eligible_raw]
+    eligible_str = '|'.join(eligible_names)
+
+    injury_status = player.get('injuryStatus', 'ACTIVE')
+    injured = player.get('injured', False)
+    pro_team_id = player.get('proTeamId', 0)
+    pro_team = PRO_TEAM_MAP.get(pro_team_id, str(pro_team_id))
+    acquisition_type = pool_entry.get('acquisitionType', '')
+    player_type = 'pitcher' if any(s in PITCHER_SLOT_IDS for s in eligible_raw) else 'batter'
+
+    row = {
+        'date': target_date_str,
+        'scoring_period': scoring_period_id,
+        'team_id': team_id,
+        'team_name': team_info['name'],
+        'team_abbrev': team_info['abbrev'],
+        'player_id': player.get('id'),
+        'player_name': player.get('fullName', ''),
+        'player_position': default_pos,
+        'player_type': player_type,
+        'lineup_slot': lineup_slot_name,
+        'injury_status': injury_status,
+        'injured': injured,
+        'pro_team': pro_team,
+        'eligible_slots': eligible_str,
+        'acquisition_type': acquisition_type,
+        'points': 0,
+    }
+
+    if player.get('stats'):
+        for stat_block in player['stats']:
+            sp_id = stat_block.get('scoringPeriodId')
+            stat_source = stat_block.get('statSourceId', -1)
+            if sp_id == scoring_period_id and stat_source == 0:
+                row['points'] = stat_block.get('appliedTotal', 0)
+                for stat_id_str, stat_val in stat_block.get('stats', {}).items():
+                    stat_id = int(stat_id_str)
+                    if stat_id in STATS_MAP:
+                        row[STATS_MAP[stat_id]] = stat_val
+                break
+
+    return row
+
+
 def fetch_daily_stats(league, scoring_period_id, target_date_str):
     """
     Call the ESPN API for a single scoring period and return a list of
     flat row-dicts ready for CSV output.
+
+    Uses two API views:
+      - mMatchupScore / mScoreboard  : active-slot players with scoring stats
+      - mRoster                      : full roster, used to back-fill bench and
+                                       IL pitchers that the matchup view omits
 
     Each row captures:
       - identifiers  : date, team, player
@@ -93,6 +202,10 @@ def fetch_daily_stats(league, scoring_period_id, target_date_str):
     """
     team_map = {t.team_id: {'name': t.team_name, 'abbrev': t.team_abbrev} for t in league.teams}
 
+    # --- Step 1: full roster lookup (bench + IL pitchers) ---
+    roster_lookup = _build_roster_lookup(league, scoring_period_id)
+
+    # --- Step 2: matchup data (active slots for all players) ---
     params = {
         'view': ['mMatchupScore', 'mScoreboard'],
         'scoringPeriodId': scoring_period_id,
@@ -102,6 +215,8 @@ def fetch_daily_stats(league, scoring_period_id, target_date_str):
     schedule = data.get('schedule', [])
 
     rows = []
+    seen_pitcher_keys = set()  # track (team_id, player_id) for pitchers already added
+
     for matchup in schedule:
         for side in ('away', 'home'):
             if side not in matchup:
@@ -117,71 +232,61 @@ def fetch_daily_stats(league, scoring_period_id, target_date_str):
 
             entries = team_data[roster_key].get('entries', [])
             for entry in entries:
+                player_id = entry.get('playerPoolEntry', {}).get('player', {}).get('id')
+                eligible_raw = entry.get('playerPoolEntry', {}).get('player', {}).get('eligibleSlots', [])
+                is_pitcher = any(s in PITCHER_SLOT_IDS for s in eligible_raw)
+
+                # Use the roster_lookup slot for pitchers so we get the correct
+                # BE/IL slot rather than whatever the matchup view reports.
+                slot_override = roster_lookup.get((team_id, player_id)) if is_pitcher else None
+
+                row = _extract_entry(
+                    entry, team_id, team_info, scoring_period_id, target_date_str,
+                    lineup_slot_override=slot_override,
+                )
+                rows.append(row)
+
+                if is_pitcher:
+                    seen_pitcher_keys.add((team_id, player_id))
+
+    # --- Step 3: back-fill bench + IL pitchers missing from matchup view ---
+    # Build a reverse map: team_id -> list of mRoster entries, restricted to
+    # pitchers not already emitted above.
+    #
+    # The mRoster view returns player data under league.teams[].roster.entries,
+    # but we already parsed that into roster_lookup (slot info only). We need
+    # the full entry dicts, so we re-fetch to get player/stats payloads.
+    # We reuse the same mRoster response cached in _build_roster_lookup by
+    # making a second lightweight call here. This is a small penalty (~1 extra
+    # API call per day) but keeps the logic clean.
+    try:
+        roster_data = league.espn_request.league_get(
+            params={'view': ['mRoster'], 'scoringPeriodId': scoring_period_id},
+            headers={},
+        )
+        for team in roster_data.get('teams', []):
+            team_id = team.get('id')
+            team_info = team_map.get(team_id, {'name': '', 'abbrev': ''})
+            for entry in team.get('roster', {}).get('entries', []):
                 pool_entry = entry.get('playerPoolEntry', {})
                 player = pool_entry.get('player', {})
-
-                lineup_slot_id = int(entry.get('lineupSlotId', -1))
-                lineup_slot_name = POSITION_MAP.get(lineup_slot_id, str(lineup_slot_id))
-
-                # Default position
-                default_pos_id = player.get('defaultPositionId', -1)
-                default_pos = POSITION_MAP.get(default_pos_id - 1, str(default_pos_id))
-
-                # Eligible slots as a pipe-separated string for CSV friendliness
+                player_id = player.get('id')
                 eligible_raw = player.get('eligibleSlots', [])
-                eligible_names = [POSITION_MAP.get(s, str(s)) for s in eligible_raw]
-                eligible_str = '|'.join(eligible_names)
 
-                # Injury info
-                injury_status = player.get('injuryStatus', 'ACTIVE')
-                injured = player.get('injured', False)
+                if not any(s in PITCHER_SLOT_IDS for s in eligible_raw):
+                    continue  # batters handled by matchup view
+                if (team_id, player_id) in seen_pitcher_keys:
+                    continue  # active-slot pitcher already added
 
-                # Pro team
-                pro_team_id = player.get('proTeamId', 0)
-                pro_team = PRO_TEAM_MAP.get(pro_team_id, str(pro_team_id))
-
-                # Acquisition type
-                acquisition_type = pool_entry.get('acquisitionType', '')
-
-                # Player type — use eligible slots, not lineup slot, so IL pitchers
-                # are still classified as 'pitcher' (lineup_slot_id becomes IL on DL).
-                player_type = 'pitcher' if any(s in PITCHER_SLOT_IDS for s in eligible_raw) else 'batter'
-
-                row = {
-                    'date': target_date_str,
-                    'scoring_period': scoring_period_id,
-                    'team_id': team_id,
-                    'team_name': team_info['name'],
-                    'team_abbrev': team_info['abbrev'],
-                    'player_id': player.get('id'),
-                    'player_name': player.get('fullName', ''),
-                    'player_position': default_pos,
-                    'player_type': player_type,
-                    'lineup_slot': lineup_slot_name,
-                    'injury_status': injury_status,
-                    'injured': injured,
-                    'pro_team': pro_team,
-                    'eligible_slots': eligible_str,
-                    'acquisition_type': acquisition_type,
-                    'points': 0,
-                }
-
-                # Flatten stats
-                if player.get('stats'):
-                    for stat_block in player['stats']:
-                        # Match the scoring period to avoid grabbing projected or
-                        # season-level stat blocks
-                        sp_id = stat_block.get('scoringPeriodId')
-                        stat_source = stat_block.get('statSourceId', -1)
-                        if sp_id == scoring_period_id and stat_source == 0:
-                            row['points'] = stat_block.get('appliedTotal', 0)
-                            for stat_id_str, stat_val in stat_block.get('stats', {}).items():
-                                stat_id = int(stat_id_str)
-                                if stat_id in STATS_MAP:
-                                    row[STATS_MAP[stat_id]] = stat_val
-                            break  # Found the matching block
-
+                # This is a bench or IL pitcher absent from the matchup view
+                slot_info = roster_lookup.get((team_id, player_id))
+                row = _extract_entry(
+                    entry, team_id, team_info, scoring_period_id, target_date_str,
+                    lineup_slot_override=slot_info,
+                )
                 rows.append(row)
+    except Exception:
+        pass  # mRoster back-fill is best-effort; active-slot data is already captured
 
     return rows
 
