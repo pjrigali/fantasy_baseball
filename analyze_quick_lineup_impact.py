@@ -6,8 +6,8 @@ across all 10 teams in the league.
 Methodology:
 - For each bench/IL batter on each day, the LAST recorded move that placed
   them in their current bench slot determines attribution:
-    'quick'   - CPU or NightlyLeagueUpdateTaskProcessor placed them there
-    'manual'  - CPU_USER_INITIATED or GUID session placed them there
+    'quick'   - CPU, CPU_USER_INITIATED, or NightlyLeagueUpdateTaskProcessor placed them there
+    'manual'  - GUID session placed them there
     'default' - No recorded move to bench (drafted/acquired onto bench,
                 or carried over with no explicit slot change)
 - Missed stats are the counting stats (R, HR, RBI, SB) those bench batters
@@ -34,7 +34,7 @@ ACTIVE_BATTER_SLOTS  = {"C", "1B", "2B", "3B", "SS", "2B/SS", "1B/3B", "OF", "UT
 ACTIVE_PITCHER_SLOTS = {"SP", "RP", "P"}
 BENCH_SLOTS          = {"BE", "IL"}
 
-QUICK_SOURCES = {"CPU", "NightlyLeagueUpdateTaskProcessor"}
+QUICK_SOURCES = {"CPU", "NightlyLeagueUpdateTaskProcessor", "CPU_USER_INITIATED"}
 
 
 # -- 1. Load data --------------------------------------------------------------
