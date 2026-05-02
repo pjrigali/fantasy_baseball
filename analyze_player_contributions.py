@@ -26,15 +26,19 @@ import numpy as np
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from fantasy_baseball import mlb_processing as mp
+
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-CSV_PATH      = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\stats_espn_daily_2026.csv"
-LINEUP_PATH   = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\lineups_mlb_batters_2026.csv"
-PROJ_LU_PATH  = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\projected_lineups_2026.csv"
-PROJ_BAT_PATH = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\player_batter_projections_2026.csv"
-PROJ_PIT_PATH = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\player_pitcher_projections_2026.csv"
-REPORTS_DIR   = r"C:\Users\peter.rigali\Desktop\acn_repo\fantasy_baseball\reports"
+CSV_PATH      = os.path.join(mp.DATA_PATH, "stats_espn_daily_2026.csv")
+LINEUP_PATH   = os.path.join(mp.DATA_PATH, "lineups_mlb_batters_2026.csv")
+PROJ_LU_PATH  = os.path.join(mp.DATA_PATH, "projected_lineups_2026.csv")
+PROJ_BAT_PATH = os.path.join(mp.DATA_PATH, "player_batter_projections_2026.csv")
+PROJ_PIT_PATH = os.path.join(mp.DATA_PATH, "player_pitcher_projections_2026.csv")
+SCRIPT_DIR    = os.path.dirname(os.path.abspath(__file__))
+REPORTS_DIR   = os.path.join(SCRIPT_DIR, "reports")
 TARGET_TEAM   = "Datalickmyballs"
 EVAL_WINDOW   = 28
 WEAK_Z_THRESH = -0.3

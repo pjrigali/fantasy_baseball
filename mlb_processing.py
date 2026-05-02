@@ -8,7 +8,7 @@ import pandas as pd
 import time
 import io
 import seaborn as sb
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 from bs4 import BeautifulSoup
 from espn_api.baseball import League
 from espn_api.baseball.constant import POSITION_MAP, PRO_TEAM_MAP, STATS_MAP
@@ -66,7 +66,24 @@ TEAM_SLUG_MAP = {
 }
 
 # Data Storage
-DATA_PATH = r'C:\Users\peter.rigali\Desktop\data-lake\01_Bronze\fantasy_baseball'
+# Resolves the Bronze data lake path across machines:
+#   Home: .data_lake/01_bronze/fantasy_baseball (inside repo)
+#   Work: ../data-lake/01_Bronze/fantasy_baseball (sibling folder)
+def _resolve_data_path():
+    _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # Home machine: .data_lake inside the repo
+    home_path = os.path.join(_project_root, '.data_lake', '01_bronze', 'fantasy_baseball')
+    if os.path.isdir(home_path):
+        return home_path
+    # Work machine: data-lake as sibling directory
+    parent_dir = os.path.dirname(_project_root)
+    work_path = os.path.join(parent_dir, 'data-lake', '01_Bronze', 'fantasy_baseball')
+    if os.path.isdir(work_path):
+        return work_path
+    # Fallback: default to home-style path (created on first use)
+    return home_path
+
+DATA_PATH = _resolve_data_path()
 
 def load_config(config_file="config.ini"):
     """
@@ -145,6 +162,33 @@ def json_parsing(obj, key):
 def remove_none(lst: list) -> list:
     """Removes None values from a list."""
     return [i for i in lst if i is not None]
+
+# --- Date Utilities ---
+
+SEASON_OPENING_DAYS = {
+    2025: date(2025, 3, 27),
+    2026: date(2026, 3, 26),
+}
+
+def date_to_scoring_period(target_date, season_year):
+    """
+    Convert a calendar date to an ESPN scoring period ID.
+    ESPN scoring period 1 = Opening Day of the MLB season.
+
+    Args:
+        target_date (datetime.date): The calendar date.
+        season_year (int): The MLB season year.
+
+    Returns:
+        int: The scoring period ID.
+    """
+    opening = SEASON_OPENING_DAYS.get(season_year)
+    if opening is None:
+        opening = date(season_year, 3, 27)
+    delta = (target_date - opening).days + 1
+    if delta < 1:
+        raise ValueError(f"Date {target_date} is before the {season_year} season opening ({opening}).")
+    return delta
 
 # --- Data Fetching Functions ---
 
@@ -1703,6 +1747,160 @@ def scrape_mlb_lineups(date_str: str) -> list:
             deduped.append(r)
             
     return deduped
+
+
+# --- Analysis Utilities ---
+
+def clean_name(name):
+    """
+    Normalize a player name by collapsing whitespace and removing
+    non-breaking space characters.
+
+    Args:
+        name: Raw player name (any type, coerced to str).
+
+    Returns:
+        str: Cleaned name.
+    """
+    return re.sub(r'\s+', ' ', str(name).replace('\xa0', ' ').replace('\u00a0', ' ')).strip()
+
+
+def parse_player_col(df, player_col='Player'):
+    """
+    Parse an ESPN-style player column (e.g. 'Mike Trout (LAA - CF)')
+    into separate Name, Team, and Pos columns on a DataFrame.
+
+    NOTE: Requires pandas DataFrame as input.
+
+    Args:
+        df (pd.DataFrame): DataFrame with a player column.
+        player_col (str): Name of the column to parse.
+
+    Returns:
+        pd.DataFrame: DataFrame with added 'Name', 'Team', 'Pos' columns.
+    """
+    names, teams, positions = [], [], []
+    for raw in df[player_col]:
+        raw = clean_name(raw)
+        raw_clean = re.sub(r'\s+(IL\d+|NRI|MiLB|DFA|RET|FA)$', '', raw)
+        match = re.match(r'^(.+?)\s*\((.+?)\s*-\s*(.+?)\)$', raw_clean)
+        if match:
+            names.append(match.group(1).strip())
+            teams.append(match.group(2).strip())
+            positions.append(match.group(3).strip())
+        else:
+            fa_match = re.match(r'^(.+?)\s*\((.+?)\)\s*(?:FA|RET)?$', raw)
+            if fa_match:
+                names.append(fa_match.group(1).strip())
+                teams.append('FA')
+                positions.append(fa_match.group(2).strip())
+            else:
+                names.append(raw_clean)
+                teams.append('UNK')
+                positions.append('UNK')
+    df['Name'] = names
+    df['Team'] = teams
+    df['Pos'] = positions
+    return df
+
+
+def calculate_z_scores(df, categories, invert_categories=None):
+    """
+    Calculate z-scores for specified stat categories on a DataFrame.
+
+    NOTE: Requires pandas DataFrame as input.
+
+    Args:
+        df (pd.DataFrame): DataFrame with stat columns. Must have a 'Type' column.
+        categories (list): List of column names to z-score.
+        invert_categories (list, optional): Columns where lower is better (e.g. ERA, WHIP).
+
+    Returns:
+        tuple: (DataFrame with z-score columns, list of z-score column names)
+    """
+    if invert_categories is None:
+        invert_categories = []
+    result = df.copy()
+    z_cols = []
+    for cat in categories:
+        z_col = f'Z_{cat}'
+        z_cols.append(z_col)
+        mean = result[cat].mean()
+        std = result[cat].std()
+        if std == 0:
+            result[z_col] = 0
+        else:
+            result[z_col] = (result[cat] - mean) / std
+            if cat in invert_categories:
+                result[z_col] = result[z_col] * -1
+    result[f'Total_Z_{df["Type"].iloc[0]}'] = result[z_cols].sum(axis=1)
+    return result, z_cols
+
+
+def add_daily_zscore(df, col, mask, sign=1.0):
+    """
+    Add a z-score-normalized stat contribution to a 'Daily_Value' column.
+    Normalizes against same-day performance across all players.
+
+    NOTE: Requires pandas DataFrame as input. Mutates df in place.
+
+    Args:
+        df (pd.DataFrame): DataFrame with a 'Daily_Value' column.
+        col (str): Stat column to normalize.
+        mask: Boolean mask selecting relevant rows (e.g. batters only).
+        sign (float): +1.0 for positive stats, -1.0 for inverse stats.
+    """
+    if col not in df.columns:
+        return
+    sub = df.loc[mask]
+    dm = sub.groupby('date')[col].transform('mean')
+    ds = sub.groupby('date')[col].transform('std').replace(0, np.nan).fillna(1)
+    df.loc[mask, 'Daily_Value'] += sign * ((sub[col] - dm) / ds).fillna(0)
+
+
+def find_streaks(pid, player_df, streak_threshold=0.25, min_streak_len=5):
+    """
+    Detect hot/cold streaks in a player's rolling deviation data.
+
+    NOTE: Requires pandas/numpy. Returns a pd.DataFrame.
+
+    Args:
+        pid: Player ID (used as label in output).
+        player_df (pd.DataFrame): Must have 'deviation' and 'game_idx' columns.
+        streak_threshold (float): Deviation threshold for streak detection.
+        min_streak_len (int): Minimum games for a streak to qualify.
+
+    Returns:
+        pd.DataFrame: Streak records with columns: espn_player_id, game_idx,
+                      streak_id, streak_type, pos_in_streak, streak_length.
+    """
+    dev = player_df['deviation'].values
+    game_idx = player_df['game_idx'].values
+    labels = np.where(dev > streak_threshold, 1,
+                      np.where(dev < -streak_threshold, -1, 0))
+    records, streak_id, i = [], 0, 0
+    while i < len(labels):
+        if labels[i] != 0:
+            j = i
+            while j < len(labels) and labels[j] == labels[i]:
+                j += 1
+            length = j - i
+            if length >= min_streak_len:
+                stype = 'hot' if labels[i] == 1 else 'cold'
+                for k in range(length):
+                    records.append({
+                        'espn_player_id': pid,
+                        'game_idx': int(game_idx[i + k]),
+                        'streak_id': f"{pid}_{streak_id}",
+                        'streak_type': stype,
+                        'pos_in_streak': k + 1,
+                        'streak_length': length,
+                    })
+                streak_id += 1
+            i = j
+        else:
+            i += 1
+    return pd.DataFrame(records)
 
 
 if __name__ == "__main__":

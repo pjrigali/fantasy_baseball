@@ -13,7 +13,10 @@ import numpy as np
 # Force UTF-8 output on Windows
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
-CSV_PATH = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\stats_espn_daily_2026.csv"
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from fantasy_baseball import mlb_processing as mp
+
+CSV_PATH = os.path.join(mp.DATA_PATH, "stats_espn_daily_2026.csv")
 
 # ---------------------------------------------------------------------------
 # Load data

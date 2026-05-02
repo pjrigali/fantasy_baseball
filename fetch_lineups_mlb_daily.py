@@ -31,7 +31,7 @@ from fantasy_baseball import mlb_processing as mp
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-DATA_PATH = os.path.join(PROJECT_ROOT, 'data-lake', '01_Bronze', 'fantasy_baseball')
+DATA_PATH = mp.DATA_PATH
 
 BATTER_FIXED_COLS = ['date', 'team_tricode', 'batting_order', 'player_name', 'player_position']
 

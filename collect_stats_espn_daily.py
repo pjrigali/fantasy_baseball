@@ -38,44 +38,17 @@ sys.path.insert(0, PROJECT_ROOT)
 
 from espn_api.baseball import League
 from espn_api.baseball.constant import POSITION_MAP, PRO_TEAM_MAP, STATS_MAP
+from fantasy_baseball.mlb_processing import (
+    load_config, setup_league, DATA_PATH, date_to_scoring_period,
+)
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-DATA_PATH = os.path.join(PROJECT_ROOT, '.data_lake', '01_bronze', 'fantasy_baseball')
-
 # Lineup slot IDs that indicate a pitcher
 PITCHER_SLOT_IDS = {13, 14, 15}   # P, SP, RP
 
 
-# ---------------------------------------------------------------------------
-# Config & league helpers
-# ---------------------------------------------------------------------------
-def load_config(config_file="config.ini"):
-    """Load config.ini from CWD, script dir, or project root."""
-    search_dirs = [
-        os.getcwd(),
-        os.path.dirname(os.path.abspath(__file__)),
-        PROJECT_ROOT,
-    ]
-    for d in search_dirs:
-        path = os.path.join(d, config_file)
-        if os.path.exists(path):
-            cfg = configparser.ConfigParser(interpolation=None)
-            cfg.read(path)
-            return cfg
-    raise FileNotFoundError(f"Could not locate {config_file} in any expected directory.")
-
-
-def setup_league(config, year):
-    """Initialise ESPN League object from config."""
-    bb = config['BASEBALL']
-    return League(
-        league_id=int(bb['BB_LEAGUE_ID']),
-        year=year,
-        espn_s2=bb['BB_ESPN_2'],
-        swid='{' + bb['BB_SWID'] + '}',
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -379,29 +352,6 @@ def _rewrite_with_new_cols(csv_path, new_fieldnames):
     os.replace(tmp_path, csv_path)
 
 
-# ---------------------------------------------------------------------------
-# Scoring period helper
-# ---------------------------------------------------------------------------
-def date_to_scoring_period(target_date, season_year):
-    """
-    Convert a calendar date to an ESPN scoring period ID.
-    ESPN scoring period 1 = Opening Day of the MLB season.
-    Approximate opening days (adjust if needed):
-      2025: March 27   2026: March 26
-    """
-    opening_days = {
-        2025: date(2025, 3, 27),
-        2026: date(2026, 3, 26),
-    }
-    opening = opening_days.get(season_year)
-    if opening is None:
-        # Fallback: assume late March
-        opening = date(season_year, 3, 27)
-
-    delta = (target_date - opening).days + 1  # SP 1 = opening day
-    if delta < 1:
-        raise ValueError(f"Date {target_date} is before the {season_year} season opening ({opening}).")
-    return delta
 
 
 # ---------------------------------------------------------------------------
