@@ -32,7 +32,6 @@ tmp/
 
 # Generated outputs
 *.png
-reports/
 
 # Generated docs (private)
 pjr_draft_cheatsheet_2026.md
