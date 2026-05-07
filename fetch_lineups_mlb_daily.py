@@ -1,8 +1,9 @@
 """
 fetch_lineups_mlb_daily.py
 ==========================
-Scrapes today's MLB lineups via mlb_processing.scrape_mlb_lineups()
-and appends them to the Bronze data lake CSV.
+Scrapes MLB lineups via mlb_processing.scrape_mlb_lineups() and appends
+them to the Bronze data lake CSV. Automatically detects and backfills any
+gap between the last recorded date and today — no need to run daily.
 
 Output file:
   data-lake/01_Bronze/fantasy_baseball/lineups_mlb_batters_<YEAR>.csv
@@ -12,13 +13,18 @@ Primary keys (deduplication):
 
 Usage:
     python fetch_lineups_mlb_daily.py [--date YYYY-MM-DD] [--year YYYY]
+
+    --date  Collect a specific date only (skips auto-backfill).
+            Default: auto-detect last recorded date and backfill to today.
+    --year  Season year for the output filename (default: current year).
 """
 
 import os
 import sys
 import csv
+import time
 import argparse
-from datetime import datetime
+from datetime import datetime, date, timedelta
 
 # ---------------------------------------------------------------------------
 # Path setup
@@ -98,50 +104,94 @@ def append_rows(csv_path: str, rows: list, existing_keys: set,
 # Main
 # ---------------------------------------------------------------------------
 
+SEASON_START = {2025: date(2025, 3, 27), 2026: date(2026, 3, 26)}
+
+
+def get_last_recorded_date(csv_path: str) -> date | None:
+    """Return the most recent date in the CSV, or None if file doesn't exist / is empty."""
+    if not os.path.exists(csv_path):
+        return None
+    with open(csv_path, 'r', newline='', encoding='utf-8') as f:
+        dates = [row['date'] for row in csv.DictReader(f) if row.get('date')]
+    return date.fromisoformat(max(dates)) if dates else None
+
+
+def fetch_date(ds: str, batter_path: str, existing_keys: set) -> int:
+    """Scrape one date and append new rows. Returns count written."""
+    try:
+        batters = mp.scrape_mlb_lineups(ds)
+    except Exception as e:
+        print(f'  {ds}: ERROR - {e}')
+        return 0
+    if not batters:
+        print(f'  {ds}: no data (off day or lineups not posted)')
+        return 0
+    written = append_rows(
+        batter_path, batters, existing_keys, BATTER_FIXED_COLS,
+        key_fn=lambda r: (r.get('date', ''), r.get('team_tricode', ''),
+                          r.get('player_name', ''), str(r.get('batting_order', '')))
+    )
+    print(f'  {ds}: {len(batters):3d} fetched, {written:3d} new')
+    return written
+
+
 def main():
-    parser = argparse.ArgumentParser(description='Fetch daily MLB lineups.')
+    parser = argparse.ArgumentParser(description='Fetch MLB lineups, auto-backfilling any gaps.')
     parser.add_argument('--date', type=str, default=None,
-                        help='Target date in YYYY-MM-DD format (default: today)')
+                        help='Collect a specific date only (skips auto-backfill)')
     parser.add_argument('--year', type=int, default=datetime.now().year,
                         help='Season year used in output filename (default: current year)')
     args = parser.parse_args()
 
     year = args.year
-    target_date = args.date or datetime.now().strftime('%Y-%m-%d')
+    today = date.today()
 
-    print(f'=== MLB Daily Lineup Fetch ===')
-    print(f'  Year  : {year}')
-    print(f'  Date  : {target_date}')
-
-    # 1. Scrape MLB.com
-    print('  Scraping lineups...')
-    try:
-        batters = mp.scrape_mlb_lineups(target_date)
-        print(f'  Raw batters: {len(batters)}')
-    except Exception as e:
-        print(f'  ERROR scraping lineups: {e}')
-        return
-
-    if not batters:
-        print('  No lineup data returned. Lineups may not be posted yet.')
-        return
-
-    # 2. Output paths
     os.makedirs(DATA_PATH, exist_ok=True)
     batter_path = os.path.join(DATA_PATH, f'lineups_mlb_batters_{year}.csv')
+    existing_keys = load_existing_batter_keys(batter_path)
 
-    # 3. Load existing keys
-    existing_batter_keys = load_existing_batter_keys(batter_path)
-    print(f'  Existing batter rows : {len(existing_batter_keys)}')
+    print(f'=== MLB Lineup Fetch ===')
+    print(f'  Year       : {year}')
+    print(f'  Output     : {batter_path}')
+    print(f'  Existing   : {len(existing_keys)} rows')
 
-    # 4. Append with dedup
-    b_written = append_rows(
-        batter_path, batters, existing_batter_keys, BATTER_FIXED_COLS,
-        key_fn=lambda r: (r.get('date', ''), r.get('team_tricode', ''), r.get('player_name', ''), str(r.get('batting_order', '')))
-    )
+    total_written = 0
 
-    print(f'  Batters  — fetched: {len(batters)}, new: {b_written}, skipped: {len(batters) - b_written}')
-    print(f'  Batter CSV : {batter_path}')
+    if args.date:
+        # Single-date mode
+        print(f'  Mode       : single date ({args.date})')
+        total_written = fetch_date(args.date, batter_path, existing_keys)
+    else:
+        # Auto-backfill mode: find last recorded date, fill forward to today
+        last = get_last_recorded_date(batter_path)
+        season_open = SEASON_START.get(year, date(year, 3, 27))
+        start = (last + timedelta(days=1)) if last else season_open
+
+        if start > today:
+            print(f'  Already current through {today}. Nothing to do.')
+            print('=== Done ===')
+            return
+
+        dates_to_fetch = []
+        d = start
+        while d <= today:
+            dates_to_fetch.append(d)
+            d += timedelta(days=1)
+
+        if last:
+            print(f'  Last date  : {last}')
+        else:
+            print(f'  No existing data — backfilling from season open ({season_open})')
+        print(f'  Fetching   : {len(dates_to_fetch)} date(s) ({start} → {today})')
+        print()
+
+        for i, d in enumerate(dates_to_fetch):
+            total_written += fetch_date(d.strftime('%Y-%m-%d'), batter_path, existing_keys)
+            if i < len(dates_to_fetch) - 1:
+                time.sleep(0.5)
+
+    print()
+    print(f'  Total new rows : {total_written}')
     print('=== Done ===')
 
 

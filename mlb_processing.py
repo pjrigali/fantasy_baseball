@@ -66,22 +66,23 @@ TEAM_SLUG_MAP = {
 }
 
 # Data Storage
-# Resolves the Bronze data lake path across machines:
-#   Home: .data_lake/01_bronze/fantasy_baseball (inside repo)
-#   Work: ../data-lake/01_Bronze/fantasy_baseball (sibling folder)
+# Resolves the Bronze data lake path across machines, checked in order:
+#   1. data-lake/01_Bronze/fantasy_baseball  (inside repo — work machine)
+#   2. ../data-lake/01_Bronze/fantasy_baseball (sibling of repo — legacy layout)
+#   3. .data_lake/01_bronze/fantasy_baseball  (inside repo — home machine)
 def _resolve_data_path():
     _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    # Home machine: .data_lake inside the repo
-    home_path = os.path.join(_project_root, '.data_lake', '01_bronze', 'fantasy_baseball')
-    if os.path.isdir(home_path):
-        return home_path
-    # Work machine: data-lake as sibling directory
+    # Work machine (primary): data-lake inside the repo
+    repo_path = os.path.join(_project_root, 'data-lake', '01_Bronze', 'fantasy_baseball')
+    if os.path.isdir(repo_path):
+        return repo_path
+    # Legacy layout: data-lake as sibling of repo
     parent_dir = os.path.dirname(_project_root)
-    work_path = os.path.join(parent_dir, 'data-lake', '01_Bronze', 'fantasy_baseball')
-    if os.path.isdir(work_path):
-        return work_path
-    # Fallback: default to home-style path (created on first use)
-    return home_path
+    sibling_path = os.path.join(parent_dir, 'data-lake', '01_Bronze', 'fantasy_baseball')
+    if os.path.isdir(sibling_path):
+        return sibling_path
+    # Home machine fallback: .data_lake inside the repo (created on first use)
+    return os.path.join(_project_root, '.data_lake', '01_bronze', 'fantasy_baseball')
 
 DATA_PATH = _resolve_data_path()
 
