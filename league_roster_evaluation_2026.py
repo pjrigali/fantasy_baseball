@@ -1,3 +1,13 @@
+"""
+Description: Pre-draft league roster evaluation using projected stats. Ranks all 10 teams
+             by projected total z-score across 5x5 H2H categories, identifies each team's
+             categorical strengths and weaknesses, and flags best/worst projected players
+             per roster.
+Source Data: player_batter_projections_2026.csv, player_pitcher_projections_2026.csv,
+             draft_results_espn_2026.csv (data-lake/01_Bronze/fantasy_baseball)
+Outputs:     fantasy_baseball/league_roster_evaluation_2026.md
+"""
+
 import os
 import sys
 import pandas as pd

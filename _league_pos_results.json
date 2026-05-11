@@ -1,0 +1,1304 @@
+{
+  "meta": {
+    "season": 2026,
+    "generated": "2026-05-07",
+    "latest_data": "2026-05-07",
+    "total_days": 37,
+    "my_team": "Datalickmyballs",
+    "all_teams": [
+      "All Rise",
+      "Big Dumpers",
+      "Big Papi",
+      "Datalickmyballs",
+      "Dingers Only",
+      "Midnight Muncy's",
+      "Shohei Me the Money",
+      "Skubal Snacks",
+      "This Schlitt is Bazzanas",
+      "Welcome to the JUNGle"
+    ],
+    "matchup_period": 6,
+    "proj_days": 4,
+    "matchup_end": "2026-05-10"
+  },
+  "league_bat_ytd": {
+    "1B/3B": {
+      "slot_days": 368,
+      "R": 166,
+      "HR": 49,
+      "RBI": 182,
+      "SB": 14,
+      "OPS": 0.785
+    },
+    "1B": {
+      "slot_days": 369,
+      "R": 157,
+      "HR": 49,
+      "RBI": 169,
+      "SB": 14,
+      "OPS": 0.732
+    },
+    "3B": {
+      "slot_days": 368,
+      "R": 143,
+      "HR": 41,
+      "RBI": 137,
+      "SB": 28,
+      "OPS": 0.676
+    },
+    "UTIL": {
+      "slot_days": 738,
+      "R": 299,
+      "HR": 78,
+      "RBI": 280,
+      "SB": 37,
+      "OPS": 0.746
+    },
+    "2B": {
+      "slot_days": 369,
+      "R": 158,
+      "HR": 26,
+      "RBI": 135,
+      "SB": 37,
+      "OPS": 0.723
+    },
+    "C": {
+      "slot_days": 370,
+      "R": 172,
+      "HR": 53,
+      "RBI": 184,
+      "SB": 8,
+      "OPS": 0.781
+    },
+    "2B/SS": {
+      "slot_days": 370,
+      "R": 158,
+      "HR": 43,
+      "RBI": 152,
+      "SB": 32,
+      "OPS": 0.752
+    },
+    "OF": {
+      "slot_days": 1479,
+      "R": 715,
+      "HR": 186,
+      "RBI": 642,
+      "SB": 149,
+      "OPS": 0.76
+    },
+    "SS": {
+      "slot_days": 369,
+      "R": 188,
+      "HR": 48,
+      "RBI": 160,
+      "SB": 39,
+      "OPS": 0.744
+    }
+  },
+  "league_pit_ytd": {
+    "SP": {
+      "slot_days": 1853,
+      "ERA": 3.85,
+      "WHIP": 1.22,
+      "K9": 9.24,
+      "QS": 160,
+      "SVHD": 10
+    },
+    "RP": {
+      "slot_days": 1448,
+      "ERA": 3.87,
+      "WHIP": 1.22,
+      "K9": 10.26,
+      "QS": 0,
+      "SVHD": 217
+    }
+  },
+  "my_bat_comparison": {
+    "C": {
+      "my": {
+        "slot_days": 37,
+        "R": 24,
+        "HR": 8,
+        "RBI": 16,
+        "SB": 0,
+        "OPS": 0.868
+      },
+      "lg": {
+        "slot_days": 31,
+        "R": 14,
+        "HR": 4,
+        "RBI": 15,
+        "SB": 1,
+        "OPS": 0.781
+      },
+      "fill_rate": 100,
+      "empty_days": 0,
+      "deficits": 1
+    },
+    "1B": {
+      "my": {
+        "slot_days": 37,
+        "R": 14,
+        "HR": 4,
+        "RBI": 11,
+        "SB": 2,
+        "OPS": 0.715
+      },
+      "lg": {
+        "slot_days": 31,
+        "R": 13,
+        "HR": 4,
+        "RBI": 14,
+        "SB": 1,
+        "OPS": 0.732
+      },
+      "fill_rate": 100,
+      "empty_days": 0,
+      "deficits": 2
+    },
+    "1B/3B": {
+      "my": {
+        "slot_days": 37,
+        "R": 19,
+        "HR": 4,
+        "RBI": 16,
+        "SB": 1,
+        "OPS": 1.038
+      },
+      "lg": {
+        "slot_days": 31,
+        "R": 14,
+        "HR": 4,
+        "RBI": 15,
+        "SB": 1,
+        "OPS": 0.785
+      },
+      "fill_rate": 100,
+      "empty_days": 0,
+      "deficits": 0
+    },
+    "2B": {
+      "my": {
+        "slot_days": 37,
+        "R": 17,
+        "HR": 2,
+        "RBI": 13,
+        "SB": 5,
+        "OPS": 0.638
+      },
+      "lg": {
+        "slot_days": 31,
+        "R": 13,
+        "HR": 2,
+        "RBI": 11,
+        "SB": 3,
+        "OPS": 0.723
+      },
+      "fill_rate": 100,
+      "empty_days": 0,
+      "deficits": 1
+    },
+    "2B/SS": {
+      "my": {
+        "slot_days": 37,
+        "R": 13,
+        "HR": 3,
+        "RBI": 22,
+        "SB": 3,
+        "OPS": 0.642
+      },
+      "lg": {
+        "slot_days": 31,
+        "R": 13,
+        "HR": 4,
+        "RBI": 13,
+        "SB": 3,
+        "OPS": 0.752
+      },
+      "fill_rate": 100,
+      "empty_days": 0,
+      "deficits": 2
+    },
+    "3B": {
+      "my": {
+        "slot_days": 37,
+        "R": 11,
+        "HR": 3,
+        "RBI": 11,
+        "SB": 4,
+        "OPS": 0.707
+      },
+      "lg": {
+        "slot_days": 31,
+        "R": 12,
+        "HR": 3,
+        "RBI": 11,
+        "SB": 2,
+        "OPS": 0.676
+      },
+      "fill_rate": 100,
+      "empty_days": 0,
+      "deficits": 1
+    },
+    "SS": {
+      "my": {
+        "slot_days": 37,
+        "R": 15,
+        "HR": 6,
+        "RBI": 14,
+        "SB": 1,
+        "OPS": 0.76
+      },
+      "lg": {
+        "slot_days": 31,
+        "R": 16,
+        "HR": 4,
+        "RBI": 13,
+        "SB": 3,
+        "OPS": 0.744
+      },
+      "fill_rate": 100,
+      "empty_days": 0,
+      "deficits": 2
+    },
+    "OF": {
+      "my": {
+        "slot_days": 148,
+        "R": 59,
+        "HR": 13,
+        "RBI": 55,
+        "SB": 12,
+        "OPS": 0.631
+      },
+      "lg": {
+        "slot_days": 123,
+        "R": 60,
+        "HR": 16,
+        "RBI": 54,
+        "SB": 12,
+        "OPS": 0.76
+      },
+      "fill_rate": 100,
+      "empty_days": 0,
+      "deficits": 3
+    },
+    "UTIL": {
+      "my": {
+        "slot_days": 74,
+        "R": 35,
+        "HR": 13,
+        "RBI": 34,
+        "SB": 3,
+        "OPS": 0.84
+      },
+      "lg": {
+        "slot_days": 62,
+        "R": 25,
+        "HR": 6,
+        "RBI": 23,
+        "SB": 3,
+        "OPS": 0.746
+      },
+      "fill_rate": 100,
+      "empty_days": 0,
+      "deficits": 0
+    }
+  },
+  "my_pit_comparison": {
+    "SP": {
+      "my": {
+        "slot_days": 185,
+        "ERA": 3.41,
+        "WHIP": 1.2,
+        "K9": 8.04,
+        "QS": 21,
+        "SVHD": 0
+      },
+      "lg": {
+        "slot_days": 154,
+        "ERA": 3.85,
+        "WHIP": 1.22,
+        "K9": 9.24,
+        "QS": 13,
+        "SVHD": 1
+      },
+      "fill_rate": 100,
+      "empty_days": 0,
+      "deficits": 2
+    },
+    "RP": {
+      "my": {
+        "slot_days": 148,
+        "ERA": 4.06,
+        "WHIP": 1.22,
+        "K9": 10.76,
+        "QS": 0,
+        "SVHD": 28
+      },
+      "lg": {
+        "slot_days": 121,
+        "ERA": 3.87,
+        "WHIP": 1.22,
+        "K9": 10.26,
+        "QS": 0,
+        "SVHD": 18
+      },
+      "fill_rate": 100,
+      "empty_days": 0,
+      "deficits": 1
+    }
+  },
+  "team_stats": {
+    "All Rise": {
+      "R": 240,
+      "HR": 72,
+      "RBI": 223,
+      "SB": 57,
+      "OPS": 0.814,
+      "ERA": 4.81,
+      "WHIP": 1.42,
+      "K9": 9.72,
+      "QS": 14,
+      "SVHD": 14
+    },
+    "Big Dumpers": {
+      "R": 215,
+      "HR": 64,
+      "RBI": 228,
+      "SB": 31,
+      "OPS": 0.735,
+      "ERA": 3.9,
+      "WHIP": 1.21,
+      "K9": 9.22,
+      "QS": 17,
+      "SVHD": 15
+    },
+    "Big Papi": {
+      "R": 211,
+      "HR": 57,
+      "RBI": 211,
+      "SB": 35,
+      "OPS": 0.737,
+      "ERA": 4.48,
+      "WHIP": 1.3,
+      "K9": 9.36,
+      "QS": 11,
+      "SVHD": 21
+    },
+    "Datalickmyballs": {
+      "R": 207,
+      "HR": 56,
+      "RBI": 192,
+      "SB": 31,
+      "OPS": 0.73,
+      "ERA": 3.53,
+      "WHIP": 1.2,
+      "K9": 8.55,
+      "QS": 21,
+      "SVHD": 28
+    },
+    "Dingers Only": {
+      "R": 234,
+      "HR": 57,
+      "RBI": 214,
+      "SB": 34,
+      "OPS": 0.732,
+      "ERA": 4.11,
+      "WHIP": 1.31,
+      "K9": 10.15,
+      "QS": 13,
+      "SVHD": 24
+    },
+    "Midnight Muncy's": {
+      "R": 198,
+      "HR": 51,
+      "RBI": 175,
+      "SB": 53,
+      "OPS": 0.757,
+      "ERA": 3.4,
+      "WHIP": 1.17,
+      "K9": 8.81,
+      "QS": 17,
+      "SVHD": 28
+    },
+    "Shohei Me the Money": {
+      "R": 210,
+      "HR": 51,
+      "RBI": 181,
+      "SB": 38,
+      "OPS": 0.784,
+      "ERA": 3.42,
+      "WHIP": 1.23,
+      "K9": 8.99,
+      "QS": 14,
+      "SVHD": 25
+    },
+    "Skubal Snacks": {
+      "R": 218,
+      "HR": 62,
+      "RBI": 213,
+      "SB": 26,
+      "OPS": 0.769,
+      "ERA": 4.08,
+      "WHIP": 1.2,
+      "K9": 10.19,
+      "QS": 16,
+      "SVHD": 23
+    },
+    "This Schlitt is Bazzanas": {
+      "R": 217,
+      "HR": 51,
+      "RBI": 197,
+      "SB": 32,
+      "OPS": 0.707,
+      "ERA": 3.15,
+      "WHIP": 1.08,
+      "K9": 9.6,
+      "QS": 22,
+      "SVHD": 24
+    },
+    "Welcome to the JUNGle": {
+      "R": 206,
+      "HR": 52,
+      "RBI": 207,
+      "SB": 21,
+      "OPS": 0.719,
+      "ERA": 3.55,
+      "WHIP": 1.07,
+      "K9": 9.48,
+      "QS": 15,
+      "SVHD": 25
+    }
+  },
+  "team_profiles": {
+    "All Rise": {
+      "ranks": {
+        "R": 1,
+        "HR": 1,
+        "RBI": 2,
+        "SB": 1,
+        "OPS": 1,
+        "ERA": 10,
+        "WHIP": 10,
+        "K9": 3,
+        "QS": 7,
+        "SVHD": 10
+      },
+      "top3": [
+        "R",
+        "HR",
+        "SB"
+      ],
+      "bot3": [
+        "ERA",
+        "WHIP",
+        "SVHD"
+      ],
+      "stats": {
+        "R": 240,
+        "HR": 72,
+        "RBI": 223,
+        "SB": 57,
+        "OPS": 0.814,
+        "ERA": 4.81,
+        "WHIP": 1.42,
+        "K9": 9.72,
+        "QS": 14,
+        "SVHD": 14
+      }
+    },
+    "Big Dumpers": {
+      "ranks": {
+        "R": 5,
+        "HR": 2,
+        "RBI": 1,
+        "SB": 7,
+        "OPS": 6,
+        "ERA": 6,
+        "WHIP": 6,
+        "K9": 7,
+        "QS": 3,
+        "SVHD": 9
+      },
+      "top3": [
+        "RBI",
+        "HR",
+        "QS"
+      ],
+      "bot3": [
+        "SVHD",
+        "SB",
+        "K9"
+      ],
+      "stats": {
+        "R": 215,
+        "HR": 64,
+        "RBI": 228,
+        "SB": 31,
+        "OPS": 0.735,
+        "ERA": 3.9,
+        "WHIP": 1.21,
+        "K9": 9.22,
+        "QS": 17,
+        "SVHD": 15
+      }
+    },
+    "Big Papi": {
+      "ranks": {
+        "R": 6,
+        "HR": 4,
+        "RBI": 5,
+        "SB": 4,
+        "OPS": 5,
+        "ERA": 9,
+        "WHIP": 8,
+        "K9": 6,
+        "QS": 10,
+        "SVHD": 8
+      },
+      "top3": [
+        "HR",
+        "SB",
+        "RBI"
+      ],
+      "bot3": [
+        "QS",
+        "ERA",
+        "WHIP"
+      ],
+      "stats": {
+        "R": 211,
+        "HR": 57,
+        "RBI": 211,
+        "SB": 35,
+        "OPS": 0.737,
+        "ERA": 4.48,
+        "WHIP": 1.3,
+        "K9": 9.36,
+        "QS": 11,
+        "SVHD": 21
+      }
+    },
+    "Datalickmyballs": {
+      "ranks": {
+        "R": 8,
+        "HR": 6,
+        "RBI": 8,
+        "SB": 8,
+        "OPS": 8,
+        "ERA": 4,
+        "WHIP": 4,
+        "K9": 10,
+        "QS": 2,
+        "SVHD": 1
+      },
+      "top3": [
+        "SVHD",
+        "QS",
+        "ERA"
+      ],
+      "bot3": [
+        "K9",
+        "R",
+        "RBI"
+      ],
+      "stats": {
+        "R": 207,
+        "HR": 56,
+        "RBI": 192,
+        "SB": 31,
+        "OPS": 0.73,
+        "ERA": 3.53,
+        "WHIP": 1.2,
+        "K9": 8.55,
+        "QS": 21,
+        "SVHD": 28
+      }
+    },
+    "Dingers Only": {
+      "ranks": {
+        "R": 2,
+        "HR": 5,
+        "RBI": 3,
+        "SB": 5,
+        "OPS": 7,
+        "ERA": 8,
+        "WHIP": 9,
+        "K9": 2,
+        "QS": 9,
+        "SVHD": 5
+      },
+      "top3": [
+        "R",
+        "K9",
+        "RBI"
+      ],
+      "bot3": [
+        "WHIP",
+        "QS",
+        "ERA"
+      ],
+      "stats": {
+        "R": 234,
+        "HR": 57,
+        "RBI": 214,
+        "SB": 34,
+        "OPS": 0.732,
+        "ERA": 4.11,
+        "WHIP": 1.31,
+        "K9": 10.15,
+        "QS": 13,
+        "SVHD": 24
+      }
+    },
+    "Midnight Muncy's": {
+      "ranks": {
+        "R": 10,
+        "HR": 8,
+        "RBI": 10,
+        "SB": 2,
+        "OPS": 4,
+        "ERA": 2,
+        "WHIP": 3,
+        "K9": 9,
+        "QS": 4,
+        "SVHD": 2
+      },
+      "top3": [
+        "SB",
+        "ERA",
+        "SVHD"
+      ],
+      "bot3": [
+        "R",
+        "RBI",
+        "K9"
+      ],
+      "stats": {
+        "R": 198,
+        "HR": 51,
+        "RBI": 175,
+        "SB": 53,
+        "OPS": 0.757,
+        "ERA": 3.4,
+        "WHIP": 1.17,
+        "K9": 8.81,
+        "QS": 17,
+        "SVHD": 28
+      }
+    },
+    "Shohei Me the Money": {
+      "ranks": {
+        "R": 7,
+        "HR": 9,
+        "RBI": 9,
+        "SB": 3,
+        "OPS": 2,
+        "ERA": 3,
+        "WHIP": 7,
+        "K9": 8,
+        "QS": 8,
+        "SVHD": 3
+      },
+      "top3": [
+        "OPS",
+        "SB",
+        "ERA"
+      ],
+      "bot3": [
+        "HR",
+        "RBI",
+        "K9"
+      ],
+      "stats": {
+        "R": 210,
+        "HR": 51,
+        "RBI": 181,
+        "SB": 38,
+        "OPS": 0.784,
+        "ERA": 3.42,
+        "WHIP": 1.23,
+        "K9": 8.99,
+        "QS": 14,
+        "SVHD": 25
+      }
+    },
+    "Skubal Snacks": {
+      "ranks": {
+        "R": 3,
+        "HR": 3,
+        "RBI": 4,
+        "SB": 9,
+        "OPS": 3,
+        "ERA": 7,
+        "WHIP": 5,
+        "K9": 1,
+        "QS": 5,
+        "SVHD": 7
+      },
+      "top3": [
+        "K9",
+        "R",
+        "HR"
+      ],
+      "bot3": [
+        "SB",
+        "ERA",
+        "SVHD"
+      ],
+      "stats": {
+        "R": 218,
+        "HR": 62,
+        "RBI": 213,
+        "SB": 26,
+        "OPS": 0.769,
+        "ERA": 4.08,
+        "WHIP": 1.2,
+        "K9": 10.19,
+        "QS": 16,
+        "SVHD": 23
+      }
+    },
+    "This Schlitt is Bazzanas": {
+      "ranks": {
+        "R": 4,
+        "HR": 10,
+        "RBI": 7,
+        "SB": 6,
+        "OPS": 10,
+        "ERA": 1,
+        "WHIP": 2,
+        "K9": 4,
+        "QS": 1,
+        "SVHD": 6
+      },
+      "top3": [
+        "ERA",
+        "QS",
+        "WHIP"
+      ],
+      "bot3": [
+        "HR",
+        "OPS",
+        "RBI"
+      ],
+      "stats": {
+        "R": 217,
+        "HR": 51,
+        "RBI": 197,
+        "SB": 32,
+        "OPS": 0.707,
+        "ERA": 3.15,
+        "WHIP": 1.08,
+        "K9": 9.6,
+        "QS": 22,
+        "SVHD": 24
+      }
+    },
+    "Welcome to the JUNGle": {
+      "ranks": {
+        "R": 9,
+        "HR": 7,
+        "RBI": 6,
+        "SB": 10,
+        "OPS": 9,
+        "ERA": 5,
+        "WHIP": 1,
+        "K9": 5,
+        "QS": 6,
+        "SVHD": 4
+      },
+      "top3": [
+        "WHIP",
+        "SVHD",
+        "ERA"
+      ],
+      "bot3": [
+        "SB",
+        "R",
+        "OPS"
+      ],
+      "stats": {
+        "R": 206,
+        "HR": 52,
+        "RBI": 207,
+        "SB": 21,
+        "OPS": 0.719,
+        "ERA": 3.55,
+        "WHIP": 1.07,
+        "K9": 9.48,
+        "QS": 15,
+        "SVHD": 25
+      }
+    }
+  },
+  "rankings": {
+    "R": {
+      "All Rise": 1,
+      "Dingers Only": 2,
+      "Skubal Snacks": 3,
+      "This Schlitt is Bazzanas": 4,
+      "Big Dumpers": 5,
+      "Big Papi": 6,
+      "Shohei Me the Money": 7,
+      "Datalickmyballs": 8,
+      "Welcome to the JUNGle": 9,
+      "Midnight Muncy's": 10
+    },
+    "HR": {
+      "All Rise": 1,
+      "Big Dumpers": 2,
+      "Skubal Snacks": 3,
+      "Big Papi": 4,
+      "Dingers Only": 5,
+      "Datalickmyballs": 6,
+      "Welcome to the JUNGle": 7,
+      "Midnight Muncy's": 8,
+      "Shohei Me the Money": 9,
+      "This Schlitt is Bazzanas": 10
+    },
+    "RBI": {
+      "Big Dumpers": 1,
+      "All Rise": 2,
+      "Dingers Only": 3,
+      "Skubal Snacks": 4,
+      "Big Papi": 5,
+      "Welcome to the JUNGle": 6,
+      "This Schlitt is Bazzanas": 7,
+      "Datalickmyballs": 8,
+      "Shohei Me the Money": 9,
+      "Midnight Muncy's": 10
+    },
+    "SB": {
+      "All Rise": 1,
+      "Midnight Muncy's": 2,
+      "Shohei Me the Money": 3,
+      "Big Papi": 4,
+      "Dingers Only": 5,
+      "This Schlitt is Bazzanas": 6,
+      "Big Dumpers": 7,
+      "Datalickmyballs": 8,
+      "Skubal Snacks": 9,
+      "Welcome to the JUNGle": 10
+    },
+    "OPS": {
+      "All Rise": 1,
+      "Shohei Me the Money": 2,
+      "Skubal Snacks": 3,
+      "Midnight Muncy's": 4,
+      "Big Papi": 5,
+      "Big Dumpers": 6,
+      "Dingers Only": 7,
+      "Datalickmyballs": 8,
+      "Welcome to the JUNGle": 9,
+      "This Schlitt is Bazzanas": 10
+    },
+    "ERA": {
+      "This Schlitt is Bazzanas": 1,
+      "Midnight Muncy's": 2,
+      "Shohei Me the Money": 3,
+      "Datalickmyballs": 4,
+      "Welcome to the JUNGle": 5,
+      "Big Dumpers": 6,
+      "Skubal Snacks": 7,
+      "Dingers Only": 8,
+      "Big Papi": 9,
+      "All Rise": 10
+    },
+    "WHIP": {
+      "Welcome to the JUNGle": 1,
+      "This Schlitt is Bazzanas": 2,
+      "Midnight Muncy's": 3,
+      "Datalickmyballs": 4,
+      "Skubal Snacks": 5,
+      "Big Dumpers": 6,
+      "Shohei Me the Money": 7,
+      "Big Papi": 8,
+      "Dingers Only": 9,
+      "All Rise": 10
+    },
+    "K9": {
+      "Skubal Snacks": 1,
+      "Dingers Only": 2,
+      "All Rise": 3,
+      "This Schlitt is Bazzanas": 4,
+      "Welcome to the JUNGle": 5,
+      "Big Papi": 6,
+      "Big Dumpers": 7,
+      "Shohei Me the Money": 8,
+      "Midnight Muncy's": 9,
+      "Datalickmyballs": 10
+    },
+    "QS": {
+      "This Schlitt is Bazzanas": 1,
+      "Datalickmyballs": 2,
+      "Big Dumpers": 3,
+      "Midnight Muncy's": 4,
+      "Skubal Snacks": 5,
+      "Welcome to the JUNGle": 6,
+      "All Rise": 7,
+      "Shohei Me the Money": 8,
+      "Dingers Only": 9,
+      "Big Papi": 10
+    },
+    "SVHD": {
+      "Datalickmyballs": 1,
+      "Midnight Muncy's": 2,
+      "Shohei Me the Money": 3,
+      "Welcome to the JUNGle": 4,
+      "Dingers Only": 5,
+      "This Schlitt is Bazzanas": 6,
+      "Skubal Snacks": 7,
+      "Big Papi": 8,
+      "Big Dumpers": 9,
+      "All Rise": 10
+    }
+  },
+  "matchup_projections": [
+    {
+      "home": "Big Dumpers",
+      "away": "Dingers Only",
+      "home_wins": 6,
+      "away_wins": 4,
+      "categories": [
+        {
+          "cat": "R",
+          "home_val": 23.2,
+          "away_val": 25.3,
+          "edge": "Dingers Only"
+        },
+        {
+          "cat": "HR",
+          "home_val": 6.9,
+          "away_val": 6.2,
+          "edge": "Big Dumpers"
+        },
+        {
+          "cat": "RBI",
+          "home_val": 24.6,
+          "away_val": 23.1,
+          "edge": "Big Dumpers"
+        },
+        {
+          "cat": "SB",
+          "home_val": 3.4,
+          "away_val": 3.7,
+          "edge": "Dingers Only"
+        },
+        {
+          "cat": "OPS",
+          "home_val": 0.735,
+          "away_val": 0.732,
+          "edge": "Big Dumpers"
+        },
+        {
+          "cat": "ERA",
+          "home_val": 3.9,
+          "away_val": 4.11,
+          "edge": "Big Dumpers"
+        },
+        {
+          "cat": "WHIP",
+          "home_val": 1.21,
+          "away_val": 1.31,
+          "edge": "Big Dumpers"
+        },
+        {
+          "cat": "K9",
+          "home_val": 9.22,
+          "away_val": 10.15,
+          "edge": "Dingers Only"
+        },
+        {
+          "cat": "QS",
+          "home_val": 1.8,
+          "away_val": 1.4,
+          "edge": "Big Dumpers"
+        },
+        {
+          "cat": "SVHD",
+          "home_val": 1.6,
+          "away_val": 2.6,
+          "edge": "Dingers Only"
+        }
+      ],
+      "matchup_period": 6
+    },
+    {
+      "home": "This Schlitt is Bazzanas",
+      "away": "All Rise",
+      "home_wins": 4,
+      "away_wins": 6,
+      "categories": [
+        {
+          "cat": "R",
+          "home_val": 23.5,
+          "away_val": 25.9,
+          "edge": "All Rise"
+        },
+        {
+          "cat": "HR",
+          "home_val": 5.5,
+          "away_val": 7.8,
+          "edge": "All Rise"
+        },
+        {
+          "cat": "RBI",
+          "home_val": 21.3,
+          "away_val": 24.1,
+          "edge": "All Rise"
+        },
+        {
+          "cat": "SB",
+          "home_val": 3.5,
+          "away_val": 6.2,
+          "edge": "All Rise"
+        },
+        {
+          "cat": "OPS",
+          "home_val": 0.707,
+          "away_val": 0.814,
+          "edge": "All Rise"
+        },
+        {
+          "cat": "ERA",
+          "home_val": 3.15,
+          "away_val": 4.81,
+          "edge": "This Schlitt is Bazzanas"
+        },
+        {
+          "cat": "WHIP",
+          "home_val": 1.08,
+          "away_val": 1.42,
+          "edge": "This Schlitt is Bazzanas"
+        },
+        {
+          "cat": "K9",
+          "home_val": 9.6,
+          "away_val": 9.72,
+          "edge": "All Rise"
+        },
+        {
+          "cat": "QS",
+          "home_val": 2.4,
+          "away_val": 1.5,
+          "edge": "This Schlitt is Bazzanas"
+        },
+        {
+          "cat": "SVHD",
+          "home_val": 2.6,
+          "away_val": 1.5,
+          "edge": "This Schlitt is Bazzanas"
+        }
+      ],
+      "matchup_period": 6
+    },
+    {
+      "home": "Shohei Me the Money",
+      "away": "Midnight Muncy's",
+      "home_wins": 4,
+      "away_wins": 5,
+      "categories": [
+        {
+          "cat": "R",
+          "home_val": 22.7,
+          "away_val": 21.4,
+          "edge": "Shohei Me the Money"
+        },
+        {
+          "cat": "HR",
+          "home_val": 5.5,
+          "away_val": 5.5,
+          "edge": "Tie"
+        },
+        {
+          "cat": "RBI",
+          "home_val": 19.6,
+          "away_val": 18.9,
+          "edge": "Shohei Me the Money"
+        },
+        {
+          "cat": "SB",
+          "home_val": 4.1,
+          "away_val": 5.7,
+          "edge": "Midnight Muncy's"
+        },
+        {
+          "cat": "OPS",
+          "home_val": 0.784,
+          "away_val": 0.757,
+          "edge": "Shohei Me the Money"
+        },
+        {
+          "cat": "ERA",
+          "home_val": 3.42,
+          "away_val": 3.4,
+          "edge": "Midnight Muncy's"
+        },
+        {
+          "cat": "WHIP",
+          "home_val": 1.23,
+          "away_val": 1.17,
+          "edge": "Midnight Muncy's"
+        },
+        {
+          "cat": "K9",
+          "home_val": 8.99,
+          "away_val": 8.81,
+          "edge": "Shohei Me the Money"
+        },
+        {
+          "cat": "QS",
+          "home_val": 1.5,
+          "away_val": 1.8,
+          "edge": "Midnight Muncy's"
+        },
+        {
+          "cat": "SVHD",
+          "home_val": 2.7,
+          "away_val": 3.0,
+          "edge": "Midnight Muncy's"
+        }
+      ],
+      "matchup_period": 6
+    },
+    {
+      "home": "Datalickmyballs",
+      "away": "Welcome to the JUNGle",
+      "home_wins": 7,
+      "away_wins": 3,
+      "categories": [
+        {
+          "cat": "R",
+          "home_val": 22.4,
+          "away_val": 22.3,
+          "edge": "Datalickmyballs"
+        },
+        {
+          "cat": "HR",
+          "home_val": 6.1,
+          "away_val": 5.6,
+          "edge": "Datalickmyballs"
+        },
+        {
+          "cat": "RBI",
+          "home_val": 20.8,
+          "away_val": 22.4,
+          "edge": "Welcome to the JUNGle"
+        },
+        {
+          "cat": "SB",
+          "home_val": 3.4,
+          "away_val": 2.3,
+          "edge": "Datalickmyballs"
+        },
+        {
+          "cat": "OPS",
+          "home_val": 0.73,
+          "away_val": 0.719,
+          "edge": "Datalickmyballs"
+        },
+        {
+          "cat": "ERA",
+          "home_val": 3.53,
+          "away_val": 3.55,
+          "edge": "Datalickmyballs"
+        },
+        {
+          "cat": "WHIP",
+          "home_val": 1.2,
+          "away_val": 1.07,
+          "edge": "Welcome to the JUNGle"
+        },
+        {
+          "cat": "K9",
+          "home_val": 8.55,
+          "away_val": 9.48,
+          "edge": "Welcome to the JUNGle"
+        },
+        {
+          "cat": "QS",
+          "home_val": 2.3,
+          "away_val": 1.6,
+          "edge": "Datalickmyballs"
+        },
+        {
+          "cat": "SVHD",
+          "home_val": 3.0,
+          "away_val": 2.7,
+          "edge": "Datalickmyballs"
+        }
+      ],
+      "matchup_period": 6
+    },
+    {
+      "home": "Big Papi",
+      "away": "Skubal Snacks",
+      "home_wins": 1,
+      "away_wins": 9,
+      "categories": [
+        {
+          "cat": "R",
+          "home_val": 22.8,
+          "away_val": 23.6,
+          "edge": "Skubal Snacks"
+        },
+        {
+          "cat": "HR",
+          "home_val": 6.2,
+          "away_val": 6.7,
+          "edge": "Skubal Snacks"
+        },
+        {
+          "cat": "RBI",
+          "home_val": 22.8,
+          "away_val": 23.0,
+          "edge": "Skubal Snacks"
+        },
+        {
+          "cat": "SB",
+          "home_val": 3.8,
+          "away_val": 2.8,
+          "edge": "Big Papi"
+        },
+        {
+          "cat": "OPS",
+          "home_val": 0.737,
+          "away_val": 0.769,
+          "edge": "Skubal Snacks"
+        },
+        {
+          "cat": "ERA",
+          "home_val": 4.48,
+          "away_val": 4.08,
+          "edge": "Skubal Snacks"
+        },
+        {
+          "cat": "WHIP",
+          "home_val": 1.3,
+          "away_val": 1.2,
+          "edge": "Skubal Snacks"
+        },
+        {
+          "cat": "K9",
+          "home_val": 9.36,
+          "away_val": 10.19,
+          "edge": "Skubal Snacks"
+        },
+        {
+          "cat": "QS",
+          "home_val": 1.2,
+          "away_val": 1.7,
+          "edge": "Skubal Snacks"
+        },
+        {
+          "cat": "SVHD",
+          "home_val": 2.3,
+          "away_val": 2.5,
+          "edge": "Skubal Snacks"
+        }
+      ],
+      "matchup_period": 6
+    }
+  ]
+}

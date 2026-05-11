@@ -1,3 +1,17 @@
+"""
+Description: Keeper value analysis for the 2026 draft. Blends 2025 actual performance
+             (ESPN daily stats, 40%) with 2026 projections (60%) to compute a blended
+             z-score per player. Calculates ADP surplus (keeper cost vs projected ADP round)
+             to identify which players are worth keeping and at what draft-round cost.
+             Covers all 10 teams; your team (MY_TEAM_ID) is marked with a star.
+Source Data: stats_espn_daily_2025.csv, roster_espn_season_2025.csv, teams_espn_season_2025.csv,
+             player_batter_projections_2026.csv, player_pitcher_projections_2026.csv,
+             overall_ADP_2026.csv, draft_results_espn_2025.csv, actual_keepers_2026.csv,
+             draft_order_2026.csv (data-lake/01_Bronze/fantasy_baseball)
+Outputs:     data-lake/01_Bronze/fantasy_baseball/projected_keepers_2026.csv
+             data-lake/01_Bronze/fantasy_baseball/keeper_report_2026.txt
+"""
+
 import sys
 import os
 import pandas as pd

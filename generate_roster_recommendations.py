@@ -1,23 +1,29 @@
+"""
+Description: Evaluates weekly roster checkpoints for a target team by comparing each
+             rostered player's trailing 28-day z-score value against available free agents.
+             Flags players where a significantly better FA exists (value delta > 0.75).
+Source Data: stats_mlb_daily_{YEAR}.csv, roster_history_{YEAR}.csv, player_map.csv
+Outputs:     fantasy_baseball/reports/roster_analysis_report_{YEAR}.md
+"""
+
 import pandas as pd
 import numpy as np
 import os
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from fantasy_baseball import mlb_processing as mp
 
 # Configuration
 SEASON = 2026
 WINDOW = 28
 TEAM_ABBREV = 'PJR'
 
-# Determine Paths dynamically
-# Assumes script is in fantasy_baseball/
+BASE_PATH  = mp.DATA_PATH
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR) # main/
-BASE_PATH = os.path.join(PROJECT_ROOT, '.data_lake', '01_Bronze', 'fantasy_baseball')
 REPORT_DIR = os.path.join(SCRIPT_DIR, 'reports')
 
-# Create report directory if it doesn't exist
-if not os.path.exists(REPORT_DIR):
-    os.makedirs(REPORT_DIR)
+os.makedirs(REPORT_DIR, exist_ok=True)
 
 OUTPUT_PATH = os.path.join(REPORT_DIR, f'roster_analysis_report_{SEASON}.md')
 
@@ -56,40 +62,44 @@ roster_df['end_date'] = roster_df['end_date'].fillna(max_date)
 
 player_map_df['espn_player_id'] = player_map_df['espn_player_id'].astype(str)
 player_map_df['statcast_player_id'] = player_map_df['statcast_player_id'].astype(str).str.replace(r'\.0$', '', regex=True)
-stats_df['playerId'] = stats_df['playerId'].astype(str)
+stats_df['player_id'] = stats_df['player_id'].astype(str)
 roster_df['player_id'] = roster_df['player_id'].astype(str)
 
 print("Merging data...")
-stats_merged = stats_df.merge(player_map_df, left_on='playerId', right_on='statcast_player_id', how='left')
+stats_merged = stats_df.merge(player_map_df, left_on='player_id', right_on='statcast_player_id', how='left')
 
 # Value Calculation
 batter_stats = ['R', 'HR', 'RBI', 'SB']
 pitcher_positive = ['QS', 'SVHD', 'K']
 
-def calculate_daily_value(df):
-    df['Daily_Value'] = 0.0
-    for col in batter_stats + pitcher_positive:
-        if col in df.columns:
-            mean = df[col].mean(); std = df[col].std(); std = 1 if std == 0 else std
-            df['Daily_Value'] += ((df[col] - mean) / std).fillna(0)
-            
-    if 'P_H' in df.columns and 'P_BB' in df.columns:
-        whip_val = df['P_H'] + df['P_BB']
-        mean = whip_val.mean(); std = whip_val.std(); std = 1 if std == 0 else std
-        df['Daily_Value'] -= ((whip_val - mean) / std).fillna(0)
-        
-    if 'ER' in df.columns:
-        mean = df['ER'].mean(); std = df['ER'].std(); std = 1 if std == 0 else std
-        df['Daily_Value'] -= ((df['ER'] - mean) / std).fillna(0)
-    return df
+# Per-day z-score via transform — pandas 3.0 compatible (groupby.apply drops key column)
+stats_merged['Daily_Value'] = 0.0
 
-daily_stats = stats_merged.groupby('date').apply(calculate_daily_value).reset_index(drop=True)
+for col in batter_stats + pitcher_positive:
+    if col in stats_merged.columns:
+        day_mean = stats_merged.groupby('date')[col].transform('mean')
+        day_std  = stats_merged.groupby('date')[col].transform('std').fillna(1).replace(0, 1)
+        stats_merged['Daily_Value'] += ((stats_merged[col] - day_mean) / day_std).fillna(0)
+
+if 'P_H' in stats_merged.columns and 'P_BB' in stats_merged.columns:
+    stats_merged['_whip'] = stats_merged['P_H'] + stats_merged['P_BB']
+    day_mean = stats_merged.groupby('date')['_whip'].transform('mean')
+    day_std  = stats_merged.groupby('date')['_whip'].transform('std').fillna(1).replace(0, 1)
+    stats_merged['Daily_Value'] -= ((stats_merged['_whip'] - day_mean) / day_std).fillna(0)
+    stats_merged.drop(columns=['_whip'], inplace=True)
+
+if 'ER' in stats_merged.columns:
+    day_mean = stats_merged.groupby('date')['ER'].transform('mean')
+    day_std  = stats_merged.groupby('date')['ER'].transform('std').fillna(1).replace(0, 1)
+    stats_merged['Daily_Value'] -= ((stats_merged['ER'] - day_mean) / day_std).fillna(0)
+
+daily_stats = stats_merged.copy()
 
 # Rolling Value
 print(f"Calculating {WINDOW}-day rolling value...")
-player_daily = daily_stats[['date', 'espn_player_id', 'playerName', 'Daily_Value']].copy()
+player_daily = daily_stats[['date', 'espn_player_id', 'player_name', 'Daily_Value']].copy()
 # Aggregate multi-game days
-player_daily = player_daily.groupby(['date', 'espn_player_id', 'playerName']).sum().reset_index()
+player_daily = player_daily.groupby(['date', 'espn_player_id', 'player_name']).sum().reset_index()
 
 # Pivot for rolling calc
 pivot_val = player_daily.pivot(index='date', columns='espn_player_id', values='Daily_Value').fillna(0)
@@ -100,7 +110,7 @@ rolling_long = rolling_val.stack().reset_index()
 rolling_long.columns = ['date', 'player_id', 'Rolling_Value']
 
 # Add Player Names back
-name_map = player_daily[['espn_player_id', 'playerName']].drop_duplicates()
+name_map = player_daily[['espn_player_id', 'player_name']].drop_duplicates()
 rolling_long = rolling_long.merge(name_map, left_on='player_id', right_on='espn_player_id', how='left')
 
 # Analyze PJR Roster - Weekly Checkpoints
@@ -163,7 +173,7 @@ for check_date in mondays:
             # Pick top 2
             top_opts = []
             for _, fa_row in better.head(2).iterrows():
-                fa_name = fa_row['playerName']
+                fa_name = fa_row['player_name']
                 fa_val = fa_row['Rolling_Value']
                 top_opts.append(f"{fa_name} ({fa_val:.2f})")
             

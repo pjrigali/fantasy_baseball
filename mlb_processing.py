@@ -916,6 +916,7 @@ def get_top_fa_batters(league, size=200, min_ab=10):
             'name': p.name,
             'pos': p.position,
             'team': p.proTeam,
+            'injuryStatus': getattr(p, 'injuryStatus', 'ACTIVE') or 'ACTIVE',
             'g': s.get('G', 0),
             'ab': s.get('AB', 0),
             'h': s.get('H', 0),

@@ -1,3 +1,14 @@
+"""
+Description: Post-season league-wide roster management analysis. Computes the optimal
+             evaluation window (days of trailing stats most predictive of future performance),
+             team churn rate (adds per week), roster patience (avg days held before dropping),
+             and total value generated per team. Generates a markdown report with Mermaid
+             charts comparing each team's management style vs the top performers.
+Source Data: roster_history_2025.csv, stats_mlb_daily_2025.csv, player_map.csv
+             (BASE_PATH below — update to current data lake path before running)
+Outputs:     OUTPUT_PATH below (markdown report with Mermaid charts)
+"""
+
 import pandas as pd
 import numpy as np
 
