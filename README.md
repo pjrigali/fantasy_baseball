@@ -1,47 +1,146 @@
 # Fantasy Baseball Data Processing
 
-This project consolidates various data collection, analysis tools, and reporting scripts for ensuring domination in the fantasy baseball league.
+This project consolidates data collection, analysis tools, and reporting scripts for ensuring domination in the fantasy baseball league (10-team H2H 5x5 categories, ESPN).
+
+## Data Flow
+
+```mermaid
+flowchart TD
+    subgraph Sources["External Data Sources"]
+        ESPN["ESPN Fantasy API\n(league, rosters, transactions,\nrankings, scoreboard)"]
+        MLB_API["MLB Stats API\n(statsapi.mlb.com)"]
+        MLB_COM["MLB.com\n(HTML scrape)"]
+    end
+
+    subgraph Collection["Data Collection — /fantasy-collect-all-data"]
+        S1["collect_stats_espn_daily.py\n--year --date"]
+        S2["fetch_activity_espn_season.py\n--year --max-pages"]
+        S3["fetch_rankings_espn_daily.py\n--year --date"]
+        S4["fetch_stats_mlb_daily.py\n--year"]
+        S5["fetch_lineups_mlb_daily.py\n--year"]
+        S6["fetch_draft_espn_season.py"]
+        S7["fetch_rosters_espn_current.py"]
+        S8["fetch_scoreboard_espn_matchup.py"]
+        S9["generate_schedule_espn_matchup.py"]
+    end
+
+    subgraph Bronze["Bronze Data Lake — data-lake/01_Bronze/fantasy_baseball/"]
+        B1["stats_espn_daily_YEAR.csv\ndedup: (date, team_id, player_id)"]
+        B2["activity_espn_season_YEAR.csv\ndedup: (date_epoch, player_id, action_id, team_id)"]
+        B3["rankings_espn_daily_YEAR.csv\ndedup: (date, player_id)"]
+        B4["stats_mlb_daily_YEAR.csv\ndedup: (date, player_id, b_or_p)"]
+        B5["lineups_mlb_batters_YEAR.csv\ndedup: (date, team_tricode, player_name, batting_order)"]
+        B6["draft_results_espn_YEAR.csv"]
+        B7["roster_espn_season_YEAR.csv"]
+        B8["scoreboard_espn_matchup_YEAR.csv"]
+        B9["schedule_espn_matchup_YEAR.csv"]
+    end
+
+    subgraph Analysis["Analysis & Reporting"]
+        A1["run_roster_analysis.py\n/fantasy-roster-analysis"]
+        A2["_league_pos_analysis.py +\n_league_pos_report.py\n/fantasy-league-position-analysis"]
+        A3["process_dashboard_data.py"]
+        A4["analyze_quick_lineup_impact.py"]
+        A5["generate_roster_recommendations.py"]
+    end
+
+    subgraph Outputs["Outputs"]
+        R1["reports/roster_analysis_YYYY-MM-DD.md\n(batter/SP/RP stats, z-score scorecard,\nFA recs, add/drop recommendations)"]
+        R2["reports/league_position_analysis_YYYY-MM-DD.md\n(slot averages, team rankings,\nmatchup projections)"]
+        R3["17_Fantasy_Baseball_Dashboard.html\n(published to GitHub Pages)"]
+        R4["quick_lineup_bench_performances_YEAR.csv\n(quick-lineup impact report)"]
+    end
+
+    ESPN --> S1 & S2 & S3 & S6 & S7 & S8
+    MLB_API --> S4
+    MLB_COM --> S5
+    S9 --> B9
+
+    S1 --> B1
+    S2 --> B2
+    S3 --> B3
+    S4 --> B4
+    S5 --> B5
+    S6 --> B6
+    S7 --> B7
+    S8 --> B8
+
+    B1 & B4 & B5 --> A1
+    ESPN -->|"live rosters + FA pool"| A1
+    A1 --> R1
+
+    B1 --> A2
+    ESPN -->|"box_scores()"| A2
+    A2 --> R2
+
+    B1 --> A3
+    ESPN -->|"live mode"| A3
+    A3 --> R3
+
+    B1 & B4 & B2 --> A4
+    A4 --> R4
+
+    B1 & B4 --> A5
+```
+
+### Scoring System (5x5 H2H Each Category)
+
+| Batting | Pitching |
+|---|---|
+| Runs (R) | K/9 |
+| Home Runs (HR) | Quality Starts (QS) |
+| RBI | Saves + Holds (SVHD) |
+| Stolen Bases (SB) | ERA |
+| OPS | WHIP |
+
+> **Note:** SVHD = SV + HLD — relievers with high hold totals are valuable even without a closer role.
+
+---
+
+## Agent Workflows (`agent/workflows/`)
+
+| Workflow | Command | What it runs |
+|---|---|---|
+| Collect all data (daily) | `/fantasy-collect-all-data` | Steps 1–5 below in sequence |
+| ESPN daily stats | `/fantasy-collect-daily-espn-stats` | `collect_stats_espn_daily.py` |
+| ESPN activity | `/fantasy-collect-activity-data` | `fetch_activity_espn_season.py` |
+| MLB lineups | `/fantasy-collect-mlb-lineups` | `fetch_lineups_mlb_daily.py` |
+| MLB game logs | `/fantasy-collect-daily-mlb-stats` | `fetch_stats_mlb_daily.py` |
+| ESPN rankings | `/fantasy-collect-espn-rankings` | `fetch_rankings_espn_daily.py` |
+| Roster analysis | `/fantasy-roster-analysis` | `run_roster_analysis.py` |
+| League position analysis | `/fantasy-league-position-analysis` | `_league_pos_analysis.py` → `_league_pos_report.py` |
+
+All collection steps are **idempotent** — safe to re-run; duplicates are skipped automatically.
+
+---
 
 ## File Overview
 
 ### Core Module
-*   **`mlb_processing.py`**: The central library containing shared logic for data fetching, processing, and league configuration. Used by almost all other scripts.
-
-### Analysis & Reporting
-*   **`generate_roster_recommendations.py`**:  Evaluates current roster vs. free agents to suggest optimal add/drops based on sliding performance windows.
-*   **`analyze_draft_strategy.py`**: Retrospective analysis of the draft, identifying value picks ("steals") and early-round "busts" by comparing draft position to actual season value.
-*   **`analyze_impact_categories.py`**: Calculates "Impact Values" (Z-scores) for every player to determine who actually contributed to winning categories.
-*   **`analyze_keepers.py`**: Evaluates potential keeper selections for the upcoming season.
-*   **`analyze_league_rosters.py`**: Break down of roster construction and management styles across the entire league.
-*   **`run_ts_analysis.py`**: Performs time-series analysis to determine optimal "lookback windows" for predicting future performance.
+- **`mlb_processing.py`**: Central library — ESPN API setup (`load_config`, `setup_league`), data fetching, MLB stats scraping, free agent lookups, and shared utilities used by all other scripts.
 
 ### Data Collection (ETL)
-*   **`fetch_stats_mlb_daily.py`**: Fetches detailed daily game logs from the official MLB API.
-*   **`fetch_stats_espn_daily.py`**: Fetches daily player stats from ESPN.
-*   **`fetch_draft_espn_season.py`**: Retrieves draft results for a specific season.
-*   **`fetch_rosters_espn_current.py`**: Snapshots the currently active rosters for all teams.
-*   **`fetch_transactions_espn_season.py`**: Downloads the full transaction log (adds, drops, trades) for the season.
-*   **`fetch_scoreboard_espn_matchup.py`**: Retrieves weekly matchup scores and results.
-*   **`fetch_stats_mlb_scrape.py`**: Scraper for bulk historical MLB data.
+- **`collect_stats_espn_daily.py`**: Daily roster stats for all ESPN fantasy teams.
+- **`fetch_activity_espn_season.py`**: Season-long transaction log (adds, drops, trades, lineup moves).
+- **`fetch_rankings_espn_daily.py`**: Daily player ownership %, trending %, and positional ranks.
+- **`fetch_stats_mlb_daily.py`**: Game-log stats for all MLB players from the MLB Stats API (full coverage, no ESPN gaps).
+- **`fetch_lineups_mlb_daily.py`**: Daily batting orders scraped from MLB.com; auto-backfills missed dates.
+- **`fetch_draft_espn_season.py`**: Draft results for the season.
+- **`fetch_rosters_espn_current.py`**: Snapshot of currently active rosters for all teams.
+- **`fetch_scoreboard_espn_matchup.py`**: Weekly matchup scores and results.
+- **`generate_schedule_espn_matchup.py`**: Generates the league matchup schedule.
 
-### Data Processing & Dashboards
-*   **`process_dashboard_data.py`**: The engine behind the **Fantasy Baseball Dashboard**. Collects daily snapshots, detects trends, and generates the HTML report published to the website.
-*   **`create_roster_history.py`**: Reconstructs daily roster states from transaction logs to allow for "who was on my team on this day" analysis.
-*   **`process_stats_espn_matchup.py`**: Aggregates raw stats into matchup-level data.
-*   **`generate_schedule_espn_matchup.py`**: Generates the league schedule for analysis.
+### Analysis & Reporting
+- **`run_roster_analysis.py`**: Full roster evaluation — batter/SP/RP stats, z-score scorecard (season + 28d), weakest player flags, top FA recommendations (position-matched and position-agnostic), and markdown report.
+- **`_league_pos_analysis.py` + `_league_pos_report.py`**: League-wide positional intelligence — slot averages, my team vs league delta, team category rankings, and current matchup projections.
+- **`process_dashboard_data.py`**: Generates the interactive Fantasy Baseball Dashboard HTML, published to GitHub Pages. Supports live mode (ESPN API) and dry-run mode (CSV).
+- **`analyze_quick_lineup_impact.py`**: Quantifies the stat cost of using ESPN's Quick Lineup auto-set vs manual moves.
+- **`generate_roster_recommendations.py`**: Weekly checkpoint analysis — compares 28d z-score of your roster vs available FAs each Monday.
+- **`build_roster_history_espn.py`**: Reconstructs daily roster states from draft picks + FA activity.
 
 ### Jupyter Notebooks
-*   **`analyze_roster_churn.ipynb`**: Deep dive into roster turnover rates and the "Optimal Evaluation Window" logic.
-*   **`draft_strategy_2026.ipynb`**: Workspace for planning the 2026 draft strategy.
-
-## Setup & Configuration
-
-1.  **Dependencies**:
-    ```bash
-    pip install requests beautifulsoup4 numpy pandas statsmodels seaborn espn_api
-    ```
-2.  **Configuration**: Ensure `config.ini` is present in the root with ESPN credentials.
-
-## Data Storage
-Data is stored in the **Data Lake**: `main/.data_lake/01_bronze/fantasy_baseball`
+- **`analyze_roster_churn.ipynb`**: Roster turnover analysis.
+- **`batting_order_analysis.ipynb`**: Batting order impact on production.
+- **`regression_to_mean.ipynb`**: Performance regression and volatility.
+- **`analyze_rookies.ipynb`**: Rookie evaluation.
 
