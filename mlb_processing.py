@@ -659,7 +659,7 @@ ACTIVITY_MAP = {
     'TRADED': 244,
 }
 
-def get_recent_activity(league, size=1000, msg_type=None, max_pages=10):
+def get_recent_activity(league, size=1000, msg_type=None, max_pages=10, since_epoch=None):
     """
     Fetches recent league activity (adds, drops, trades, waivers, moves) by
     calling the ESPN communication API directly. This bypasses the espn_api
@@ -672,6 +672,8 @@ def get_recent_activity(league, size=1000, msg_type=None, max_pages=10):
         msg_type (str, optional): Filter to a specific type key from ACTIVITY_MAP
                                    (e.g. 'FA', 'WAIVER', 'TRADED'). None returns all types.
         max_pages (int): Maximum number of pages to paginate through (default 10).
+        since_epoch (int, optional): Millisecond epoch cutoff — skip records at or before
+                                     this value and stop paginating once a full page is older.
 
     Returns:
         list: List of flat activity dictionaries with keys:
@@ -715,6 +717,8 @@ def get_recent_activity(league, size=1000, msg_type=None, max_pages=10):
 
         for topic in topics:
             for msg in topic.get('messages', []):
+                if since_epoch is not None and msg.get('date', 0) <= since_epoch:
+                    continue
                 msg_id = msg.get('messageTypeId')
                 action_label = ACTIVITY_MAP.get(msg_id, f'UNKNOWN ({msg_id})')
 
@@ -773,16 +777,19 @@ def get_recent_activity(league, size=1000, msg_type=None, max_pages=10):
                     'topic_id': msg.get('topicId', ''),
                 })
 
-        print(f"  Page {page + 1}: fetched {len(topics)} topics ({len(all_activity)} total records)")
-
         # If we got fewer topics than requested, we've reached the end
         if len(topics) < size:
             break
 
+        # Stop paginating if every record on this page is at/before the cutoff
+        if since_epoch is not None:
+            page_epochs = [msg['date'] for topic in topics for msg in topic.get('messages', []) if 'date' in msg]
+            if page_epochs and max(page_epochs) <= since_epoch:
+                break
+
         offset += size
         time.sleep(0.3)  # polite delay
 
-    print(f"  [OK] Collected {len(all_activity)} total activity records")
     return all_activity
 
 def scrape_espn_historical_stats(years=[2024], stat_types=['batting', 'pitching']):

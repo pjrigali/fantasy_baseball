@@ -159,36 +159,19 @@ def main():
         if existing_rows:
             last_date = max(r['date'] for r in existing_rows)
             start_date = last_date  # one day overlap, dedup handles it
-        print(f"  Existing rows : {len(existing_rows)}")
-        print(f"  Last date     : {last_date if existing_rows else 'none'}")
-    else:
-        print("  No existing CSV — starting fresh.")
-
-    print(f"=== Generating Daily Stats for {season} ({start_date} → {target_date}) ===")
-    if limit:
-        print(f"  Limit: {limit} players per group.")
-
-    print("Fetching player lists...")
     hitting_players = mp.scrape_mlb_stats("hitting", season, "ALL")
     pitching_players = mp.scrape_mlb_stats("pitching", season, "ALL")
 
     unique_hitters = {p['player_id']: p['player_name'] for p in hitting_players if p['player_id']}
     unique_pitchers = {p['player_id']: p['player_name'] for p in pitching_players if p['player_id']}
 
-    print(f"Found {len(unique_hitters)} hitters and {len(unique_pitchers)} pitchers.")
-
     new_rows = []
 
-    # Process Hitters
-    print("\n--- Processing Hitters ---")
-    count = 0
     hitters_items = list(unique_hitters.items())
     if limit:
         hitters_items = hitters_items[:limit]
 
     for pid, name in hitters_items:
-        count += 1
-        print(f"[{count}/{len(hitters_items)}] Fetching logs for {name} ({pid})...")
         logs = fetch_game_logs(pid, "hitting", season)
         for log in logs:
             row = process_hitting_log(log, {'id': pid, 'name': name}, get_scoring_period_local)
@@ -199,16 +182,11 @@ def main():
                     existing_keys.add(key)
         time.sleep(0.5)
 
-    # Process Pitchers
-    print("\n--- Processing Pitchers ---")
-    count = 0
     pitchers_items = list(unique_pitchers.items())
     if limit:
         pitchers_items = pitchers_items[:limit]
 
     for pid, name in pitchers_items:
-        count += 1
-        print(f"[{count}/{len(pitchers_items)}] Fetching logs for {name} ({pid})...")
         logs = fetch_game_logs(pid, "pitching", season)
         for log in logs:
             row = process_pitching_log(log, {'id': pid, 'name': name}, get_scoring_period_local)
@@ -218,9 +196,6 @@ def main():
                     new_rows.append(row)
                     existing_keys.add(key)
         time.sleep(0.5)
-
-    print(f"\n  New rows: {len(new_rows)}")
-    print(f"  Duplicates skipped: {len(existing_keys) - len(existing_rows) - len(new_rows) + len(existing_rows)}")
 
     if new_rows:
         all_keys = set()
@@ -236,11 +211,8 @@ def main():
             writer.writeheader()
             writer.writerows(existing_rows)
             writer.writerows(new_rows)
-        print(f"  CSV path: {output_file}")
-    else:
-        print("  No new rows to write.")
 
-    print("=== Done ===")
+    print(f"[OK]    fetch_stats_mlb_daily: {len(new_rows)} rows written | {start_date} → {target_date} | {len(unique_hitters)} hitters, {len(unique_pitchers)} pitchers")
 
 if __name__ == "__main__":
     main()

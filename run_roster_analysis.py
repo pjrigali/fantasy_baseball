@@ -67,6 +67,17 @@ pitcher_rows = [r for r in mlb_rows if r['b_or_p'] == 'pitcher']
 with open(os.path.join(BASE, f'lineups_mlb_batters_{YEAR}.csv'), encoding='utf-8') as f:
     all_lineups = list(csv.DictReader(f))
 
+rank_lookup = {}
+_rank_path = os.path.join(BASE, f'rankings_espn_daily_{YEAR}.csv')
+if os.path.exists(_rank_path):
+    with open(_rank_path, encoding='utf-8') as f:
+        _rank_rows = list(csv.DictReader(f))
+    if _rank_rows:
+        _latest_rank = max(r['date'] for r in _rank_rows)
+        for r in _rank_rows:
+            if r['date'] == _latest_rank:
+                rank_lookup[mp.normalize_player_name(r['player_name'])] = r
+
 # ── Aggregation helpers ───────────────────────────────────────────────────────
 def agg_batter(name):
     norm = mp.normalize_player_name(name)
@@ -139,6 +150,14 @@ def batting_order_stats(name):
         return None, 0
     return round(sum(positions) / len(positions), 1), len(positions)
 
+def get_rank(name):
+    r = rank_lookup.get(mp.normalize_player_name(name), {})
+    pr  = r.get('position_rank', '')
+    p30 = r.get('pr30', '')
+    pos_rank = int(pr)          if pr  not in ('', '0', None) else None
+    pr30     = float(p30)       if p30 not in ('', None)      else None
+    return pos_rank, pr30
+
 # ── Lineup presence index (last 14 days) — used to filter FA batters ─────────
 cutoff_14  = (date.today() - timedelta(days=14)).isoformat()
 lu_presence = {}
@@ -149,7 +168,7 @@ for r in all_lineups:
 
 # ── BATTER TABLE ──────────────────────────────────────────────────────────────
 print('\n=== BATTER STATS (sorted by OPS) ===')
-hdr = f"{'Player':<25} {'Pos':<5} {'G':>4} {'AB':>4} {'R':>4} {'HR':>4} {'RBI':>4} {'SB':>4} {'OPS':>6} {'AVG':>6} {'AvgBO':>6} {'ProjOPS':>8} {'PrevOPS':>8} {'Status':<10}  Flags"
+hdr = f"{'Player':<25} {'Pos':<5} {'G':>4} {'AB':>4} {'R':>4} {'HR':>4} {'RBI':>4} {'SB':>4} {'OPS':>6} {'AVG':>6} {'AvgBO':>6} {'ProjOPS':>8} {'PrevOPS':>8} {'PRank':>6} {'PR30':>6} {'Status':<10}  Flags"
 print(hdr); print('-'*len(hdr))
 
 batter_data = []
@@ -160,6 +179,7 @@ for p in my_batters:
     prev_ops  = prev_stat(p.name, 'OPS')
     avg_bo, bo_games = batting_order_stats(p.name)
     on_il, status    = player_status(p)
+    pos_rank, pr30   = get_rank(p.name)
 
     ops = s['OPS'] if s else 0
     avg = s['AVG'] if s else 0
@@ -182,16 +202,19 @@ for p in my_batters:
     bo_s  = f'{avg_bo:.1f}' if avg_bo else 'N/A'
     pr_s  = f'{proj_ops:.3f}' if proj_ops else 'N/A'
     pv_s  = f'{prev_ops:.3f}' if prev_ops else 'N/A'
-    print(f'{p.name:<25} {pos:<5} {g:>4} {ab:>4} {r_:>4} {hr_:>4} {rbi:>4} {sb:>4} {ops:>6.3f} {avg:>6.3f} {bo_s:>6} {pr_s:>8} {pv_s:>8} {status:<10}  {", ".join(flags)}')
+    rk_s  = f'#{pos_rank}' if pos_rank else 'N/A'
+    p30_s = f'{pr30:+.1f}' if pr30 is not None else 'N/A'
+    print(f'{p.name:<25} {pos:<5} {g:>4} {ab:>4} {r_:>4} {hr_:>4} {rbi:>4} {sb:>4} {ops:>6.3f} {avg:>6.3f} {bo_s:>6} {pr_s:>8} {pv_s:>8} {rk_s:>6} {p30_s:>6} {status:<10}  {", ".join(flags)}')
     batter_data.append(dict(player=p, stats=s, ops=ops, avg=avg, flags=flags,
                             avg_bo=avg_bo, bo_games=bo_games, proj_ops=proj_ops,
-                            prev_ops=prev_ops, on_il=on_il, status=status))
+                            prev_ops=prev_ops, on_il=on_il, status=status,
+                            pos_rank=pos_rank, pr30=pr30))
 
 batter_data.sort(key=lambda x: x['ops'], reverse=True)
 
 # ── SP TABLE ──────────────────────────────────────────────────────────────────
 print('\n=== SP STATS (sorted by ERA) ===')
-hdr = f"{'Player':<25} {'G':>4} {'GS':>4} {'IP':>6} {'ERA':>6} {'WHIP':>6} {'K/9':>6} {'QS':>4} {'SVHD':>5} {'ProjERA':>8} {'PrevERA':>8} {'Status':<10}  Flags"
+hdr = f"{'Player':<25} {'G':>4} {'GS':>4} {'IP':>6} {'ERA':>6} {'WHIP':>6} {'K/9':>6} {'QS':>4} {'SVHD':>5} {'ProjERA':>8} {'PrevERA':>8} {'PRank':>6} {'PR30':>6} {'Status':<10}  Flags"
 print(hdr); print('-'*len(hdr))
 
 sp_data = []
@@ -200,7 +223,8 @@ for p in my_sps:
     pb       = proj_bd(p)
     proj_era = pb.get('ERA')
     prev_era = prev_stat(p.name, 'ERA')
-    on_il, status = player_status(p)
+    on_il, status    = player_status(p)
+    pos_rank, pr30   = get_rank(p.name)
     flags = []
     if s and not on_il:
         if s['ERA']  > 5.0:  flags.append('HIGH_ERA')
@@ -209,20 +233,23 @@ for p in my_sps:
         if s['GS'] > 0 and s['QS'] / s['GS'] < 0.40: flags.append('LOW_QS_RATE')
     elif not s:
         flags.append('NO_DATA')
-    pe = f'{proj_era:.2f}' if proj_era else 'N/A'
-    pv = f'{prev_era:.2f}' if prev_era else 'N/A'
+    pe   = f'{proj_era:.2f}' if proj_era else 'N/A'
+    pv   = f'{prev_era:.2f}' if prev_era else 'N/A'
+    rk_s = f'#{pos_rank}' if pos_rank else 'N/A'
+    p30_s= f'{pr30:+.1f}' if pr30 is not None else 'N/A'
     if s:
-        print(f"{p.name:<25} {s['G']:>4} {s['GS']:>4} {s['IP']:>6.1f} {s['ERA']:>6.2f} {s['WHIP']:>6.2f} {s['K9']:>6.2f} {s['QS']:>4} {s['SVHD']:>5} {pe:>8} {pv:>8} {status:<10}  {', '.join(flags)}")
+        print(f"{p.name:<25} {s['G']:>4} {s['GS']:>4} {s['IP']:>6.1f} {s['ERA']:>6.2f} {s['WHIP']:>6.2f} {s['K9']:>6.2f} {s['QS']:>4} {s['SVHD']:>5} {pe:>8} {pv:>8} {rk_s:>6} {p30_s:>6} {status:<10}  {', '.join(flags)}")
     else:
         print(f'{p.name:<25}  NO DATA  {status}')
     sp_data.append(dict(player=p, stats=s, flags=flags, proj_era=proj_era,
-                        prev_era=prev_era, on_il=on_il, status=status))
+                        prev_era=prev_era, on_il=on_il, status=status,
+                        pos_rank=pos_rank, pr30=pr30))
 
 sp_data.sort(key=lambda x: x['stats']['ERA'] if x['stats'] else 99)
 
 # ── RP TABLE ──────────────────────────────────────────────────────────────────
 print('\n=== RP STATS (sorted by ProjSVHD) ===')
-hdr = f"{'Player':<25} {'G':>4} {'IP':>6} {'ERA':>6} {'WHIP':>6} {'K/9':>6} {'SV':>4} {'HLD':>4} {'SVHD':>5} {'ProjSVHD':>9} {'ProjERA':>8} {'Status':<10}  Flags"
+hdr = f"{'Player':<25} {'G':>4} {'IP':>6} {'ERA':>6} {'WHIP':>6} {'K/9':>6} {'SV':>4} {'HLD':>4} {'SVHD':>5} {'ProjSVHD':>9} {'ProjERA':>8} {'PRank':>6} {'PR30':>6} {'Status':<10}  Flags"
 print(hdr); print('-'*len(hdr))
 
 rp_data = []
@@ -231,7 +258,8 @@ for p in my_rps:
     pb        = proj_bd(p)
     proj_svhd = pb.get('SVHD')
     proj_era  = pb.get('ERA')
-    on_il, status = player_status(p)
+    on_il, status  = player_status(p)
+    pos_rank, pr30 = get_rank(p.name)
     flags = []
     if s and not on_il:
         if s['ERA']  > 5.0:  flags.append('HIGH_ERA')
@@ -239,14 +267,17 @@ for p in my_rps:
         if (proj_svhd or 0) < 10: flags.append('LOW_SVHD_CEIL')
     elif not s:
         flags.append('NO_DATA')
-    ps = f'{proj_svhd:.0f}' if proj_svhd else 'N/A'
-    pe = f'{proj_era:.2f}'  if proj_era  else 'N/A'
+    ps   = f'{proj_svhd:.0f}' if proj_svhd else 'N/A'
+    pe   = f'{proj_era:.2f}'  if proj_era  else 'N/A'
+    rk_s = f'#{pos_rank}' if pos_rank else 'N/A'
+    p30_s= f'{pr30:+.1f}' if pr30 is not None else 'N/A'
     if s:
-        print(f"{p.name:<25} {s['G']:>4} {s['IP']:>6.1f} {s['ERA']:>6.2f} {s['WHIP']:>6.2f} {s['K9']:>6.2f} {s['SV']:>4} {s['HLD']:>4} {s['SVHD']:>5} {ps:>9} {pe:>8} {status:<10}  {', '.join(flags)}")
+        print(f"{p.name:<25} {s['G']:>4} {s['IP']:>6.1f} {s['ERA']:>6.2f} {s['WHIP']:>6.2f} {s['K9']:>6.2f} {s['SV']:>4} {s['HLD']:>4} {s['SVHD']:>5} {ps:>9} {pe:>8} {rk_s:>6} {p30_s:>6} {status:<10}  {', '.join(flags)}")
     else:
         print(f'{p.name:<25}  NO DATA  {status}')
     rp_data.append(dict(player=p, stats=s, flags=flags, proj_svhd=proj_svhd,
-                        proj_era=proj_era, on_il=on_il, status=status))
+                        proj_era=proj_era, on_il=on_il, status=status,
+                        pos_rank=pos_rank, pr30=pr30))
 
 rp_data.sort(key=lambda x: (-(x['proj_svhd'] or 0), x['stats']['ERA'] if x['stats'] else 99))
 
@@ -270,6 +301,107 @@ for r in weak_rps:
     era = r['stats']['ERA']  if r['stats'] else 'N/A'
     ps  = f"{r['proj_svhd']:.0f}" if r['proj_svhd'] else 'N/A'
     print(f"  {r['player'].name:<25} ERA={era}  ProjSVHD={ps}  status={r['status']}  flags={r['flags']}")
+
+# ── QL Slot Competition ───────────────────────────────────────────────────────
+print('\n=== QL SLOT COMPETITION ===')
+print('Players ranked by ESPN position_rank within each slot group (lower = better).')
+print('* = top-ranked (QL will start).  ⚠ = ranked below a worse-performing teammate.\n')
+
+_OF_SLOTS = {'OF', 'LF', 'CF', 'RF'}
+_ql_groups = {}
+
+for _b in batter_data:
+    _pos = _b['player'].eligibleSlots[0] if _b['player'].eligibleSlots else '?'
+    _grp = 'OF' if _pos in _OF_SLOTS else _pos
+    if _grp in ('C','1B','2B','3B','SS','OF','DH'):
+        _ql_groups.setdefault(_grp, []).append(('BAT', _b))
+
+for _s in sp_data:
+    _ql_groups.setdefault('SP', []).append(('SP', _s))
+
+for _r in rp_data:
+    _ql_groups.setdefault('RP', []).append(('RP', _r))
+
+ql_manual_overrides = []
+
+for _grp in ['C', '1B', '2B', '3B', 'SS', 'OF', 'DH', 'SP', 'RP']:
+    _players = _ql_groups.get(_grp, [])
+    if len(_players) < 2:
+        continue
+
+    _sorted = sorted(_players, key=lambda x: (
+        1 if x[1]['on_il'] else 0,
+        x[1].get('pos_rank') or 9999
+    ))
+
+    _active = [(t, d) for t, d in _sorted if not d['on_il']]
+    if not _active:
+        continue
+
+    print(f'  {_grp}  ({len(_players)} rostered, {len(_active)} active):')
+
+    for _i, (_ptype, _pdata) in enumerate(_sorted):
+        _name  = _pdata['player'].name
+        _pr    = _pdata.get('pos_rank')
+        _pr30  = _pdata.get('pr30')
+        _rk_s  = f'#{_pr}' if _pr else 'N/A'
+        _p30_s = f'PR30={_pr30:+.1f}' if _pr30 is not None else 'PR30=N/A'
+        _il_s  = ' [IL]' if _pdata['on_il'] else ''
+
+        if _ptype == 'BAT':
+            _stat_s = f"OPS={_pdata['ops']:.3f}"
+        elif _ptype == 'SP':
+            _st = _pdata['stats']
+            _stat_s = f"ERA={_st['ERA']:.2f}  QS={_st['QS']}" if _st else 'no data'
+        else:
+            _st = _pdata['stats']
+            _ps = _pdata.get('proj_svhd') or 0
+            _stat_s = f"ProjSVHD={_ps:.0f}  ERA={_st['ERA']:.2f}" if _st else 'no data'
+
+        _flag = ''
+        if not _pdata['on_il']:
+            _above = [(t, d) for t, d in _sorted[:_i] if not d['on_il']]
+            for _at, _ad in _above:
+                if _ptype == 'BAT' and _at == 'BAT':
+                    if _pdata['ops'] > _ad['ops'] and _pdata['ops'] >= 0.700:
+                        _flag = f'  ⚠ better OPS than {_ad["player"].name} (rank #{_ad.get("pos_rank")})'
+                        ql_manual_overrides.append(dict(
+                            group=_grp, player=_name, blocks=_ad['player'].name,
+                            reason=f"OPS {_pdata['ops']:.3f} > {_ad['ops']:.3f} | rank #{_pr} vs #{_ad.get('pos_rank')}"
+                        ))
+                        break
+                elif _ptype == 'SP' and _at == 'SP':
+                    _st_a = _ad['stats']
+                    if _pdata['stats'] and _st_a and _pdata['stats']['ERA'] < _st_a['ERA'] and _pdata['stats']['QS'] >= _st_a['QS']:
+                        _flag = f'  ⚠ better ERA+QS than {_ad["player"].name} (rank #{_ad.get("pos_rank")})'
+                        ql_manual_overrides.append(dict(
+                            group=_grp, player=_name, blocks=_ad['player'].name,
+                            reason=f"ERA {_pdata['stats']['ERA']:.2f} < {_st_a['ERA']:.2f} & QS {_pdata['stats']['QS']} >= {_st_a['QS']} | rank #{_pr} vs #{_ad.get('pos_rank')}"
+                        ))
+                        break
+                elif _ptype == 'RP' and _at == 'RP':
+                    _ps_a = _ad.get('proj_svhd') or 0
+                    _st_a = _ad['stats']
+                    _ps_me = _pdata.get('proj_svhd') or 0
+                    _st_me = _pdata['stats']
+                    if _ps_me > _ps_a and _st_me and _st_a and _st_me['ERA'] <= _st_a['ERA'] + 0.5:
+                        _flag = f'  ⚠ better ProjSVHD than {_ad["player"].name} (rank #{_ad.get("pos_rank")})'
+                        ql_manual_overrides.append(dict(
+                            group=_grp, player=_name, blocks=_ad['player'].name,
+                            reason=f"ProjSVHD {_ps_me:.0f} > {_ps_a:.0f} | rank #{_pr} vs #{_ad.get('pos_rank')}"
+                        ))
+                        break
+
+        _star = '*' if (_i == 0 and not _pdata['on_il']) else ' '
+        print(f"    {_star} {_name:<25} rank={_rk_s:<6}  {_p30_s:<14}  {_stat_s}{_il_s}{_flag}")
+
+    print()
+
+if ql_manual_overrides:
+    print('  --- Manual Override Summary ---')
+    for _item in ql_manual_overrides:
+        print(f"  ⚠ {_item['group']:>3}: START {_item['player']} over {_item['blocks']} — {_item['reason']}")
+    print()
 
 # ── Free agents ───────────────────────────────────────────────────────────────
 print('\n=== TOP FREE AGENTS ===')
@@ -303,9 +435,11 @@ for fa in top_fa_batters_raw:
     proj_ops  = fa.get('proj_ops', 0) or 0
     composite = 0.6 * ops + 0.4 * proj_ops
     score, pr, phr, prbi, psb = cat_score_fa(fa)
+    fa_pos_rank, fa_pr30 = get_rank(fa['name'])
     top_fa_batters.append({**fa, 'composite': composite, 'cat_score': score,
                            'pace_r': pr, 'pace_hr': phr, 'pace_rbi': prbi,
-                           'pace_sb': psb, 'lineup_games': lu_games})
+                           'pace_sb': psb, 'lineup_games': lu_games,
+                           'pos_rank': fa_pos_rank, 'pr30': fa_pr30})
 
 top_fa_batters.sort(key=lambda x: (-x['cat_score'], -x['composite']))
 
@@ -360,11 +494,13 @@ for fa in fa_rps_raw:
 fa_rps.sort(key=lambda x: (-(x['ProjSVHD'] or 0), x['ERA']))
 
 print(f'\nTop FA Batters (top 20 by cat score + composite OPS, active, in lineups last 14d):')
-print(f"  {'Name':<25} {'Pos':<6} {'OPS':>6} {'pR':>5} {'pHR':>5} {'pRBI':>6} {'pSB':>5} {'AB':>5} {'ProjOPS':>8} {'Comp':>6} {'Cat':>4} {'LU':>4}")
+print(f"  {'Name':<25} {'Pos':<6} {'OPS':>6} {'pR':>5} {'pHR':>5} {'pRBI':>6} {'pSB':>5} {'AB':>5} {'ProjOPS':>8} {'Comp':>6} {'Cat':>4} {'LU':>4} {'PRank':>6} {'PR30':>6}")
 for fa in top_fa_batters[:20]:
-    po = fa.get('proj_ops')
-    ps = f'{po:.3f}' if po else 'N/A'
-    print(f"  {fa['name']:<25} {fa.get('pos','?'):<6} {fa.get('ops',0):>6.3f} {fa['pace_r']:>5} {fa['pace_hr']:>5} {fa['pace_rbi']:>6} {fa['pace_sb']:>5} {int(fa.get('ab',0) or 0):>5} {ps:>8} {fa['composite']:>6.3f} {fa['cat_score']:>4} {fa['lineup_games']:>4}")
+    po    = fa.get('proj_ops')
+    ps    = f'{po:.3f}' if po else 'N/A'
+    rk_s  = f"#{fa['pos_rank']}" if fa.get('pos_rank') else 'N/A'
+    p30_s = f"{fa['pr30']:+.1f}" if fa.get('pr30') is not None else 'N/A'
+    print(f"  {fa['name']:<25} {fa.get('pos','?'):<6} {fa.get('ops',0):>6.3f} {fa['pace_r']:>5} {fa['pace_hr']:>5} {fa['pace_rbi']:>6} {fa['pace_sb']:>5} {int(fa.get('ab',0) or 0):>5} {ps:>8} {fa['composite']:>6.3f} {fa['cat_score']:>4} {fa['lineup_games']:>4} {rk_s:>6} {p30_s:>6}")
 
 print(f'\nTop FA SPs (top 15 by ERA, min 1 G, active only):')
 print(f"  {'Name':<25} {'Team':<6} {'G':>4} {'IP':>6} {'ERA':>6} {'WHIP':>6} {'K/9':>6} {'QS':>4} {'ProjERA':>8}")
@@ -692,40 +828,46 @@ lines.append(f'> Season pace: {days_played} days played, pace multiplier = {PACE
 
 # Batter table
 lines.append('\n## My Roster — Batter Stats\n')
-lines.append('| Player | Pos | G | AB | R | HR | RBI | SB | OPS | AVG | AvgBO | ProjOPS | PrevOPS | Status | Flags |')
-lines.append('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|')
+lines.append('| Player | Pos | G | AB | R | HR | RBI | SB | OPS | AVG | AvgBO | ProjOPS | PrevOPS | PRank | PR30 | Status | Flags |')
+lines.append('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|')
 for b in sorted(batter_data, key=lambda x: x['ops'], reverse=True):
     s    = b['stats']
     pos  = b['player'].eligibleSlots[0] if b['player'].eligibleSlots else '?'
     bo_s = f"{b['avg_bo']:.1f}" if b['avg_bo'] else 'N/A'
     pr_s = f"{b['proj_ops']:.3f}" if b['proj_ops'] else 'N/A'
     pv_s = f"{b['prev_ops']:.3f}" if b.get('prev_ops') else 'N/A'
+    rk_s = f"#{b['pos_rank']}" if b.get('pos_rank') else 'N/A'
+    p30_s= f"{b['pr30']:+.1f}" if b.get('pr30') is not None else 'N/A'
     g_ = s['G'] if s else 0; ab_ = s['AB'] if s else 0; r_ = s['R'] if s else 0
     hr_= s['HR'] if s else 0; rbi_= s['RBI'] if s else 0; sb_= s['SB'] if s else 0
     flags = ', '.join(b['flags']) or '—'
-    lines.append(f"| {b['player'].name} | {pos} | {g_} | {ab_} | {r_} | {hr_} | {rbi_} | {sb_} | {b['ops']:.3f} | {b['avg']:.3f} | {bo_s} | {pr_s} | {pv_s} | {b['status']} | {flags} |")
+    lines.append(f"| {b['player'].name} | {pos} | {g_} | {ab_} | {r_} | {hr_} | {rbi_} | {sb_} | {b['ops']:.3f} | {b['avg']:.3f} | {bo_s} | {pr_s} | {pv_s} | {rk_s} | {p30_s} | {b['status']} | {flags} |")
 
 # SP table
 lines.append('\n## My Roster — SP Stats\n')
-lines.append('| Player | G | GS | IP | ERA | WHIP | K/9 | QS | ProjERA | PrevERA | Status | Flags |')
-lines.append('|---|---|---|---|---|---|---|---|---|---|---|---|')
+lines.append('| Player | G | GS | IP | ERA | WHIP | K/9 | QS | ProjERA | PrevERA | PRank | PR30 | Status | Flags |')
+lines.append('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|')
 for s in sorted(sp_data, key=lambda x: x['stats']['ERA'] if x['stats'] else 99):
     st = s['stats']
     if not st: continue
-    pe = f"{s['proj_era']:.2f}" if s['proj_era'] else 'N/A'
-    pv = f"{s['prev_era']:.2f}" if s.get('prev_era') else 'N/A'
-    lines.append(f"| {s['player'].name} | {st['G']} | {st['GS']} | {st['IP']} | {st['ERA']} | {st['WHIP']} | {st['K9']} | {st['QS']} | {pe} | {pv} | {s['status']} | {', '.join(s['flags']) or '—'} |")
+    pe   = f"{s['proj_era']:.2f}" if s['proj_era'] else 'N/A'
+    pv   = f"{s['prev_era']:.2f}" if s.get('prev_era') else 'N/A'
+    rk_s = f"#{s['pos_rank']}" if s.get('pos_rank') else 'N/A'
+    p30_s= f"{s['pr30']:+.1f}" if s.get('pr30') is not None else 'N/A'
+    lines.append(f"| {s['player'].name} | {st['G']} | {st['GS']} | {st['IP']} | {st['ERA']} | {st['WHIP']} | {st['K9']} | {st['QS']} | {pe} | {pv} | {rk_s} | {p30_s} | {s['status']} | {', '.join(s['flags']) or '—'} |")
 
 # RP table
 lines.append('\n## My Roster — RP Stats\n')
-lines.append('| Player | G | IP | ERA | WHIP | K/9 | SV | HLD | SVHD | ProjSVHD | ProjERA | Status | Flags |')
-lines.append('|---|---|---|---|---|---|---|---|---|---|---|---|---|')
+lines.append('| Player | G | IP | ERA | WHIP | K/9 | SV | HLD | SVHD | ProjSVHD | ProjERA | PRank | PR30 | Status | Flags |')
+lines.append('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|')
 for r in sorted(rp_data, key=lambda x: (-(x['proj_svhd'] or 0), x['stats']['ERA'] if x['stats'] else 99)):
     st = r['stats']
     if not st: continue
-    ps = f"{r['proj_svhd']:.0f}" if r['proj_svhd'] else 'N/A'
-    pe = f"{r['proj_era']:.2f}"  if r['proj_era']  else 'N/A'
-    lines.append(f"| {r['player'].name} | {st['G']} | {st['IP']} | {st['ERA']} | {st['WHIP']} | {st['K9']} | {st['SV']} | {st['HLD']} | {st['SVHD']} | {ps} | {pe} | {r['status']} | {', '.join(r['flags']) or '—'} |")
+    ps   = f"{r['proj_svhd']:.0f}" if r['proj_svhd'] else 'N/A'
+    pe   = f"{r['proj_era']:.2f}"  if r['proj_era']  else 'N/A'
+    rk_s = f"#{r['pos_rank']}" if r.get('pos_rank') else 'N/A'
+    p30_s= f"{r['pr30']:+.1f}" if r.get('pr30') is not None else 'N/A'
+    lines.append(f"| {r['player'].name} | {st['G']} | {st['IP']} | {st['ERA']} | {st['WHIP']} | {st['K9']} | {st['SV']} | {st['HLD']} | {st['SVHD']} | {ps} | {pe} | {rk_s} | {p30_s} | {r['status']} | {', '.join(r['flags']) or '—'} |")
 
 # Z-Score Scorecard
 lines.append('\n## Z-Score Scorecard (League-Wide Relative Ranking)\n')
@@ -793,14 +935,67 @@ for r in weak_rps:
     ps = f"{r['proj_svhd']:.0f}" if r['proj_svhd'] else 'N/A'
     lines.append(f"| {r['player'].name} | {st['ERA']} | {st['WHIP']} | {st['SVHD']} | {ps} | {r['status']} | {', '.join(r['flags'])} |")
 
+# QL Slot Competition section
+lines.append('\n## QL Slot Competition\n')
+lines.append('> Players ranked by ESPN `position_rank` within each slot group. Quick Lineup starts the top-ranked active player per slot. ⚠ = ranked below a worse-performing teammate — candidate for manual override.\n')
+
+for _rgrp in ['C', '1B', '2B', '3B', 'SS', 'OF', 'DH', 'SP', 'RP']:
+    _rplayers = _ql_groups.get(_rgrp, [])
+    _ractive  = [(t, d) for t, d in _rplayers if not d['on_il']]
+    if len(_rplayers) < 2:
+        continue
+    lines.append(f'\n### {_rgrp} ({len(_rplayers)} rostered, {len(_ractive)} active)\n')
+    if _rgrp in ('SP', 'RP'):
+        lines.append('| Player | PRank | PR30 | ERA | QS/ProjSVHD | Status | Override |')
+        lines.append('|---|---|---|---|---|---|---|')
+    else:
+        lines.append('| Player | PRank | PR30 | OPS | Status | Override |')
+        lines.append('|---|---|---|---|---|---|')
+    _rsorted = sorted(_rplayers, key=lambda x: (1 if x[1]['on_il'] else 0, x[1].get('pos_rank') or 9999))
+    for _ri, (_rtype, _rdata) in enumerate(_rsorted):
+        _rname  = _rdata['player'].name
+        _rpr    = _rdata.get('pos_rank')
+        _rp30   = _rdata.get('pr30')
+        _rrk_s  = f"#{_rpr}" if _rpr else 'N/A'
+        _rp30_s = f"{_rp30:+.1f}" if _rp30 is not None else 'N/A'
+        _ril_s  = _rdata['status']
+        _rover  = ''
+        for _rov in ql_manual_overrides:
+            if _rov['player'] == _rname and _rov['group'] == _rgrp:
+                _rover = f'⚠ {_rov["reason"]}'
+                break
+        if _rtype == 'BAT':
+            lines.append(f"| {_rname} | {_rrk_s} | {_rp30_s} | {_rdata['ops']:.3f} | {_ril_s} | {_rover} |")
+        elif _rtype == 'SP':
+            _rst = _rdata['stats']
+            _rera = f"{_rst['ERA']:.2f}" if _rst else 'N/A'
+            _rqs  = str(_rst['QS']) if _rst else 'N/A'
+            lines.append(f"| {_rname} | {_rrk_s} | {_rp30_s} | {_rera} | {_rqs} QS | {_ril_s} | {_rover} |")
+        else:
+            _rst = _rdata['stats']
+            _rera = f"{_rst['ERA']:.2f}" if _rst else 'N/A'
+            _rps  = f"{_rdata.get('proj_svhd') or 0:.0f}"
+            lines.append(f"| {_rname} | {_rrk_s} | {_rp30_s} | {_rera} | {_rps} ProjSVHD | {_ril_s} | {_rover} |")
+
+if ql_manual_overrides:
+    lines.append('\n### Manual Override Summary\n')
+    lines.append('| Slot | Start | Over | Reason |')
+    lines.append('|---|---|---|---|')
+    for _ov in ql_manual_overrides:
+        lines.append(f"| {_ov['group']} | {_ov['player']} | {_ov['blocks']} | {_ov['reason']} |")
+else:
+    lines.append('\n_No manual override candidates identified — QL rankings align with performance._\n')
+
 # FA Batters table
 lines.append('\n## Top Free Agents — Batters\n')
 lines.append('> Active/healthy only, seen in lineups last 14 days. pR/pHR/pRBI/pSB = full-season pace. Cat = categories at pace (R≥60, HR≥15, RBI≥55, SB≥10, OPS≥.750). Composite = 60% curr OPS + 40% proj OPS.\n')
-lines.append('| Name | Pos | OPS | pR | pHR | pRBI | pSB | AB | ProjOPS | Composite | Cat | LU |')
-lines.append('|---|---|---|---|---|---|---|---|---|---|---|---|')
+lines.append('| Name | Pos | OPS | pR | pHR | pRBI | pSB | AB | ProjOPS | Composite | Cat | LU | PRank | PR30 |')
+lines.append('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|')
 for fa in top_fa_batters[:20]:
-    po = fa.get('proj_ops'); ps = f'{po:.3f}' if po else 'N/A'
-    lines.append(f"| {fa['name']} | {fa.get('pos','?')} | {fa.get('ops',0):.3f} | {fa['pace_r']} | {fa['pace_hr']} | {fa['pace_rbi']} | {fa['pace_sb']} | {int(fa.get('ab',0) or 0)} | {ps} | {fa['composite']:.3f} | {fa['cat_score']} | {fa['lineup_games']} |")
+    po    = fa.get('proj_ops'); ps = f'{po:.3f}' if po else 'N/A'
+    rk_s  = f"#{fa['pos_rank']}" if fa.get('pos_rank') else 'N/A'
+    p30_s = f"{fa['pr30']:+.1f}" if fa.get('pr30') is not None else 'N/A'
+    lines.append(f"| {fa['name']} | {fa.get('pos','?')} | {fa.get('ops',0):.3f} | {fa['pace_r']} | {fa['pace_hr']} | {fa['pace_rbi']} | {fa['pace_sb']} | {int(fa.get('ab',0) or 0)} | {ps} | {fa['composite']:.3f} | {fa['cat_score']} | {fa['lineup_games']} | {rk_s} | {p30_s} |")
 
 # FA SP table
 lines.append('\n## Top Free Agents — SPs\n')

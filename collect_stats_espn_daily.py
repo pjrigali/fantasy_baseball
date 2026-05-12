@@ -369,60 +369,39 @@ def main():
     target_date_str = target_date.strftime('%Y-%m-%d')
     year = args.year
 
-    print(f"=== Daily Stats Collection ===")
-    print(f"  Date  : {target_date_str}")
-    print(f"  Season: {year}")
-
-    # 1. Resolve scoring period
     try:
         scoring_period = date_to_scoring_period(target_date, year)
-        print(f"  Scoring Period: {scoring_period}")
     except ValueError as e:
-        print(f"  ERROR: {e}")
+        print(f"[ERROR] collect_stats_espn_daily: {e}")
         return
 
-    # 2. Load config & init league
     try:
         config = load_config()
-        print("  Config loaded.")
     except FileNotFoundError as e:
-        print(f"  ERROR: {e}")
+        print(f"[ERROR] collect_stats_espn_daily: {e}")
         return
 
     try:
         league = setup_league(config, year=year)
-        print(f"  League initialised: {league}")
     except Exception as e:
-        print(f"  ERROR initialising league: {e}")
+        print(f"[ERROR] collect_stats_espn_daily: failed to init league — {e}")
         return
 
-    # 3. Fetch daily stats
-    print("  Fetching player stats...")
     try:
         rows = fetch_daily_stats(league, scoring_period, target_date_str)
-        print(f"  Fetched {len(rows)} player records.")
     except Exception as e:
-        print(f"  ERROR fetching stats: {e}")
+        print(f"[ERROR] collect_stats_espn_daily: failed to fetch stats — {e}")
         return
 
     if not rows:
-        print("  No data returned for this scoring period. Games may not have started yet.")
+        print(f"[WARN]  collect_stats_espn_daily: no data for SP {scoring_period} ({target_date_str}) — games may not have started")
         return
 
-    # 4. Append to CSV with dedup
     os.makedirs(DATA_PATH, exist_ok=True)
-    csv_filename = f"stats_espn_daily_{year}.csv"
-    csv_path = os.path.join(DATA_PATH, csv_filename)
-
-    print(f"  Loading existing keys for dedup...")
+    csv_path = os.path.join(DATA_PATH, f"stats_espn_daily_{year}.csv")
     existing_keys = load_existing_keys(csv_path)
-    print(f"  Existing rows: {len(existing_keys)}")
-
     written = append_rows(csv_path, rows, existing_keys)
-    print(f"  New rows written: {written}")
-    print(f"  Duplicates skipped: {len(rows) - written}")
-    print(f"  CSV path: {csv_path}")
-    print("=== Done ===")
+    print(f"[OK]    collect_stats_espn_daily: {written} rows written, {len(rows) - written} dupes skipped | {target_date_str} SP {scoring_period}")
 
 
 if __name__ == '__main__':

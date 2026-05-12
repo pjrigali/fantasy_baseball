@@ -121,17 +121,15 @@ def fetch_date(ds: str, batter_path: str, existing_keys: set) -> int:
     try:
         batters = mp.scrape_mlb_lineups(ds)
     except Exception as e:
-        print(f'  {ds}: ERROR - {e}')
+        print(f'[ERROR] fetch_lineups_mlb_daily: {ds} — {e}')
         return 0
     if not batters:
-        print(f'  {ds}: no data (off day or lineups not posted)')
         return 0
     written = append_rows(
         batter_path, batters, existing_keys, BATTER_FIXED_COLS,
         key_fn=lambda r: (r.get('date', ''), r.get('team_tricode', ''),
                           r.get('player_name', ''), str(r.get('batting_order', '')))
     )
-    print(f'  {ds}: {len(batters):3d} fetched, {written:3d} new')
     return written
 
 
@@ -150,26 +148,18 @@ def main():
     batter_path = os.path.join(DATA_PATH, f'lineups_mlb_batters_{year}.csv')
     existing_keys = load_existing_batter_keys(batter_path)
 
-    print(f'=== MLB Lineup Fetch ===')
-    print(f'  Year       : {year}')
-    print(f'  Output     : {batter_path}')
-    print(f'  Existing   : {len(existing_keys)} rows')
-
     total_written = 0
 
     if args.date:
-        # Single-date mode
-        print(f'  Mode       : single date ({args.date})')
         total_written = fetch_date(args.date, batter_path, existing_keys)
+        print(f'[OK]    fetch_lineups_mlb_daily: {total_written} rows written | {args.date}')
     else:
-        # Auto-backfill mode: find last recorded date, fill forward to today
         last = get_last_recorded_date(batter_path)
         season_open = SEASON_START.get(year, date(year, 3, 27))
         start = (last + timedelta(days=1)) if last else season_open
 
         if start > today:
-            print(f'  Already current through {today}. Nothing to do.')
-            print('=== Done ===')
+            print(f'[OK]    fetch_lineups_mlb_daily: already current through {today}, nothing to do')
             return
 
         dates_to_fetch = []
@@ -178,21 +168,12 @@ def main():
             dates_to_fetch.append(d)
             d += timedelta(days=1)
 
-        if last:
-            print(f'  Last date  : {last}')
-        else:
-            print(f'  No existing data — backfilling from season open ({season_open})')
-        print(f'  Fetching   : {len(dates_to_fetch)} date(s) ({start} → {today})')
-        print()
-
         for i, d in enumerate(dates_to_fetch):
             total_written += fetch_date(d.strftime('%Y-%m-%d'), batter_path, existing_keys)
             if i < len(dates_to_fetch) - 1:
                 time.sleep(0.5)
 
-    print()
-    print(f'  Total new rows : {total_written}')
-    print('=== Done ===')
+        print(f'[OK]    fetch_lineups_mlb_daily: {total_written} rows written | {start} → {today} ({len(dates_to_fetch)} dates)')
 
 
 if __name__ == '__main__':
