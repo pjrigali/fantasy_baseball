@@ -19,7 +19,7 @@ import sys
 import csv
 import json
 import argparse
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
@@ -236,22 +236,26 @@ def append_rows(csv_path, rows, existing_keys):
 def main():
     parser = argparse.ArgumentParser(description='Collect daily ESPN player rankings.')
     parser.add_argument('--date', type=str, default=None,
-                        help='Target date YYYY-MM-DD (default: today)')
+                        help='Target date YYYY-MM-DD (default: auto-detect from time of day)')
     parser.add_argument('--year', type=int, default=2026,
                         help='Season year (default: 2026)')
     parser.add_argument('--size', type=int, default=300,
                         help='Players to fetch per position slot (default: 300)')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Preview rows that would be written without saving to disk')
     args = parser.parse_args()
 
-    target_date     = date.today() if args.date is None else datetime.strptime(args.date, '%Y-%m-%d').date()
-    target_date_str = target_date.strftime('%Y-%m-%d')
-    year            = args.year
+    year = args.year
 
-    try:
-        scoring_period = date_to_scoring_period(target_date, year)
-    except ValueError as e:
-        print(f'[ERROR] fetch_rankings_espn_daily: {e}')
-        return
+    # Determine which dates to collect.
+    # Explicit --date: collect only that date.
+    # Auto-detect: before noon → yesterday only; noon or later → yesterday + today.
+    if args.date is not None:
+        dates = [datetime.strptime(args.date, '%Y-%m-%d').date()]
+    else:
+        today = date.today()
+        yesterday = today - timedelta(days=1)
+        dates = [yesterday] if datetime.now().hour < 12 else [yesterday, today]
 
     try:
         config = load_config()
@@ -265,19 +269,47 @@ def main():
         print(f'[ERROR] fetch_rankings_espn_daily: failed to init league — {e}')
         return
 
-    raw = fetch_player_rankings(league, scoring_period, size=args.size)
-    if not raw:
-        print(f'[WARN]  fetch_rankings_espn_daily: no players returned for {target_date_str}')
-        return
-
-    rows = [parse_player_entry(pos, entry, target_date_str, scoring_period)
-            for pos, entry in raw]
-
     os.makedirs(DATA_PATH, exist_ok=True)
     csv_path = os.path.join(DATA_PATH, f'rankings_espn_daily_{year}.csv')
     existing_keys = load_existing_keys(csv_path)
-    written = append_rows(csv_path, rows, existing_keys)
-    print(f'[OK]    fetch_rankings_espn_daily: {written} rows written, {len(rows) - written} dupes skipped | {target_date_str} SP {scoring_period} | {len(raw)} players fetched')
+
+    total_written = 0
+    total_dupes = 0
+    total_players = 0
+
+    for target_date in dates:
+        target_date_str = target_date.strftime('%Y-%m-%d')
+
+        try:
+            scoring_period = date_to_scoring_period(target_date, year)
+        except ValueError as e:
+            print(f'[ERROR] fetch_rankings_espn_daily: {e}')
+            continue
+
+        raw = fetch_player_rankings(league, scoring_period, size=args.size)
+        if not raw:
+            print(f'[WARN]  fetch_rankings_espn_daily: no players returned for {target_date_str}')
+            continue
+
+        rows = [parse_player_entry(pos, entry, target_date_str, scoring_period)
+                for pos, entry in raw]
+        total_players = len(raw)
+
+        if args.dry_run:
+            new = [r for r in rows if (r['date'], str(r['player_id'])) not in existing_keys]
+            for r in new:
+                existing_keys.add((r['date'], str(r['player_id'])))
+            total_written += len(new)
+            total_dupes += len(rows) - len(new)
+        else:
+            written = append_rows(csv_path, rows, existing_keys)
+            total_written += written
+            total_dupes += len(rows) - written
+
+    date_range = f"{dates[0]} → {dates[-1]}" if len(dates) > 1 else str(dates[0])
+    tag = "[DRY-RUN]" if args.dry_run else "[OK]   "
+    verb = "would write" if args.dry_run else "rows written,"
+    print(f'{tag} fetch_rankings_espn_daily: {total_written} {verb} {total_dupes} dupes skipped | {date_range} | {total_players} players fetched')
 
 
 if __name__ == '__main__':

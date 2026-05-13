@@ -116,8 +116,8 @@ def get_last_recorded_date(csv_path: str) -> date | None:
     return date.fromisoformat(max(dates)) if dates else None
 
 
-def fetch_date(ds: str, batter_path: str, existing_keys: set) -> int:
-    """Scrape one date and append new rows. Returns count written."""
+def fetch_date(ds: str, batter_path: str, existing_keys: set, dry_run: bool = False) -> int:
+    """Scrape one date, append new rows (or preview in dry-run). Returns count written/previewed."""
     try:
         batters = mp.scrape_mlb_lineups(ds)
     except Exception as e:
@@ -125,12 +125,14 @@ def fetch_date(ds: str, batter_path: str, existing_keys: set) -> int:
         return 0
     if not batters:
         return 0
-    written = append_rows(
-        batter_path, batters, existing_keys, BATTER_FIXED_COLS,
-        key_fn=lambda r: (r.get('date', ''), r.get('team_tricode', ''),
-                          r.get('player_name', ''), str(r.get('batting_order', '')))
-    )
-    return written
+    key_fn = lambda r: (r.get('date', ''), r.get('team_tricode', ''),
+                        r.get('player_name', ''), str(r.get('batting_order', '')))
+    if dry_run:
+        new = [r for r in batters if key_fn(r) not in existing_keys]
+        for r in new:
+            existing_keys.add(key_fn(r))
+        return len(new)
+    return append_rows(batter_path, batters, existing_keys, BATTER_FIXED_COLS, key_fn=key_fn)
 
 
 def main():
@@ -139,41 +141,53 @@ def main():
                         help='Collect a specific date only (skips auto-backfill)')
     parser.add_argument('--year', type=int, default=datetime.now().year,
                         help='Season year used in output filename (default: current year)')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Preview rows that would be written without saving to disk')
     args = parser.parse_args()
 
     year = args.year
     today = date.today()
+
+    # Time-based end date when no explicit --date is given.
+    # Before noon → stop at yesterday (lineups incomplete for today);
+    # noon or later → include today.
+    if args.date is None:
+        end_date = (today - timedelta(days=1)) if datetime.now().hour < 12 else today
+    else:
+        end_date = None  # handled per-branch below
 
     os.makedirs(DATA_PATH, exist_ok=True)
     batter_path = os.path.join(DATA_PATH, f'lineups_mlb_batters_{year}.csv')
     existing_keys = load_existing_batter_keys(batter_path)
 
     total_written = 0
+    tag = "[DRY-RUN]" if args.dry_run else "[OK]   "
+    verb = "rows would be written" if args.dry_run else "rows written"
 
     if args.date:
-        total_written = fetch_date(args.date, batter_path, existing_keys)
-        print(f'[OK]    fetch_lineups_mlb_daily: {total_written} rows written | {args.date}')
+        total_written = fetch_date(args.date, batter_path, existing_keys, dry_run=args.dry_run)
+        print(f'{tag} fetch_lineups_mlb_daily: {total_written} {verb} | {args.date}')
     else:
         last = get_last_recorded_date(batter_path)
         season_open = SEASON_START.get(year, date(year, 3, 27))
         start = (last + timedelta(days=1)) if last else season_open
 
-        if start > today:
-            print(f'[OK]    fetch_lineups_mlb_daily: already current through {today}, nothing to do')
+        if start > end_date:
+            print(f'{tag} fetch_lineups_mlb_daily: already current through {end_date}, nothing to do')
             return
 
         dates_to_fetch = []
         d = start
-        while d <= today:
+        while d <= end_date:
             dates_to_fetch.append(d)
             d += timedelta(days=1)
 
         for i, d in enumerate(dates_to_fetch):
-            total_written += fetch_date(d.strftime('%Y-%m-%d'), batter_path, existing_keys)
+            total_written += fetch_date(d.strftime('%Y-%m-%d'), batter_path, existing_keys, dry_run=args.dry_run)
             if i < len(dates_to_fetch) - 1:
                 time.sleep(0.5)
 
-        print(f'[OK]    fetch_lineups_mlb_daily: {total_written} rows written | {start} → {today} ({len(dates_to_fetch)} dates)')
+        print(f'{tag} fetch_lineups_mlb_daily: {total_written} {verb} | {start} → {end_date} ({len(dates_to_fetch)} dates)')
 
 
 if __name__ == '__main__':

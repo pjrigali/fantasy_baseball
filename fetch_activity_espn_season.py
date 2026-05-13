@@ -24,6 +24,8 @@ def main():
                         help='Max pages to paginate through (default: 20)')
     parser.add_argument('--size', type=int, default=100,
                         help='Records per API page (default: 100)')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Preview records that would be written without saving to disk')
     args = parser.parse_args()
 
     target_year = args.year
@@ -62,13 +64,21 @@ def main():
         return
 
     if not activity_data:
-        print(f"[OK]    fetch_activity_espn_season: 0 new records (already current) | {target_year}")
+        tag = "[DRY-RUN]" if args.dry_run else "[OK]   "
+        print(f"{tag} fetch_activity_espn_season: 0 new records (already current) | {target_year}")
+        return
+
+    dates = sorted(set(r.get('date', '')[:10] for r in activity_data if r.get('date')))
+    date_range = f"{dates[0]} → {dates[-1]}" if len(dates) > 1 else (dates[0] if dates else str(target_year))
+
+    if args.dry_run:
+        print(f"[DRY-RUN] fetch_activity_espn_season: {len(activity_data)} records would be written | {date_range}")
         return
 
     df_new = pd.DataFrame(activity_data)
     write_header = not os.path.exists(save_path)
     df_new.to_csv(save_path, mode='a', index=False, header=write_header)
-    print(f"[OK]    fetch_activity_espn_season: {len(df_new)} records written | {target_year}")
+    print(f"[OK]    fetch_activity_espn_season: {len(df_new)} records written | {date_range}")
 
 
 if __name__ == "__main__":

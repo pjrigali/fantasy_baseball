@@ -1,10 +1,24 @@
+"""
+fetch_stats_mlb_daily.py
+========================
+Description: Fetches per-game hitting and pitching stats for all MLB players
+             via the MLB Stats API (statsapi.mlb.com) and appends new records
+             to the Bronze data lake. Automatically backfills from the last
+             recorded date in the CSV through the target end date.
+
+Source Data: MLB Stats API — /api/v1/people/{id}/stats?stats=gameLog
+             Player roster pulled from mlb_processing.scrape_mlb_stats().
+
+Outputs: data-lake/01_Bronze/fantasy_baseball/stats_mlb_daily_{year}.csv
+         Deduplicates on (date, player_id, b_or_p). Safe to re-run.
+"""
 
 import requests
 import time
 import csv
 import os
 import sys
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -122,15 +136,26 @@ def process_pitching_log(log, player_info, get_scoring_period_fn=None):
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description='Generate daily stats')
-    parser.add_argument('--year', type=int, default=datetime.now().year, help='Season year (default: current year)')
-    parser.add_argument('--date', type=str, default=datetime.now().strftime('%Y-%m-%d'), help='Fetch logs up to this date (YYYY-MM-DD, default: today)')
-    parser.add_argument('--limit', type=int, help='Limit number of players to process')
+    parser = argparse.ArgumentParser(description='Fetch MLB daily game logs via Stats API')
+    parser.add_argument('--year', type=int, default=datetime.now().year,
+                        help='Season year (default: current year)')
+    parser.add_argument('--date', type=str, default=None,
+                        help='Collect logs up to this date YYYY-MM-DD (default: auto-detect from time of day)')
+    parser.add_argument('--limit', type=int, help='Limit number of players to process (for testing)')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Preview rows that would be written without saving to disk')
     args = parser.parse_args()
 
     limit = args.limit
     season = args.year
-    target_date = args.date
+
+    # Time-based end date: before noon → yesterday; noon or later → today.
+    if args.date is not None:
+        target_date = args.date
+    elif datetime.now().hour < 12:
+        target_date = (date.today() - timedelta(days=1)).strftime('%Y-%m-%d')
+    else:
+        target_date = date.today().strftime('%Y-%m-%d')
 
     output_file = os.path.join(mp.DATA_PATH, f'stats_mlb_daily_{season}.csv')
     season_start = date(season, 3, 23)
@@ -197,7 +222,10 @@ def main():
                     existing_keys.add(key)
         time.sleep(0.5)
 
-    if new_rows:
+    tag = "[DRY-RUN]" if args.dry_run else "[OK]   "
+    verb = "would write" if args.dry_run else "rows written"
+
+    if new_rows and not args.dry_run:
         all_keys = set()
         for r in existing_rows + new_rows:
             all_keys.update(r.keys())
@@ -212,7 +240,7 @@ def main():
             writer.writerows(existing_rows)
             writer.writerows(new_rows)
 
-    print(f"[OK]    fetch_stats_mlb_daily: {len(new_rows)} rows written | {start_date} → {target_date} | {len(unique_hitters)} hitters, {len(unique_pitchers)} pitchers")
+    print(f"{tag} fetch_stats_mlb_daily: {len(new_rows)} {verb} | {start_date} → {target_date} | {len(unique_hitters)} hitters, {len(unique_pitchers)} pitchers")
 
 if __name__ == "__main__":
     main()
