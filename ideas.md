@@ -2,7 +2,21 @@
 
 ---
 
+## Status Categories
+
+| Status | Meaning |
+|--------|---------|
+| `Not Started` | Idea captured, no work begun |
+| `In Progress` | Actively being built or investigated |
+| `Complete` | Analysis finished and documented |
+| `On Hold` | Paused — blocked or deprioritized |
+| `Abandoned` | Decided not to pursue |
+
+---
+
 ## 1. Roster Play-Time Density vs Box Score Performance
+
+**Status:** `Not Started`
 
 **Observation:** On a given day, only ~420 MLB players appear in game logs out of the ~1,100 tracked (509 hitters + 597 pitchers). That means roughly 60% of rostered players are idle on any given day.
 
@@ -24,6 +38,8 @@
 ---
 
 ## 2. Gini Analysis — Box Score Concentration by Player and Team
+
+**Status:** `Not Started`
 
 **Observation:** Fantasy scoring is likely highly unequal — a small number of players probably account for a disproportionate share of total points scored across the league. A Gini coefficient (0 = perfectly equal, 1 = one player scores everything) quantifies that concentration.
 
@@ -51,6 +67,8 @@
 
 ## 3. Batting Order Position vs Batter Stats
 
+**Status:** `Not Started`
+
 **Context:** We now have two complementary datasets that haven't been joined before — `lineups_mlb_batters` gives us the exact batting order slot each player hit in on a given day, and `stats_mlb_daily` gives us their actual game-level output. Joining on `(date, player_name/team)` enables a clean batting-order analysis grounded in real per-game data rather than season aggregates.
 
 **Idea:** Analyze how batting order position (1–9) relates to counting stats and fantasy-relevant production. Revisit any prior batting order analysis with this richer, date-aligned dataset.
@@ -75,6 +93,8 @@
 
 ## 4. Batter Consistency — Streakiness, Slumps, and the OBP Drag Problem
 
+**Status:** `Not Started`
+
 **Observation:** Some batters appear to go 0-for on multiple consecutive days then explode in a single game. When those games get averaged into a season OBP/OPS, the player looks respectable — but the underlying pattern is feast-or-famine, which is practically worse for daily/weekly fantasy scoring than the average suggests.
 
 **Idea:** Measure per-game consistency for each batter and determine whether "good" players by season average are actually suppressing team-level rate stats (OBP, OPS) due to high variance in their day-to-day output. A player averaging .300 OBP via 3 great games and 7 hitless ones is not the same as a player consistently going 1-for-4 every game.
@@ -98,6 +118,8 @@
 ---
 
 ## 5. Box Score Stat Relationships — Correlation, Redundancy, and Scoring System Audit
+
+**Status:** `Not Started`
 
 **Observation:** Fantasy scoring systems typically assign fixed point values to each stat (R, HR, RBI, SB, OPS, K, ERA, WHIP, etc.), but those stats are not independent. HR drives RBI and R simultaneously, meaning power hitters get amplified credit while a walk-heavy, low-power player may be undervalued. Understanding the correlation structure exposes which stats are redundant, which are independent signals, and whether the current scoring weights reflect actual value.
 
@@ -133,6 +155,8 @@
 
 ## 6. Waiver Wire Timing and Transaction ROI
 
+**Status:** `Not Started`
+
 **Motivation:** The activity data captures every add, drop, and trade with timestamps. Teams that are winning may be making smarter or better-timed roster moves — or the causality runs the other way. Either way, the data exists to measure it.
 
 **Idea:** For every waiver add, compute the fantasy points that player scored in the 7 and 14 days following acquisition. Compare that against the points the dropped player scored over the same window. This gives a per-transaction ROI. Aggregate by team to see who is winning and losing the waiver wire.
@@ -150,6 +174,8 @@
 ---
 
 ## 7. Ownership Lag — Finding Market Inefficiencies Before ESPN Catches Up
+
+**Status:** `Not Started`
 
 **Motivation:** The `rankings_espn_daily_2026.csv` captures both `pct_owned` and `pct_change` (the trending signal) on a daily basis. A player breaking out will show strong game-log stats before the ownership % moves. The lag between performance and market reaction is the window to act.
 
@@ -169,6 +195,8 @@
 
 ## 8. Roster Slot Efficiency — Are Teams Wasting Positional Slots?
 
+**Status:** `Not Started`
+
 **Motivation:** Every fantasy team has a fixed number of roster slots per position. A team with a great SS1 but a weak SS2 is leaving value on the table relative to what that slot could produce. This measures how efficiently each team converts their positional allocation into points.
 
 **Idea:** For each positional slot (C, 1B, 2B, SS, 3B, OF×3, SP, RP), compute the actual fantasy points scored vs the league-average output for that slot. Sum the gaps to get a "slot efficiency" score per team — how much value are they under- or over-performing relative to the average slot holder?
@@ -187,6 +215,8 @@
 
 ## 9. Trade Value Audit — Who Is Winning the League's Trades?
 
+**Status:** `Not Started`
+
 **Motivation:** The activity data logs every trade with player names and timestamps. By pulling the season stats of every traded player and splitting them into pre-trade and post-trade windows, we can objectively score each side of every deal.
 
 **Idea:** For each trade, compute cumulative fantasy points for all players exchanged in the 30 days before and 30 days after the trade date. The team receiving the higher post-trade value won the trade. Aggregate across all trades to rank teams by trade acumen.
@@ -204,6 +234,8 @@
 ---
 
 ## 11. Mutually Beneficial Trade Finder — Identifying Win-Win Deals Within the League
+
+**Status:** `Not Started`
 
 **Motivation:** Most trade analysis evaluates a specific proposal after the fact. A proactive approach would scan every team's roster, identify where each team is weak and strong relative to the scoring system, and surface trade candidates that simultaneously improve both sides. In a points-based league, a deal is mutually beneficial when both teams improve their projected weekly fantasy points after the swap — which requires surplus at one position to be exchanged for surplus at another.
 
@@ -235,6 +267,8 @@
 ---
 
 ## 10. Hot Hand Detection — Rolling Performance Windows for Streaming Decisions
+
+**Status:** `Not Started`
 
 **Motivation:** A player's season average is a lagging indicator. For daily/weekly lineup decisions, what matters is recent form. By computing rolling 7- and 14-day windows across the full game-log history, we can build a real-time "temperature" metric for every player that surfaces who is hot right now vs who is riding a cold streak.
 
