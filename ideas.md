@@ -203,6 +203,37 @@
 
 ---
 
+## 11. Mutually Beneficial Trade Finder — Identifying Win-Win Deals Within the League
+
+**Motivation:** Most trade analysis evaluates a specific proposal after the fact. A proactive approach would scan every team's roster, identify where each team is weak and strong relative to the scoring system, and surface trade candidates that simultaneously improve both sides. In a points-based league, a deal is mutually beneficial when both teams improve their projected weekly fantasy points after the swap — which requires surplus at one position to be exchanged for surplus at another.
+
+**Idea:** For each pair of teams in the league, compute their positional strength scores (fantasy points per slot vs league average). Identify positions where Team A is strong and Team B is weak, and vice versa. Then search the actual rosters for specific player swaps that would close both gaps — and rank candidate deals by the combined two-sided improvement.
+
+**Questions to answer:**
+- Which teams have a clear surplus at one position and a clear deficit at another?
+- For a given team, which other teams have the most complementary surplus/deficit profiles?
+- Which specific 1-for-1 (or 2-for-2) player swaps produce the largest combined two-sided point gain?
+- How does the trade value change when evaluated against rest-of-season projections vs recent form?
+- Are there deals that look neutral on ADP/rankings but are actually win-win under this specific league's scoring weights?
+
+**Data sources:**
+- `stats_espn_daily_2026.csv` — current roster composition, lineup slots, and per-player fantasy points by team
+- `stats_mlb_daily_2026.csv` — YTD box score stats to compute position-adjusted value
+- `player_batter_projections_2026.csv` / `player_pitcher_projections_2026.csv` — rest-of-season projections to evaluate forward value, not just past performance
+- `rankings_espn_daily_2026.csv` — ownership % and positional rank as a sanity check on player value
+
+**Approach:**
+1. Aggregate each team's fantasy points by positional slot YTD; compute delta vs league average per slot to get a surplus/deficit profile per team
+2. For every pair of teams, score their profile compatibility (how well does one team's surplus offset the other's deficit?)
+3. For the most compatible pairs, enumerate candidate player swaps and score each deal: `Δ = (Team A pts after) + (Team B pts after) - (Team A pts before) - (Team B pts before)`
+4. Rank all candidate swaps by combined Δ; filter to deals where both sides are positive
+
+**Connection to trade_analysis workflow:** Deals surfaced here can be fed directly into the `trade_analysis/trade_N/` pipeline for full scoring-system evaluation and write-up.
+
+**Possible output:** League-wide surplus/deficit heatmap (teams × positions); ranked list of mutually beneficial swap candidates with projected two-sided point gain; compatibility score matrix showing which team pairs have the most trade potential.
+
+---
+
 ## 10. Hot Hand Detection — Rolling Performance Windows for Streaming Decisions
 
 **Motivation:** A player's season average is a lagging indicator. For daily/weekly lineup decisions, what matters is recent form. By computing rolling 7- and 14-day windows across the full game-log history, we can build a real-time "temperature" metric for every player that surfaces who is hot right now vs who is riding a cold streak.
