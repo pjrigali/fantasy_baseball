@@ -235,7 +235,7 @@
 
 ## 11. Mutually Beneficial Trade Finder — Identifying Win-Win Deals Within the League
 
-**Status:** `Not Started`
+**Status:** `Complete`
 
 **Motivation:** Most trade analysis evaluates a specific proposal after the fact. A proactive approach would scan every team's roster, identify where each team is weak and strong relative to the scoring system, and surface trade candidates that simultaneously improve both sides. In a points-based league, a deal is mutually beneficial when both teams improve their projected weekly fantasy points after the swap — which requires surplus at one position to be exchanged for surplus at another.
 
