@@ -378,7 +378,29 @@ def main():
     else:
         today = date.today()
         yesterday = today - timedelta(days=1)
-        dates = [yesterday] if datetime.now().hour < 12 else [yesterday, today]
+        end_date = yesterday if datetime.now().hour < 12 else today
+
+        # Auto-detect gaps: find the last recorded date in the CSV and backfill
+        # from the day after it through end_date. Falls back to yesterday/today
+        # if the file doesn't exist yet.
+        csv_path_check = os.path.join(DATA_PATH, f"stats_espn_daily_{year}.csv")
+        last_recorded = None
+        if os.path.exists(csv_path_check):
+            with open(csv_path_check, 'r', newline='', encoding='utf-8') as f:
+                for row in csv.DictReader(f):
+                    d = date.fromisoformat(row['date'])
+                    if last_recorded is None or d > last_recorded:
+                        last_recorded = d
+
+        if last_recorded is not None and last_recorded < end_date:
+            start_date = last_recorded + timedelta(days=1)
+            dates = []
+            cur = start_date
+            while cur <= end_date:
+                dates.append(cur)
+                cur += timedelta(days=1)
+        else:
+            dates = [yesterday] if datetime.now().hour < 12 else [yesterday, today]
 
     try:
         config = load_config()

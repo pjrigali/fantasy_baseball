@@ -283,3 +283,35 @@
 **Data sources:** `stats_espn_daily_2026.csv`, `rankings_espn_daily_2026.csv` (ownership context), `stats_mlb_daily_2026.csv` (raw game logs)
 
 **Possible output:** Daily "temperature" leaderboard (hottest and coldest players); persistence analysis of streaks; streaming recommendation list of hot, low-owned free agents.
+
+---
+
+## 12. Bat Tracking Metrics as Batter Predictors — Year-Over-Year Carry-Forward
+
+**Status:** `Not Started`
+
+**Motivation:** MLB's Statcast bat-tracking leaderboard (https://baseballsavant.mlb.com/leaderboard/bat-tracking) publishes per-season metrics like swing speed, squared-up rate, blast rate, and attack angle for every batter. These are physical attributes that change slowly and may be more predictive of the following year's performance than traditional rate stats, which are subject to BABIP noise and strand-rate variance.
+
+**Idea:** Collect yearly bat-tracking data (and analogous Statcast pitching metrics — spin rate, extension, pitch movement profiles) and measure how well each metric predicts next-year performance. Run a year-over-year regression for both hitters and pitchers: which underlying physical metrics are the strongest leading indicators of fantasy-relevant outcomes (HR, AVG, SB, K%, ERA, WHIP)?
+
+**Questions to answer:**
+- Which bat-tracking metrics (swing speed, blast rate, squared-up %, etc.) have the strongest year-over-year correlation with following-season HR, AVG, and OPS?
+- Are bat-tracking metrics more stable and predictive than traditional stats like xwOBA or wRC+?
+- On the pitching side, which Statcast metrics (spin rate, velocity, extension, chase rate) best predict next-year ERA, WHIP, and K/9?
+- Are there batters currently undervalued in ESPN rankings whose bat-tracking profiles suggest a breakout is coming?
+- Which current-roster players have elite bat-tracking numbers but depressed traditional stats — suggesting a correction upward?
+
+**Data sources:**
+- [Baseball Savant Bat Tracking Leaderboard](https://baseballsavant.mlb.com/leaderboard/bat-tracking) — yearly swing speed, blast rate, squared-up %, attack angle per batter
+- Baseball Savant Statcast pitching leaderboards — spin rate, velocity, extension, movement profiles per pitcher
+- `stats_mlb_daily_2026.csv` / prior seasons — traditional box score stats for the prediction target
+- `rankings_espn_daily_2026.csv` — ESPN ADP and ownership as a proxy for market valuation (to find the gap between physical profile and perceived value)
+
+**Approach:**
+- Scrape or download multi-year bat-tracking and pitching Statcast data (2020–present)
+- Join to season-level traditional stats (HR, AVG, ERA, WHIP, K%) by player-year
+- Run year-over-year correlations: metric in year N vs outcome in year N+1
+- Rank metrics by predictive power (R², partial correlations controlling for age/opportunity)
+- Flag current-season players with elite physical profiles whose traditional stats haven't caught up
+
+**Possible output:** Predictive-power ranking of bat-tracking and pitching metrics; breakout candidate list (strong physical profile, lagging traditional stats); regression model coefficients for year-over-year fantasy value prediction.

@@ -24,6 +24,34 @@ SEASON_START = date(YEAR, 3, 23)
 days_played  = max(1, (date.today() - SEASON_START).days)
 PACE_MULT    = 183 / days_played
 
+# ── FanGraphs Closer Role Data ─────────────────────────────────────────────────
+# Used to replace frozen preseason ProjSVHD with actual role signal from FanGraphs
+# Roster Resource. Closers/Co-Closers/Closer Committees are the only RPs that
+# reliably accumulate SVHD; Setup Men are included as a secondary tier.
+CLOSER_ROLES = {'Closer', 'Co-Closer', 'Closer Committee', 'Setup Man'}
+
+_fg_csv = os.path.join(BASE, f'closer_depth_fangraphs_{YEAR}.csv')
+fg_role_lookup = {}   # lowercase player_name -> role string
+_fg_max_date   = 'N/A'
+if os.path.exists(_fg_csv):
+    with open(_fg_csv, 'r', encoding='utf-8') as _fgf:
+        _fg_rows = list(csv.DictReader(_fgf))
+    if _fg_rows:
+        _fg_max_date = max(r['date_scraped'] for r in _fg_rows)
+        for _fgr in _fg_rows:
+            if _fgr['date_scraped'] == _fg_max_date:
+                fg_role_lookup[_fgr['player_name'].lower()] = _fgr['role']
+
+def get_fg_role(name):
+    """Return the FanGraphs projected role for a pitcher, or '' if not found."""
+    return fg_role_lookup.get((name or '').lower(), '')
+
+def svhd_rate(stats_dict):
+    """Return SVHD per game (YTD actual rate). Returns 0.0 if no games played."""
+    g    = (stats_dict or {}).get('G', 0) or 0
+    svhd = (stats_dict or {}).get('SVHD', 0) or 0
+    return svhd / g if g > 0 else 0.0
+
 # Category thresholds for 5-cat scoring (0–5 scale)
 CAT_THRESHOLDS = {'r': 60, 'hr': 15, 'rbi': 55, 'sb': 10, 'ops': 0.750}
 
@@ -264,7 +292,9 @@ for p in my_rps:
     if s and not on_il:
         if s['ERA']  > 5.0:  flags.append('HIGH_ERA')
         if s['WHIP'] > 1.50: flags.append('HIGH_WHIP')
-        if (proj_svhd or 0) < 10: flags.append('LOW_SVHD_CEIL')
+        # Flag if no active closer role AND low YTD SVHD production rate
+        if get_fg_role(p.name) not in CLOSER_ROLES and svhd_rate(s) < 0.2:
+            flags.append('LOW_SVHD_CEIL')
     elif not s:
         flags.append('NO_DATA')
     ps   = f'{proj_svhd:.0f}' if proj_svhd else 'N/A'
@@ -279,7 +309,10 @@ for p in my_rps:
                         proj_era=proj_era, on_il=on_il, status=status,
                         pos_rank=pos_rank, pr30=pr30))
 
-rp_data.sort(key=lambda x: (-(x['proj_svhd'] or 0), x['stats']['ERA'] if x['stats'] else 99))
+rp_data.sort(key=lambda x: (
+    -svhd_rate(x['stats']),                          # SVHD/G rate desc (actual YTD production)
+    x['stats']['ERA'] if x['stats'] else 99          # tiebreak: ERA asc
+))
 
 # ── Weakest players ───────────────────────────────────────────────────────────
 print('\n=== WEAKEST PLAYERS ===')
@@ -444,7 +477,16 @@ for fa in top_fa_batters_raw:
 top_fa_batters.sort(key=lambda x: (-x['cat_score'], -x['composite']))
 
 # FA pitchers — split SP vs RP, filter injured
-all_fa_pitchers = mp.get_free_agents(league, position_ids=[14, 15], size=300)
+all_fa_pitchers_raw = mp.get_free_agents(league, position_ids=[14, 15], size=300)
+# Dedup by name: the API call loops over position_ids [14, 15] separately, so
+# pitchers with SP+RP eligibility appear twice in the combined list.
+_seen_pit_names = set()
+all_fa_pitchers = []
+for _fp in all_fa_pitchers_raw:
+    if _fp['name'] not in _seen_pit_names:
+        _seen_pit_names.add(_fp['name'])
+        all_fa_pitchers.append(_fp)
+
 fa_sps_raw = [f for f in all_fa_pitchers if 'SP' in f.get('eligibleSlots', [])]
 fa_rps_raw = [f for f in all_fa_pitchers
               if 'RP' in f.get('eligibleSlots', []) and 'SP' not in f.get('eligibleSlots', [])]
@@ -480,7 +522,9 @@ for fa in fa_sps_raw:
     if s['G'] < 1: continue
     fa_sps.append(dict(name=fa['name'], team=fa.get('proTeam', '?'),
                        eligibleSlots=fa.get('eligibleSlots', []), **s))
-fa_sps.sort(key=lambda x: x['ERA'])
+# Sort: qualified SPs (>=20 IP) by ERA first, then small-sample SPs by ERA.
+# This prevents a 0.00 ERA / 2 IP pitcher from floating to the top of the list.
+fa_sps.sort(key=lambda x: (0 if x['IP'] >= 20 else 1, x['ERA']))
 
 fa_rps = []
 for fa in fa_rps_raw:
@@ -490,8 +534,16 @@ for fa in fa_rps_raw:
     s = fa_pitcher_stats(fa)
     if s['G'] < 2: continue
     fa_rps.append(dict(name=fa['name'], team=fa.get('proTeam', '?'),
-                       eligibleSlots=fa.get('eligibleSlots', []), **s))
-fa_rps.sort(key=lambda x: (-(x['ProjSVHD'] or 0), x['ERA']))
+                       eligibleSlots=fa.get('eligibleSlots', []),
+                       FGRole=get_fg_role(fa['name']), **s))
+# Sort: active closer roles first, then by SVHD/G rate desc, tiebreak ERA asc.
+# Replaces the old ProjSVHD sort which was frozen at draft and blind to mid-season
+# breakouts (e.g., undrafted closers with ADP 260 had ProjSVHD=0 → invisible).
+fa_rps.sort(key=lambda x: (
+    0 if x['FGRole'] in CLOSER_ROLES else 1,   # closer-role players first
+    -svhd_rate(x),                              # then SVHD/G rate desc
+    x['ERA']                                    # tiebreak: ERA asc
+))
 
 print(f'\nTop FA Batters (top 20 by cat score + composite OPS, active, in lineups last 14d):')
 print(f"  {'Name':<25} {'Pos':<6} {'OPS':>6} {'pR':>5} {'pHR':>5} {'pRBI':>6} {'pSB':>5} {'AB':>5} {'ProjOPS':>8} {'Comp':>6} {'Cat':>4} {'LU':>4} {'PRank':>6} {'PR30':>6}")
@@ -502,18 +554,21 @@ for fa in top_fa_batters[:20]:
     p30_s = f"{fa['pr30']:+.1f}" if fa.get('pr30') is not None else 'N/A'
     print(f"  {fa['name']:<25} {fa.get('pos','?'):<6} {fa.get('ops',0):>6.3f} {fa['pace_r']:>5} {fa['pace_hr']:>5} {fa['pace_rbi']:>6} {fa['pace_sb']:>5} {int(fa.get('ab',0) or 0):>5} {ps:>8} {fa['composite']:>6.3f} {fa['cat_score']:>4} {fa['lineup_games']:>4} {rk_s:>6} {p30_s:>6}")
 
-print(f'\nTop FA SPs (top 15 by ERA, min 1 G, active only):')
+print(f'\nTop FA SPs (top 15 by ERA — qualified >=20 IP first, min 1 G, active only):')
 print(f"  {'Name':<25} {'Team':<6} {'G':>4} {'IP':>6} {'ERA':>6} {'WHIP':>6} {'K/9':>6} {'QS':>4} {'ProjERA':>8}")
 for fa in fa_sps[:15]:
     pe = f'{fa["ProjERA"]:.2f}' if fa['ProjERA'] else 'N/A'
-    print(f"  {fa['name']:<25} {fa['team']:<6} {fa['G']:>4} {fa['IP']:>6.1f} {fa['ERA']:>6.2f} {fa['WHIP']:>6.2f} {fa['K9']:>6.2f} {fa['QS']:>4} {pe:>8}")
+    ip_flag = '' if fa['IP'] >= 20 else ' *'
+    print(f"  {fa['name']:<25} {fa['team']:<6} {fa['G']:>4} {fa['IP']:>6.1f}{ip_flag} {fa['ERA']:>6.2f} {fa['WHIP']:>6.2f} {fa['K9']:>6.2f} {fa['QS']:>4} {pe:>8}")
 
-print(f'\nTop FA RPs (top 20 by ProjSVHD, min 2 G, active only):')
-print(f"  {'Name':<25} {'Team':<6} {'G':>4} {'IP':>6} {'SV':>4} {'HLD':>4} {'SVHD':>5} {'ERA':>6} {'WHIP':>6} {'ProjSVHD':>9} {'ProjERA':>8}")
+print(f'\nTop FA RPs (top 20 by FG role + SVHD/G rate, min 2 G, active only):')
+print(f"  {'Name':<25} {'Team':<6} {'G':>4} {'IP':>6} {'SV':>4} {'HLD':>4} {'SVHD':>5} {'SVHD/G':>7} {'ERA':>6} {'WHIP':>6} {'FG Role':<22} {'ProjERA':>8}")
 for fa in fa_rps[:20]:
-    ps = f'{fa["ProjSVHD"]:.0f}' if fa['ProjSVHD'] else 'N/A'
-    pe = f'{fa["ProjERA"]:.2f}'  if fa['ProjERA']  else 'N/A'
-    print(f"  {fa['name']:<25} {fa['team']:<6} {fa['G']:>4} {fa['IP']:>6.1f} {fa['SV']:>4} {fa['HLD']:>4} {fa['SVHD']:>5} {fa['ERA']:>6.2f} {fa['WHIP']:>6.2f} {ps:>9} {pe:>8}")
+    sr   = svhd_rate(fa)
+    sr_s = f'{sr:.2f}' if sr > 0 else '-'
+    pe   = f'{fa["ProjERA"]:.2f}' if fa['ProjERA'] else 'N/A'
+    fgr  = fa.get('FGRole', '')
+    print(f"  {fa['name']:<25} {fa['team']:<6} {fa['G']:>4} {fa['IP']:>6.1f} {fa['SV']:>4} {fa['HLD']:>4} {fa['SVHD']:>5} {sr_s:>7} {fa['ERA']:>6.2f} {fa['WHIP']:>6.2f} {fgr:<22} {pe:>8}")
 
 # ── Z-Score Analysis (ESPN daily stats — league-wide relative ranking) ────────
 print('\nRunning z-score analysis...')
@@ -717,23 +772,26 @@ recs_8a_rps = []
 for r in weak_rps:
     p = r['player']
     if not r['stats']: continue
-    my_ps = r['proj_svhd'] or 0
-    # Composite SVHD = 60% proj + 40% current pace; sort composite desc → WHIP asc → ERA asc
+    my_svhd_g = svhd_rate(r['stats'])
+    # Filter: FA must have an active closer role (Closer / Co-Closer / Closer Committee
+    # / Setup Man). Sort by SVHD/G rate desc → WHIP asc → ERA asc.
+    # Replaces old ProjSVHD hard-filter which blocked undrafted mid-season closers.
     candidates = []
     for fa in fa_rps:
-        fa_ps = fa['ProjSVHD'] or 0
-        if fa_ps <= my_ps: continue  # must project better than dropped player
-        pace_svhd = fa['SVHD'] * PACE_MULT
-        comp_svhd = round(0.6 * fa_ps + 0.4 * pace_svhd, 1)
-        candidates.append((fa, fa_ps, fa['SVHD'], comp_svhd, fa['WHIP'], fa['ERA']))
-    candidates.sort(key=lambda x: (-x[3], x[4], x[5]))
+        if fa['FGRole'] not in CLOSER_ROLES: continue
+        fa_svhd_g  = svhd_rate(fa)
+        pace_svhd  = round(fa['SVHD'] * PACE_MULT, 1)
+        candidates.append((fa, fa_svhd_g, fa['SVHD'], pace_svhd, fa['WHIP'], fa['ERA']))
+    candidates.sort(key=lambda x: (-x[1], x[4], x[5]))
     if candidates:
-        fa_d, fa_ps, fa_svhd, fa_comp, fa_whip, fa_era = candidates[0]
-        print(f"  DROP {p.name:<22} (ProjSVHD={my_ps:.0f}, {r['status']})  ADD {fa_d['name']:<22} (ProjSVHD={fa_ps:.0f}, SVHD={fa_svhd}, Comp={fa_comp:.1f}, WHIP={fa_whip:.2f})")
+        fa_d, fa_svhd_g, fa_svhd, pace_svhd, fa_whip, fa_era = candidates[0]
+        print(f"  DROP {p.name:<22} (SVHD/G={my_svhd_g:.2f}, {r['status']})  "
+              f"ADD {fa_d['name']:<22} (Role={fa_d['FGRole']}, SVHD/G={fa_svhd_g:.2f}, "
+              f"SVHD={fa_svhd}, Pace={pace_svhd:.0f}, WHIP={fa_whip:.2f})")
         recs_8a_rps.append(dict(drop=p.name, drop_status=r['status'], add=fa_d['name'],
-                                svhd_delta=int(fa_ps - my_ps), curr_svhd=fa_svhd,
-                                comp_svhd=fa_comp, whip=fa_whip,
-                                era_delta=fa_era - (r['stats']['ERA'] if r['stats'] else 0)))
+                                fg_role=fa_d['FGRole'], svhd_per_g=round(fa_svhd_g, 3),
+                                curr_svhd=fa_svhd, pace_svhd=pace_svhd, whip=fa_whip,
+                                era_delta=round(fa_era - (r['stats']['ERA'] if r['stats'] else 0), 2)))
 
 # ── 8B: Position-agnostic replacements ───────────────────────────────────────
 print('\n=== 8B: POSITION-AGNOSTIC REPLACEMENTS ===')
@@ -750,15 +808,18 @@ active_flagged = sorted(
 fa_bat_ok = [fa for fa in top_fa_batters
              if int(fa.get('ab', 0) or 0) >= 10 and (fa.get('ops', 0) or 0) >= 0.700]
 fa_sp_ok  = [fa for fa in fa_sps if fa['IP'] >= 5]
-fa_rp_ok  = sorted(fa_rps, key=lambda x: (
-    -(0.6 * (x.get('ProjSVHD') or 0) + 0.4 * (x.get('SVHD', 0) * PACE_MULT)),
+# 8B RP pool: restrict to active closer roles (same logic as 8A) and sort by
+# SVHD/G rate. ProjSVHD is frozen at draft; SVHD/G reflects current production.
+fa_rp_ok  = [fa for fa in fa_rps if fa['FGRole'] in CLOSER_ROLES]
+fa_rp_ok  = sorted(fa_rp_ok, key=lambda x: (
+    -svhd_rate(x),
     x.get('WHIP', 9), x.get('ERA', 99)
 ))
 
 fa_all = (
-    [('BAT', fa, fa['cat_score'],        fa.get('composite', 0))   for fa in fa_bat_ok] +
-    [('SP',  fa, 0,                      -(fa.get('ERA', 99)))      for fa in fa_sp_ok] +
-    [('RP',  fa, 0,                       fa.get('ProjSVHD') or 0)  for fa in fa_rp_ok]
+    [('BAT', fa, fa['cat_score'],   fa.get('composite', 0))   for fa in fa_bat_ok] +
+    [('SP',  fa, 0,                 -(fa.get('ERA', 99)))      for fa in fa_sp_ok] +
+    [('RP',  fa, 0,                  svhd_rate(fa))            for fa in fa_rp_ok]
 )
 fa_all.sort(key=lambda x: (-x[2], -x[3]))
 
@@ -1036,11 +1097,11 @@ if recs_8a_sps:
 
 if recs_8a_rps:
     lines.append('\n### RP Replacements\n')
-    lines.append('> Composite SVHD = 60% ProjSVHD + 40% current pace. Ranked composite desc → WHIP asc → ERA asc.\n')
-    lines.append('| Drop | Drop Status | Add | ProjSVHD Δ | Curr SVHD | Comp SVHD | WHIP | ERA Δ |')
-    lines.append('|---|---|---|---|---|---|---|---|')
+    lines.append('> Ranked by SVHD/G rate desc → WHIP asc → ERA asc. Only FanGraphs closer-role players (Closer / Co-Closer / Closer Committee / Setup Man) are considered.\n')
+    lines.append('| Drop | Drop Status | Add | FG Role | SVHD/G | Curr SVHD | Season Pace | WHIP | ERA Δ |')
+    lines.append('|---|---|---|---|---|---|---|---|---|')
     for r in recs_8a_rps:
-        lines.append(f"| {r['drop']} | {r['drop_status']} | {r['add']} | {r['svhd_delta']:+} | {r['curr_svhd']} | {r['comp_svhd']:.1f} | {r['whip']:.2f} | {r['era_delta']:+.2f} |")
+        lines.append(f"| {r['drop']} | {r['drop_status']} | {r['add']} | {r.get('fg_role','?')} | {r.get('svhd_per_g', 0):.3f} | {r['curr_svhd']} | {r.get('pace_svhd', 0):.0f} | {r['whip']:.2f} | {r['era_delta']:+.2f} |")
 
 if not any([recs_8a_batters, recs_8a_sps, recs_8a_rps]):
     lines.append('_No position-matched upgrades found._')
@@ -1139,7 +1200,7 @@ lines.append(f'- **Active weaknesses:** {len(active_weak_batters)} batters, {len
 if active_weak_batters:
     lines.append(f'- **Priority active batter drops:** {", ".join(b["player"].name for b in active_weak_batters[:3])}')
 if active_weak_rps:
-    lines.append(f'- **RP concern:** {", ".join(r["player"].name for r in active_weak_rps[:2])} — check ProjSVHD and ERA flags')
+    lines.append(f'- **RP concern:** {", ".join(r["player"].name for r in active_weak_rps[:2])} — check FG closer role and SVHD/G rate flags')
 if agnostic_moves:
     bat_adds = [m for m in agnostic_moves if m['add_type'] == 'BAT']
     lines.append(f'- **Top agnostic adds:** {", ".join(m["add"] for m in bat_adds[:3]) or "see RP upgrades"}')

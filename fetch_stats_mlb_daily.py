@@ -11,6 +11,9 @@ Source Data: MLB Stats API — /api/v1/people/{id}/stats?stats=gameLog
 
 Outputs: data-lake/01_Bronze/fantasy_baseball/stats_mlb_daily_{year}.csv
          Deduplicates on (date, player_id, b_or_p). Safe to re-run.
+         data-lake/01_Bronze/fantasy_baseball/skipped_mlb_daily_{year}.csv
+         Players whose game logs could not be fetched (SSL errors, etc.).
+         Deduplicates on (date_ran, player_id, group). Safe to re-run.
 """
 
 import requests
@@ -29,18 +32,18 @@ HEADERS = {
 }
 
 def fetch_game_logs(player_id, group, season):
-    """Fetch game logs for a player."""
+    """Fetch game logs for a player. Returns (splits, error_msg) — error_msg is None on success."""
     url = f"https://statsapi.mlb.com/api/v1/people/{player_id}/stats?stats=gameLog&season={season}&group={group}"
     try:
         response = requests.get(url, headers=HEADERS, timeout=10)
         if response.status_code == 200:
-            return response.json().get('stats', [{}])[0].get('splits', [])
+            return response.json().get('stats', [{}])[0].get('splits', []), None
         else:
             print(f"  Error fetching logs for {player_id}: Status {response.status_code}")
-            return []
+            return [], f"HTTP {response.status_code}"
     except Exception as e:
         print(f"  Exception fetching logs for {player_id}: {e}")
-        return []
+        return [], str(e)
 
 def process_hitting_log(log, player_info, get_scoring_period_fn=None):
     """Process a single hitting game log."""
@@ -191,13 +194,17 @@ def main():
     unique_pitchers = {p['player_id']: p['player_name'] for p in pitching_players if p['player_id']}
 
     new_rows = []
+    skipped_players = []
+    run_date = date.today().strftime('%Y-%m-%d')
 
     hitters_items = list(unique_hitters.items())
     if limit:
         hitters_items = hitters_items[:limit]
 
     for pid, name in hitters_items:
-        logs = fetch_game_logs(pid, "hitting", season)
+        logs, err = fetch_game_logs(pid, "hitting", season)
+        if err is not None:
+            skipped_players.append({'date_ran': run_date, 'player_id': pid, 'player_name': name, 'group': 'hitting', 'error': err})
         for log in logs:
             row = process_hitting_log(log, {'id': pid, 'name': name}, get_scoring_period_local)
             if start_date <= row['date'] <= target_date:
@@ -212,7 +219,9 @@ def main():
         pitchers_items = pitchers_items[:limit]
 
     for pid, name in pitchers_items:
-        logs = fetch_game_logs(pid, "pitching", season)
+        logs, err = fetch_game_logs(pid, "pitching", season)
+        if err is not None:
+            skipped_players.append({'date_ran': run_date, 'player_id': pid, 'player_name': name, 'group': 'pitching', 'error': err})
         for log in logs:
             row = process_pitching_log(log, {'id': pid, 'name': name}, get_scoring_period_local)
             if start_date <= row['date'] <= target_date:
@@ -221,6 +230,24 @@ def main():
                     new_rows.append(row)
                     existing_keys.add(key)
         time.sleep(0.5)
+
+    # Write skipped players log
+    skipped_file = os.path.join(mp.DATA_PATH, f'skipped_mlb_daily_{season}.csv')
+    skipped_headers = ['date_ran', 'player_id', 'player_name', 'group', 'error']
+    if skipped_players and not args.dry_run:
+        existing_skipped = []
+        existing_skipped_keys = set()
+        if os.path.exists(skipped_file):
+            with open(skipped_file, 'r', encoding='utf-8') as f:
+                for row in csv.DictReader(f):
+                    existing_skipped.append(row)
+                    existing_skipped_keys.add((row['date_ran'], str(row['player_id']), row['group']))
+        new_skipped = [r for r in skipped_players if (r['date_ran'], str(r['player_id']), r['group']) not in existing_skipped_keys]
+        with open(skipped_file, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=skipped_headers)
+            writer.writeheader()
+            writer.writerows(existing_skipped)
+            writer.writerows(new_skipped)
 
     tag = "[DRY-RUN]" if args.dry_run else "[OK]   "
     verb = "would write" if args.dry_run else "rows written"
@@ -240,7 +267,8 @@ def main():
             writer.writerows(existing_rows)
             writer.writerows(new_rows)
 
-    print(f"{tag} fetch_stats_mlb_daily: {len(new_rows)} {verb} | {start_date} → {target_date} | {len(unique_hitters)} hitters, {len(unique_pitchers)} pitchers")
+    skipped_note = f" | {len(skipped_players)} skipped" if skipped_players else ""
+    print(f"{tag} fetch_stats_mlb_daily: {len(new_rows)} {verb} | {start_date} → {target_date} | {len(unique_hitters)} hitters, {len(unique_pitchers)} pitchers{skipped_note}")
 
 if __name__ == "__main__":
     main()
