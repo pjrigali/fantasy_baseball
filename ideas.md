@@ -1,5 +1,7 @@
 # Fantasy Baseball — Ideas & Things to Investigate
 
+> **Maintenance note:** When a new idea is added here, update the **Future Analysis** table in [`README.md`](README.md) with the idea number, name, one-sentence description, and status.
+
 ---
 
 ## Status Categories
@@ -315,3 +317,44 @@
 - Flag current-season players with elite physical profiles whose traditional stats haven't caught up
 
 **Possible output:** Predictive-power ranking of bat-tracking and pitching metrics; breakout candidate list (strong physical profile, lagging traditional stats); regression model coefficients for year-over-year fantasy value prediction.
+
+---
+
+## 13. Projection Accuracy Tracking — Actual vs Preseason Performance Over Multiple Years
+
+**Status:** `Not Started`
+
+**Motivation:** Preseason projections (from ESPN or external sources) are baked into ADP, draft position, and roster decisions. But how accurate are they? With multiple years of projection and actual stat data, we can measure systematic biases — which positions are consistently over-projected, which player archetypes beat projections most reliably, and whether projection error is predictable enough to exploit at draft time.
+
+**Idea:** For each player-season, compute the delta between their preseason projected stats and their actual end-of-season stats across all fantasy-relevant categories (HR, R, RBI, SB, AVG, OBP for batters; ERA, WHIP, K/9, W, SV for pitchers). Track these deltas year-over-year (2023–2026) to identify systematic patterns: which projection sources are most accurate, which player types beat projections, and whether last year's projection error predicts this year's.
+
+**Questions to answer:**
+- Which fantasy-relevant stat categories are most and least accurately projected each year?
+- Are there position groups (e.g. catchers, closers) where projections are systematically optimistic or pessimistic?
+- Which individual players have consistently beaten or missed their preseason projections across multiple years?
+- Does a player's prior-year projection error correlate with their current-year error — i.e., is beating projections a repeatable skill?
+- Are young/breakout players systematically under-projected and veterans over-projected?
+- Which stat categories show the most year-over-year projection volatility (large swings in error direction)?
+- In draft value terms: which ADP ranges produce the most consistent projection beats vs busts?
+
+**Data sources:**
+- `player_batter_projections_2023.csv` / `2024.csv` / `2025.csv` / `2026.csv` — preseason projected stats per batter by year
+- `player_pitcher_projections_2023.csv` / `2024.csv` / `2025.csv` / `2026.csv` — preseason projected stats per pitcher by year
+- `stats_mlb_daily_2023.csv` through `stats_mlb_daily_2026.csv` — actual game-log stats aggregated to season totals for comparison
+- `rankings_espn_daily_2026.csv` — ADP and ownership % as a proxy for how much the market trusted each projection
+
+**Approach:**
+1. Aggregate daily game logs to season totals per player per year (AB, HR, R, RBI, SB, AVG, OBP for batters; IP, ERA, WHIP, K, W, SV for pitchers)
+2. Join to projection files on `(player_name, year)` — flag join failures (players with no projection, called-up mid-season) separately
+3. Compute per-stat deltas: `actual - projected` for counting stats; `projected - actual` for ERA/WHIP (lower is better)
+4. Aggregate by year, position, age bucket, and ADP tier to surface systematic biases
+5. Run year-over-year correlation on individual player projection error to test repeatability
+6. Flag players whose current-year projection looks mis-calibrated based on their historical error pattern
+
+**Key metrics:**
+- **Projection error** per stat: `actual - projected` (positive = beat projection)
+- **Relative accuracy**: `actual / projected` ratio — useful for comparing across different stat scales
+- **Bias score**: mean error across a group (position, age, ADP tier) — systematic over/under-projection
+- **Repeatability score**: year-over-year correlation of individual player projection error (Pearson R across matched player-years)
+
+**Possible output:** Multi-year projection error heatmap by stat and position; ranked list of players who consistently beat or miss projections; ADP tier accuracy analysis (which draft rounds are least/most predictable); current-year "regression candidates" flagged by historical error pattern.

@@ -144,3 +144,25 @@ All collection steps are **idempotent** — safe to re-run; duplicates are skipp
 - **`regression_to_mean.ipynb`**: Performance regression and volatility.
 - **`analyze_rookies.ipynb`**: Rookie evaluation.
 
+---
+
+## Future Analysis
+
+Ideas and investigations being tracked in [`ideas.md`](ideas.md). See that file for full context, data sources, and approach notes on each item.
+
+| # | Idea | Description | Status |
+|---|------|-------------|--------|
+| 1 | Roster Play-Time Density vs Box Score Performance | Measure what % of each team's roster played on a given day and correlate against fantasy scoring. | `Not Started` |
+| 2 | Gini Analysis — Box Score Concentration by Player and Team | Apply Gini/Lorenz analysis to fantasy scoring to surface value-concentrated players and keeper candidates. | `Not Started` |
+| 3 | Batting Order Position vs Batter Stats | Join batting order position data to game-level stats to measure how lineup slot affects fantasy production. | `Not Started` |
+| 4 | Batter Consistency — Streakiness, Slumps, and the OBP Drag Problem | Quantify per-game OBP variance to identify batters whose season averages mask frequent zero-contribution days. | `Not Started` |
+| 5 | Box Score Stat Relationships — Correlation, Redundancy, and Scoring System Audit | Build a stat correlation matrix and audit ESPN scoring weights against actual fantasy point drivers. | `Not Started` |
+| 6 | Waiver Wire Timing and Transaction ROI | Measure post-acquisition fantasy point ROI for every waiver add and drop to rank teams by transaction quality. | `Not Started` |
+| 7 | Ownership Lag — Finding Market Inefficiencies Before ESPN Catches Up | Detect the lag between a player's breakout game logs and ESPN ownership movement to surface buy windows. | `Not Started` |
+| 8 | Roster Slot Efficiency — Are Teams Wasting Positional Slots? | Compare each team's per-slot fantasy production against league averages to identify positional dead weight. | `Not Started` |
+| 9 | Trade Value Audit — Who Is Winning the League's Trades? | Score every trade by comparing post-trade fantasy output of all players exchanged to determine who won each deal. | `Not Started` |
+| 10 | Hot Hand Detection — Rolling Performance Windows for Streaming Decisions | Compute rolling 7/14-day fantasy point windows to flag players running hot or cold relative to their season average. | `Not Started` |
+| 11 | Mutually Beneficial Trade Finder — Identifying Win-Win Deals Within the League | Proactively scan all team rosters to find specific player swaps that simultaneously improve both sides of a trade. | `Complete` |
+| 12 | Bat Tracking Metrics as Batter Predictors — Year-Over-Year Carry-Forward | Correlate Statcast bat-tracking and pitching metrics year-over-year to find physical leading indicators of fantasy performance. | `Not Started` |
+| 13 | Projection Accuracy Tracking — Actual vs Preseason Performance Over Multiple Years | Measure preseason projection accuracy across multiple years to find systematic biases exploitable at draft time. | `Not Started` |
+
