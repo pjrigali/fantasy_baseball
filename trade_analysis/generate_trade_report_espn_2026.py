@@ -42,14 +42,14 @@ PITCHER_STATS = ['K/9', 'QS', 'SVHD', 'ERA', 'WHIP']
 
 # ─── Path resolver ────────────────────────────────────────────────────────────
 
-def _csv_path():
+def _csv_path(year):
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     p = os.path.join(root, 'data-lake', '01_Bronze', 'fantasy_baseball',
-                     'analyze_trade_finder_espn_2026.csv')
+                     f'analyze_trade_finder_espn_{year}.csv')
     if os.path.isfile(p):
         return p
     raise FileNotFoundError(f"Trade finder CSV not found: {p}\n"
-                             "Run analyze_trade_finder_espn_2026.py first.")
+                             "Run analyze_trade_finder_espn_*.py first.")
 
 
 # ─── Rank-change indicator ────────────────────────────────────────────────────
@@ -229,10 +229,12 @@ def team_summary(rows):
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
+    from datetime import datetime
     # ── Parse simple args ──────────────────────────────────────────────────────
     args = sys.argv[1:]
     filter_team = None
     top_n = DEFAULT_TOP
+    year = datetime.now().year
 
     i = 0
     while i < len(args):
@@ -242,11 +244,14 @@ def main():
         elif args[i] == '--top' and i + 1 < len(args):
             top_n = int(args[i + 1])
             i += 2
+        elif args[i] == '--year' and i + 1 < len(args):
+            year = int(args[i + 1])
+            i += 2
         else:
             i += 1
 
     # ── Load CSV ───────────────────────────────────────────────────────────────
-    csv_path = _csv_path()
+    csv_path = _csv_path(year)
     with open(csv_path, encoding='utf-8') as f:
         all_rows = list(csv.DictReader(f))
 
@@ -262,7 +267,7 @@ def main():
 
     # ── Header ─────────────────────────────────────────────────────────────────
     print("=" * 70)
-    print("  MUTUALLY BENEFICIAL TRADE REPORT — 2026 ESPN Fantasy Baseball")
+    print(f"  MUTUALLY BENEFICIAL TRADE REPORT — {year} ESPN Fantasy Baseball")
     if filter_team:
         print(f"  Filter: teams containing '{filter_team}'")
     print(f"  Showing {len(display_rows)} of {len(rows)} trades "

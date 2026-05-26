@@ -19,12 +19,15 @@ All grouping uses team_id (not team_name) to handle mid-season renames.
 Display names use the most recent name seen per team_id.
 """
 
+import argparse
+from datetime import datetime
 import pandas as pd
 import numpy as np
 from collections import defaultdict
 
-ACTIVITY_PATH = "data-lake/01_Bronze/fantasy_baseball/activity_espn_season_2026.csv"
-STATS_PATH    = "data-lake/01_Bronze/fantasy_baseball/stats_espn_daily_2026.csv"
+ACTIVITY_PATH = "data-lake/01_Bronze/fantasy_baseball/activity_espn_season_{year}.csv"
+STATS_PATH    = "data-lake/01_Bronze/fantasy_baseball/stats_espn_daily_{year}.csv"
+OUTPUT_PATH   = "data-lake/01_Bronze/fantasy_baseball/quick_lineup_bench_performances_{year}.csv"
 
 BATTING_COUNTING  = ["R", "HR", "RBI", "SB"]
 PITCHING_COUNTING = ["QS", "SVHD"]
@@ -39,12 +42,12 @@ QUICK_SOURCES = {"CPU", "NightlyLeagueUpdateTaskProcessor", "CPU_USER_INITIATED"
 
 # -- 1. Load data --------------------------------------------------------------
 
-def load_data():
-    act = pd.read_csv(ACTIVITY_PATH)
+def load_data(year):
+    act = pd.read_csv(ACTIVITY_PATH.format(year=year))
     act["date_only"] = pd.to_datetime(act["date"]).dt.date
     act = act.sort_values("date")           # chronological for history lookup
 
-    stats = pd.read_csv(STATS_PATH, low_memory=False)
+    stats = pd.read_csv(STATS_PATH.format(year=year), low_memory=False)
     stats["date"] = pd.to_datetime(stats["date"]).dt.date
     return act, stats
 
@@ -253,8 +256,14 @@ def per_team_top_misses(bench_perf: pd.DataFrame, team_name_map: dict,
 # -- Main ----------------------------------------------------------------------
 
 def main():
-    print("Loading data...")
-    act, stats = load_data()
+    parser = argparse.ArgumentParser(description="Quantify the stat cost of ESPN Quick Lineup auto-set.")
+    parser.add_argument('--year', type=int, default=datetime.now().year,
+                        help='Season year (default: current calendar year).')
+    args = parser.parse_args()
+    year = args.year
+
+    print(f"Loading data (year={year})...")
+    act, stats = load_data(year)
 
     print("Building team name map...")
     team_name_map = build_team_name_map(stats)
@@ -280,11 +289,9 @@ def main():
     per_team_top_misses(bench_perf, team_name_map, n=5)
 
     # Save outputs
-    bench_perf.to_csv(
-        "data-lake/01_Bronze/fantasy_baseball/quick_lineup_bench_performances_2026.csv",
-        index=False
-    )
-    print("\nBench performances saved.")
+    out_path = OUTPUT_PATH.format(year=year)
+    bench_perf.to_csv(out_path, index=False)
+    print(f"\nBench performances saved to {out_path}.")
 
 
 if __name__ == "__main__":

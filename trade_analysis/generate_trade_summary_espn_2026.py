@@ -27,13 +27,13 @@ PITCHER_STATS = ['K/9', 'QS', 'SVHD', 'ERA', 'WHIP']
 TOP_N = 5
 
 
-def _paths():
+def _paths(year):
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     csv_in  = os.path.join(root, 'data-lake', '01_Bronze', 'fantasy_baseball',
-                           'analyze_trade_finder_espn_2026.csv')
+                           f'analyze_trade_finder_espn_{year}.csv')
     rpt_dir = os.path.join(root, 'fantasy_baseball', 'reports')
     os.makedirs(rpt_dir, exist_ok=True)
-    md_out  = os.path.join(rpt_dir, f'trade_summary_espn_2026_{date.today()}.md')
+    md_out  = os.path.join(rpt_dir, f'trade_summary_espn_{year}_{date.today()}.md')
     return csv_in, md_out
 
 
@@ -162,7 +162,14 @@ def render_trade_block(r, idx):
 
 
 def main():
-    csv_path, md_path = _paths()
+    import argparse
+    from datetime import datetime
+    parser = argparse.ArgumentParser(description="Generate per-team mutually beneficial trade summary.")
+    parser.add_argument('--year', type=int, default=datetime.now().year,
+                        help='Season year (default: current calendar year).')
+    args = parser.parse_args()
+    year = args.year
+    csv_path, md_path = _paths(year)
 
     with open(csv_path, encoding='utf-8') as f:
         all_rows = list(csv.DictReader(f))
@@ -177,8 +184,8 @@ def main():
                 team_baseline[tname] = {c: int(r[f'{side}_{c}_rank_before']) for c in ALL_CATS}
 
     lines = []
-    lines.append("# Mutually Beneficial Trade Summary — 2026 ESPN Fantasy Baseball")
-    lines.append(f"*Generated: {date.today()}  |  Source: analyze_trade_finder_espn_2026.csv*")
+    lines.append(f"# Mutually Beneficial Trade Summary — {year} ESPN Fantasy Baseball")
+    lines.append(f"*Generated: {date.today()}  |  Source: analyze_trade_finder_espn_{year}.csv*")
     lines.append(f"*Top {TOP_N} trades per team, sorted by net category gain for that team.*")
     lines.append("")
     lines.append("---")

@@ -1,57 +1,57 @@
+"""
+Description: Snapshots the current ESPN fantasy league roster for all teams.
+Source Data: ESPN Fantasy API (via mlb_processing.get_league_rosters).
+Outputs: data-lake/01_Bronze/fantasy_baseball/roster_espn_season_<YEAR>.csv
+"""
+
+import argparse
 import os
-import pandas as pd
-from fantasy_baseball import mlb_processing as mp
+import csv
 from datetime import datetime
+from fantasy_baseball import mlb_processing as mp
+
 
 def main():
-    print("--- Starting Roster Update ---")
-    
-    # 1. Load config
-    try:
-        config = mp.load_config()
-        print("Config loaded.")
-    except Exception as e:
-        print(f"Error loading config: {e}")
-        return
+    parser = argparse.ArgumentParser(description="Refresh current ESPN rosters into the Bronze data lake.")
+    parser.add_argument('--year', type=int, default=datetime.now().year,
+                        help='Season year (default: current calendar year).')
+    args = parser.parse_args()
+    year = args.year
 
-    # 2. Setup League
-    try:
-        league = mp.setup_league(config, year=2025)
-        print(f"League initialized: {league}")
-    except Exception as e:
-        print(f"Error initializing league: {e}")
-        return
+    print(f"--- Starting Roster Update (year={year}) ---")
 
-    # 3. Fetch Rosters
-    print("Fetching rosters...")
-    try:
-        today_str = datetime.now().strftime('%Y-%m-%d')
-        rosters = mp.get_league_rosters(league, today_dt=today_str)
-        print(f"Fetched {len(rosters)} player records.")
-    except Exception as e:
-        print(f"Error fetching rosters: {e}")
-        return
+    config = mp.load_config()
+    print("Config loaded.")
 
-    # 4. Save to Data Lake
-    if rosters:
-        try:
-            df = pd.DataFrame(rosters)
-            
-            # Ensure directory exists (it should, but good practice)
-            os.makedirs(mp.DATA_PATH, exist_ok=True)
-            
-            save_path = os.path.join(mp.DATA_PATH, "roster_espn_season_2025.csv")
-            df.to_csv(save_path, index=False)
-            print(f"Successfully saved data to: {save_path}")
-            
-            # Preview
-            print("\nPreview:")
-            print(df.head())
-            
-        except Exception as e:
-            print(f"Error saving data: {e}")
-    else:
+    league = mp.setup_league(config, year=year)
+    print(f"League initialized: {league}")
+
+    today_str = datetime.now().strftime('%Y-%m-%d')
+    rosters = mp.get_league_rosters(league, today_dt=today_str)
+    print(f"Fetched {len(rosters)} player records.")
+
+    if not rosters:
         print("No roster data returned.")
+        return
+
+    os.makedirs(mp.DATA_PATH, exist_ok=True)
+    save_path = os.path.join(mp.DATA_PATH, f"roster_espn_season_{year}.csv")
+
+    fieldnames = list({k for r in rosters for k in r.keys()})
+    preferred_order = ['date', 'team_id', 'team_name', 'player_id', 'player_name',
+                       'lineup_slot', 'injuryStatus', 'eligibleSlots']
+    ordered = [c for c in preferred_order if c in fieldnames] + \
+              [c for c in fieldnames if c not in preferred_order]
+
+    with open(save_path, 'w', encoding='utf-8', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=ordered)
+        writer.writeheader()
+        for row in rosters:
+            writer.writerow(row)
+
+    print(f"Successfully saved data to: {save_path}")
+    print(f"Rows: {len(rosters)}")
+
 
 if __name__ == "__main__":
     main()

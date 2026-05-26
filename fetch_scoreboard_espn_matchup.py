@@ -1,67 +1,55 @@
+"""
+Description: Captures the ESPN fantasy league matchup scoreboard for the current matchup period.
+Source Data: ESPN Fantasy API (via mlb_processing.get_matchup_scoreboard).
+Outputs: data-lake/01_Bronze/fantasy_baseball/scoreboard_espn_matchup_<YEAR>.csv
+"""
+
+import argparse
+import csv
 import os
 import sys
-import pandas as pd
-import json
+from datetime import datetime
 
-# Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fantasy_baseball import mlb_processing as mp
 
+
 def main():
-    print("--- Capturing Matchup Scoreboard ---")
-    
-    # 1. Load config
-    try:
-        config = mp.load_config()
-        print("Config loaded.")
-    except Exception as e:
-        print(f"Error loading config: {e}")
-        return
+    parser = argparse.ArgumentParser(description="Capture ESPN matchup scoreboard for the given season.")
+    parser.add_argument('--year', type=int, default=datetime.now().year,
+                        help='Season year (default: current calendar year).')
+    args = parser.parse_args()
+    year = args.year
 
-    # 2. Setup League
-    league = None
-    try:
-        # Default to 2025 as per current season
-        league = mp.setup_league(config, year=2025)
-        print(f"League initialized: {league}")
-    except Exception as e:
-        print(f"League init failed: {e}")
-        return
+    print(f"--- Capturing Matchup Scoreboard (year={year}) ---")
+    config = mp.load_config()
+    league = mp.setup_league(config, year=year)
+    print(f"League initialized: {league}")
 
-    # 3. Fetch Scoreboard
-    try:
-        print("Fetching scoreboard for all matchups...")
-        scoreboard_data = mp.get_matchup_scoreboard(league)
-        print(f"Captured {len(scoreboard_data)} matchups.")
-    except Exception as e:
-        print(f"Error fetching scoreboard: {e}")
-        return
-        print(f"Error fetching scoreboard: {e}")
-        return
-
-    # 4. Save to CSV
-    if scoreboard_data:
-        try:
-            df = pd.DataFrame(scoreboard_data)
-            
-            # Enrich with Team Names if possible
-            # league.teams has ID -> Name mapping
-            team_map = {team.team_id: team.team_abbrev for team in league.teams}
-            
-            df['homeTeamParams'] = df['homeTeamId'].map(team_map)
-            df['awayTeamParams'] = df['awayTeamId'].map(team_map)
-            
-            os.makedirs(mp.DATA_PATH, exist_ok=True)
-            save_path = os.path.join(mp.DATA_PATH, "scoreboard_espn_matchup_2025.csv")
-            
-            df.to_csv(save_path, index=False)
-            print(f"Scoreboard saved to: {save_path}")
-            print(df.head())
-            
-        except Exception as e:
-            print(f"Error saving data: {e}")
-    else:
+    scoreboard_data = mp.get_matchup_scoreboard(league)
+    print(f"Captured {len(scoreboard_data)} matchups.")
+    if not scoreboard_data:
         print("No scoreboard data returned.")
+        return
+
+    team_map = {team.team_id: team.team_abbrev for team in league.teams}
+    for row in scoreboard_data:
+        if 'homeTeamId' in row:
+            row['homeTeamParams'] = team_map.get(row.get('homeTeamId'))
+        if 'awayTeamId' in row:
+            row['awayTeamParams'] = team_map.get(row.get('awayTeamId'))
+
+    os.makedirs(mp.DATA_PATH, exist_ok=True)
+    save_path = os.path.join(mp.DATA_PATH, f"scoreboard_espn_matchup_{year}.csv")
+    fieldnames = list({k for r in scoreboard_data for k in r.keys()})
+    with open(save_path, 'w', encoding='utf-8', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w.writeheader()
+        for row in scoreboard_data:
+            w.writerow(row)
+    print(f"Scoreboard saved to: {save_path}")
+    print(f"Rows: {len(scoreboard_data)}")
+
 
 if __name__ == "__main__":
     main()

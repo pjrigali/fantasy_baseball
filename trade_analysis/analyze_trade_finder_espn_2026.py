@@ -513,27 +513,35 @@ def eval_swap(tid_a, tid_b, pid_x, pid_y,
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
+    import argparse
+    from datetime import datetime
+    parser = argparse.ArgumentParser(description="Find mutually beneficial 1-for-1 trades.")
+    parser.add_argument('--year', type=int, default=datetime.now().year,
+                        help='Season year (default: current calendar year).')
+    args = parser.parse_args()
+    year = args.year
+
     dp = _data_path()
 
     # ── Load ESPN daily ────────────────────────────────────────────────────────
-    print("Loading ESPN daily stats...")
+    print(f"Loading ESPN daily stats (year={year})...")
     (team_bat_ytd, team_pit_ytd, team_names,
      player_current, player_bat_acc, player_pit_acc) = load_espn_daily(
-        os.path.join(dp, 'stats_espn_daily_2026.csv'))
+        os.path.join(dp, f'stats_espn_daily_{year}.csv'))
     print(f"  {len(team_names)} teams, {len(player_current)} players tracked")
 
     # ── Load activity — determines who is actually on a roster right now ─────
     print("Loading activity log to identify current free agents...")
-    free_agents = load_free_agents(os.path.join(dp, 'activity_espn_season_2026.csv'))
+    free_agents = load_free_agents(os.path.join(dp, f'activity_espn_season_{year}.csv'))
     n_fa = sum(1 for pid in player_current if pid in free_agents)
     print(f"  {n_fa} players in ESPN daily history are now free agents — excluded from analysis")
 
     # ── Load projections ───────────────────────────────────────────────────────
     print("Loading projections...")
     bat_projs = load_batter_projections(
-        os.path.join(dp, 'player_batter_projections_2026.csv'))
+        os.path.join(dp, f'player_batter_projections_{year}.csv'))
     pit_projs = load_pitcher_projections(
-        os.path.join(dp, 'player_pitcher_projections_2026.csv'))
+        os.path.join(dp, f'player_pitcher_projections_{year}.csv'))
     print(f"  {len(bat_projs)} batter projections, {len(pit_projs)} pitcher projections")
 
     # ── Build active rosters (exclude IL and free agents) ─────────────────────
@@ -623,7 +631,7 @@ def main():
     results.sort(key=lambda r: (r['combined'], r['net_a'] + r['net_b']), reverse=True)
 
     # ── Write output CSV ───────────────────────────────────────────────────────
-    out_path = os.path.join(dp, 'analyze_trade_finder_espn_2026.csv')
+    out_path = os.path.join(dp, f'analyze_trade_finder_espn_{year}.csv')
 
     cat_rank_cols = []
     for c in ALL_CATS:

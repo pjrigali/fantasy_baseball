@@ -1,97 +1,100 @@
+"""
+Description: Generates a scoring-period <-> matchup-period <-> calendar-date mapping
+             for the ESPN fantasy league. Uses league settings + a heuristic
+             even-distribution of scoring periods across matchups.
+Source Data: ESPN Fantasy API (league settings via mlb_processing).
+Outputs: data-lake/01_Bronze/fantasy_baseball/schedule_espn_matchup_<YEAR>.csv
+"""
+
+import argparse
+import csv
 import os
 import sys
-import pandas as pd
-from datetime import datetime, timedelta
+from collections import defaultdict
+from datetime import datetime, timedelta, date
 
-# Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fantasy_baseball import mlb_processing as mp
 
-def main():
-    print("--- Creating Matchup Period Mapping ---")
-    
-    # 1. Load config
-    try:
-        config = mp.load_config()
-    except Exception as e:
-        print(f"Error loading config: {e}")
-        return
 
-    # 2. Setup League
-    league = mp.setup_league(config, year=2025)
-    
-    # 3. Build Matchup Map using Heuristic
-    # (Since API mapping was incomplete/weird)
-    
-    # Get Settings
-    # final_sp = league.settings.final_scoring_period # This might be 0 if not set?
-    # Inspect settings from API showed 167.
+OPENING_DAYS = {
+    2025: date(2025, 3, 27),
+    2026: date(2026, 3, 26),
+}
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Generate ESPN matchup-period <-> scoring-period <-> date map.")
+    parser.add_argument('--year', type=int, default=datetime.now().year,
+                        help='Season year (default: current calendar year).')
+    parser.add_argument('--opening-day', type=str, default=None,
+                        help='Override opening day (YYYY-MM-DD). Defaults to known opening day for the year.')
+    args = parser.parse_args()
+    year = args.year
+
+    if args.opening_day:
+        opening_day = date.fromisoformat(args.opening_day)
+    elif year in OPENING_DAYS:
+        opening_day = OPENING_DAYS[year]
+    else:
+        raise SystemExit(f"No opening day known for {year}; pass --opening-day YYYY-MM-DD.")
+
+    print(f"--- Creating Matchup Period Mapping (year={year}, opening_day={opening_day}) ---")
+    config = mp.load_config()
+    league = mp.setup_league(config, year=year)
+
     params = {'view': 'mSettings'}
     data = league.espn_request.league_get(params=params)
     status = data.get('status', {})
     schedule_settings = data.get('settings', {}).get('scheduleSettings', {})
-    
-    final_sp = status.get('finalScoringPeriod', 167) 
-    
-    # Check length of matchupPeriods map to get TRUE total (Reg + Playoff)
+
+    final_sp = status.get('finalScoringPeriod', 167)
     mp_dict = schedule_settings.get('matchupPeriods', {})
     if mp_dict:
         total_matchups = len(mp_dict)
     else:
-        # Fallback to count + 2 assumption if map is empty (unlikely)
         total_matchups = schedule_settings.get('matchupPeriodCount', 18) + 2
-        
+
     reg_season_count = league.settings.reg_season_count
-    
-    print(f"Details: Final SP={final_sp}, Total Matchups={total_matchups} (derived), Reg Season={reg_season_count}")
-    
-    # Heuristic Logic from update_daily_stats_matchup.py
-    # Distribute SPs evenly among Matchups
-    mp_map = {}
-    
-    # If standard 2025 season length is ~24 weeks (167 days), distribute:
+    print(f"Details: Final SP={final_sp}, Total Matchups={total_matchups}, Reg Season={reg_season_count}")
+
     days_per_matchup = final_sp // total_matchups
     remainder = final_sp % total_matchups
-    
+
+    rows = []
     sp_counter = 1
-    generated_map = []
-    
     for mp_id in range(1, total_matchups + 1):
-        days = days_per_matchup
-        if mp_id <= remainder:
-            days += 1
-            
+        days = days_per_matchup + (1 if mp_id <= remainder else 0)
         for _ in range(days):
-            if sp_counter <= final_sp:
-                mp_map[sp_counter] = mp_id
-                
-                # Calculate Date (Assuming SP 1 = March 27, 2025)
-                # Note: This is an approximation.
-                game_date = datetime(2025, 3, 27).date() + timedelta(days=(sp_counter - 1))
-                
-                generated_map.append({
-                    'matchup_period': mp_id,
-                    'scoring_period': sp_counter,
-                    'date': game_date.strftime("%Y-%m-%d")
-                })
-                sp_counter += 1
-                
-    # Generate DataFrame
-    df = pd.DataFrame(generated_map)
-    
-    # Add Start/End Dates for Matchup
-    mp_agg = df.groupby('matchup_period')['date'].agg(['min', 'max']).reset_index()
-    mp_agg.columns = ['matchup_period', 'matchup_start_date', 'matchup_end_date']
-    
-    final_df = pd.merge(df, mp_agg, on='matchup_period', how='left')
-    
-    # Save
+            if sp_counter > final_sp:
+                break
+            game_date = opening_day + timedelta(days=sp_counter - 1)
+            rows.append({
+                'matchup_period': mp_id,
+                'scoring_period': sp_counter,
+                'date': game_date.isoformat(),
+            })
+            sp_counter += 1
+
+    by_mp = defaultdict(list)
+    for r in rows:
+        by_mp[r['matchup_period']].append(r['date'])
+    for r in rows:
+        dates = by_mp[r['matchup_period']]
+        r['matchup_start_date'] = min(dates)
+        r['matchup_end_date'] = max(dates)
+
     os.makedirs(mp.DATA_PATH, exist_ok=True)
-    save_path = os.path.join(mp.DATA_PATH, "schedule_espn_matchup_2025.csv")
-    final_df.to_csv(save_path, index=False)
+    save_path = os.path.join(mp.DATA_PATH, f"schedule_espn_matchup_{year}.csv")
+    fieldnames = ['matchup_period', 'scoring_period', 'date', 'matchup_start_date', 'matchup_end_date']
+    with open(save_path, 'w', encoding='utf-8', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w.writeheader()
+        for row in rows:
+            w.writerow(row)
     print(f"Mapping saved to {save_path}")
-    print(final_df.head(10))
-    print(final_df.tail(10))
+    print(f"Rows: {len(rows)}")
+
 
 if __name__ == "__main__":
     main()
