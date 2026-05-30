@@ -165,4 +165,5 @@ Ideas and investigations being tracked in [`ideas.md`](ideas.md). See that file 
 | 11 | Mutually Beneficial Trade Finder — Identifying Win-Win Deals Within the League | Proactively scan all team rosters to find specific player swaps that simultaneously improve both sides of a trade. | `Complete` |
 | 12 | Bat Tracking Metrics as Batter Predictors — Year-Over-Year Carry-Forward | Correlate Statcast bat-tracking and pitching metrics year-over-year to find physical leading indicators of fantasy performance. | `Not Started` |
 | 13 | Projection Accuracy Tracking — Actual vs Preseason Performance Over Multiple Years | Measure preseason projection accuracy across multiple years to find systematic biases exploitable at draft time. | `Not Started` |
+| 14 | Player Injury Data Analysis — Duration, Frequency, and Predictability | Track and analyze player injuries to determine duration, frequency per position, player propensity, and historical trends. | `Not Started` |
 

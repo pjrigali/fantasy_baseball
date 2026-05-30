@@ -358,3 +358,32 @@
 - **Repeatability score**: year-over-year correlation of individual player projection error (Pearson R across matched player-years)
 
 **Possible output:** Multi-year projection error heatmap by stat and position; ranked list of players who consistently beat or miss projections; ADP tier accuracy analysis (which draft rounds are least/most predictable); current-year "regression candidates" flagged by historical error pattern.
+
+---
+
+## 14. Player Injury Data Analysis — Duration, Frequency, and Predictability
+
+**Status:** `Not Started`
+
+**Motivation:** Injuries have a massive impact on fantasy performance. By capturing data around player injuries, we can understand the average duration by position, identify players who are systematically more prone to injury, and leverage historical injury data to better discount injury risk during drafts.
+
+**Idea:** Track all injured list (IL) stints for players across the league. Compute the duration of each injury, categorize them by injury type and player position, and maintain a historical ledger of each player's injury frequency.
+
+**Questions to answer:**
+- How long are players typically injured when placed on the IL?
+- How often do injuries occur per position (e.g., are pitchers significantly more likely to miss time)?
+- Are certain players (or player profiles) systematically more likely to be injured?
+- Can historical injury data be used to accurately forecast a player's injury risk?
+
+**Data sources:**
+- MLB API injury/transaction logs (via `fetch_activity_espn_season.py` or new MLB API scraper) to detect IL placements and activations.
+- Historical MLB injury datasets (if available) or multi-year transaction logs.
+
+**Approach:**
+1. Parse transaction logs to capture every time a player is placed on or activated from the IL.
+2. Calculate the total days missed for each injury stint.
+3. Group and aggregate injury events by player, position, and injury type (if available).
+4. Build a historical profile for each player computing their "injury frequency" and "average days missed per season".
+5. Analyze positional injury rates (e.g., starting pitchers vs. outfielders).
+
+**Possible output:** A player "injury risk" score/index based on historical IL stints; average injury duration tables by position; a list of "high-risk" draft targets based on their propensity for injury.
