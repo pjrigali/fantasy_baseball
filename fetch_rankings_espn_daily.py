@@ -311,6 +311,27 @@ def main():
     verb = "would write" if args.dry_run else "rows written,"
     print(f'{tag} fetch_rankings_espn_daily: {total_written} {verb} {total_dupes} dupes skipped | {date_range} | {total_players} players fetched')
 
+    # ── Write run log ─────────────────────────────────────────────────────────
+    if not args.dry_run:
+        try:
+            _log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                    'data-lake', '00_Logs', 'fantasy_baseball')
+            os.makedirs(_log_dir, exist_ok=True)
+            _csv_rows = sum(1 for _ in open(csv_path, encoding='utf-8')) - 1
+            _entry = {
+                'ts'             : datetime.now().isoformat(timespec='seconds'),
+                'workflow'       : 'fantasy-collect-espn-rankings',
+                'status'         : 'ok',
+                'csv_path'       : csv_path,
+                'csv_total_rows' : _csv_rows,
+                'rows_written'   : total_written,
+                'last_date_in_csv': dates[-1] if dates else '',
+            }
+            with open(os.path.join(_log_dir, 'fantasy-collect-espn-rankings.jsonl'), 'a', encoding='utf-8') as _f:
+                _f.write(json.dumps(_entry) + '\n')
+        except Exception as _e:
+            print(f'[WARN] run-log write failed: {_e}')
+
 
 if __name__ == '__main__':
     main()

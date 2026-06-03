@@ -427,6 +427,27 @@ def main():
     print(f'  Wrote {len(new_rows)} new rows -> {output_file}')
     print(f'  File total: {total} rows ({len(existing_rows)} prior + {len(new_rows)} new)')
 
+    # ── Write run log ─────────────────────────────────────────────────────────
+    try:
+        import json as _json
+        from datetime import datetime as _dt
+        _log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                'data-lake', '00_Logs', 'fantasy_baseball')
+        os.makedirs(_log_dir, exist_ok=True)
+        _entry = {
+            'ts'             : _dt.now().isoformat(timespec='seconds'),
+            'workflow'       : 'fantasy-collect-fangraphs-closers',
+            'status'         : 'ok',
+            'csv_path'       : output_file,
+            'csv_total_rows' : total,
+            'rows_written'   : len(new_rows),
+            'latest_scrape'  : today_str,
+        }
+        with open(os.path.join(_log_dir, 'fantasy-collect-fangraphs-closers.jsonl'), 'a', encoding='utf-8') as _f:
+            _f.write(_json.dumps(_entry) + '\n')
+    except Exception as _e:
+        print(f'[WARN] run-log write failed: {_e}')
+
 
 if __name__ == '__main__':
     main()

@@ -19,7 +19,8 @@ Outputs: fantasy_baseball/reports/rp_analysis_{YYYY-MM-DD}.md
 import csv
 import os
 import sys
-from datetime import date, timedelta
+import json
+from datetime import date, datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fantasy_baseball import mlb_processing as mp
@@ -376,4 +377,25 @@ print(f'\nReport saved to: {report_path}')
 print(f'Rostered RPs   : {len(rostered_rps)}')
 print(f'Flagged RPs    : {len(flagged)}')
 print(f'FA RPs ranked  : {len(fa_rps)}')
+
+# ── Write run log ─────────────────────────────────────────────────────────
+try:
+    _log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            'data-lake', '00_Logs', 'fantasy_baseball')
+    os.makedirs(_log_dir, exist_ok=True)
+    _entry = {
+        'ts'               : datetime.now().isoformat(timespec='seconds'),
+        'workflow'         : 'fantasy-rp-analysis',
+        'status'           : 'ok',
+        'report_path'      : report_path,
+        'report_size_bytes': os.path.getsize(report_path),
+        'flagged_rps'      : len(flagged),
+        'fa_rps_ranked'    : len(fa_rps),
+    }
+    with open(os.path.join(_log_dir, 'fantasy-rp-analysis.jsonl'), 'a', encoding='utf-8') as _f:
+        _f.write(json.dumps(_entry) + '\n')
+    print(f'Run log updated: {os.path.join(_log_dir, "fantasy-rp-analysis.jsonl")}')
+except Exception as _e:
+    print(f'[WARN] run-log write failed: {_e}')
+
 print('\n=== DONE ===')

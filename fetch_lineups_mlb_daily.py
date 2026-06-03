@@ -167,6 +167,7 @@ def main():
     if args.date:
         total_written = fetch_date(args.date, batter_path, existing_keys, dry_run=args.dry_run)
         print(f'{tag} fetch_lineups_mlb_daily: {total_written} {verb} | {args.date}')
+        _log_last_date = args.date
     else:
         last = get_last_recorded_date(batter_path)
         season_open = SEASON_START.get(year, date(year, 3, 27))
@@ -188,6 +189,30 @@ def main():
                 time.sleep(0.5)
 
         print(f'{tag} fetch_lineups_mlb_daily: {total_written} {verb} | {start} → {end_date} ({len(dates_to_fetch)} dates)')
+        _log_last_date = str(end_date)
+
+    # ── Write run log ─────────────────────────────────────────────────────────
+    if not args.dry_run:
+        try:
+            import json as _json
+            from datetime import datetime as _dt
+            _log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                    'data-lake', '00_Logs', 'fantasy_baseball')
+            os.makedirs(_log_dir, exist_ok=True)
+            _csv_rows = sum(1 for _ in open(batter_path, encoding='utf-8')) - 1
+            _entry = {
+                'ts'             : _dt.now().isoformat(timespec='seconds'),
+                'workflow'       : 'fantasy-collect-mlb-lineups',
+                'status'         : 'ok',
+                'csv_path'       : batter_path,
+                'csv_total_rows' : _csv_rows,
+                'rows_written'   : total_written,
+                'last_date_in_csv': _log_last_date,
+            }
+            with open(os.path.join(_log_dir, 'fantasy-collect-mlb-lineups.jsonl'), 'a', encoding='utf-8') as _f:
+                _f.write(_json.dumps(_entry) + '\n')
+        except Exception as _e:
+            print(f'[WARN] run-log write failed: {_e}')
 
 
 if __name__ == '__main__':

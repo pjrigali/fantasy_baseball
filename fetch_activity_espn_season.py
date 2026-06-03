@@ -80,6 +80,27 @@ def main():
     df_new.to_csv(save_path, mode='a', index=False, header=write_header)
     print(f"[OK]    fetch_activity_espn_season: {len(df_new)} records written | {date_range}")
 
+    # ── Write run log ─────────────────────────────────────────────────────────
+    try:
+        import json as _json
+        _log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                'data-lake', '00_Logs', 'fantasy_baseball')
+        os.makedirs(_log_dir, exist_ok=True)
+        _csv_rows = sum(1 for _ in open(save_path, encoding='utf-8')) - 1
+        _entry = {
+            'ts'             : datetime.now().isoformat(timespec='seconds'),
+            'workflow'       : 'fantasy-collect-activity-data',
+            'status'         : 'ok',
+            'csv_path'       : save_path,
+            'csv_total_rows' : _csv_rows,
+            'rows_written'   : len(df_new),
+            'last_date_in_csv': dates[-1] if dates else '',
+        }
+        with open(os.path.join(_log_dir, 'fantasy-collect-activity-data.jsonl'), 'a', encoding='utf-8') as _f:
+            _f.write(_json.dumps(_entry) + '\n')
+    except Exception as _e:
+        print(f'[WARN] run-log write failed: {_e}')
+
 
 if __name__ == "__main__":
     main()

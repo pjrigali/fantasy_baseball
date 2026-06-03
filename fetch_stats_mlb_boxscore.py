@@ -305,6 +305,29 @@ def main():
     print(f'{tag} fetch_stats_mlb_boxscore: {len(new_rows)} {verb} | '
           f'{start_date} → {target_date} | {len(games)} games')
 
+    # ── Write run log ─────────────────────────────────────────────────────────
+    if not args.dry_run:
+        try:
+            import json as _json
+            _log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                    'data-lake', '00_Logs', 'fantasy_baseball')
+            os.makedirs(_log_dir, exist_ok=True)
+            _csv_rows = len(existing_rows) + len(new_rows)
+            _entry = {
+                'ts'             : datetime.now().isoformat(timespec='seconds'),
+                'workflow'       : 'fantasy-collect-daily-mlb-stats',
+                'status'         : 'ok',
+                'csv_path'       : output_file,
+                'csv_total_rows' : _csv_rows,
+                'rows_written'   : len(new_rows),
+                'last_date_in_csv': target_date,
+                'games_fetched'  : len(games),
+            }
+            with open(os.path.join(_log_dir, 'fantasy-collect-daily-mlb-stats.jsonl'), 'a', encoding='utf-8') as _f:
+                _f.write(_json.dumps(_entry) + '\n')
+        except Exception as _e:
+            print(f'[WARN] run-log write failed: {_e}')
+
 
 if __name__ == '__main__':
     main()

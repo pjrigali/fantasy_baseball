@@ -16,13 +16,13 @@ Michael McGreevy           Active      7/12 (0.58) |  2.98 |  1.10 |  5.97 |  66
   └ Last 14d                            1/3 (0.33) |  6.00 |  1.87 |  4.80 |  15.0
   └ Last 28d                            3/5 (0.60) |  3.67 |  1.37 |  6.67 |  27.0
 
-Trevor Rogers              Active      3/10 (0.30) |  6.84 |  1.56 |  7.03 |  48.7  HIGH_WHIP
-  └ Last 14d                            0/2 (0.00) |  6.75 |  1.22 |  4.22 |  10.7
-  └ Last 28d                            0/4 (0.00) | 10.31 |  1.75 |  5.40 |  18.3
-
 Chris Sale                 Active      9/11 (0.82) |  2.01 |  0.94 | 10.75 |  67.0  ✓
   └ Last 14d                            1/2 (0.50) |  2.25 |  1.08 | 12.00 |  12.0
   └ Last 28d                            3/4 (0.75) |  1.80 |  1.00 | 11.16 |  25.0
+
+Seth Lugo                  Active      8/12 (0.67) |  3.55 |  1.35 |  7.61 |  71.0  ✓
+  └ Last 14d                            2/2 (1.00) |  2.92 |  1.14 |  6.57 |  12.3
+  └ Last 28d                            3/5 (0.60) |  4.94 |  1.54 |  7.57 |  27.3
 
 Gavin Williams             Active      6/12 (0.50) |  3.07 |  1.09 | 10.38 |  76.3  ✓
   └ Last 14d                            2/2 (1.00) |  0.60 |  0.67 |  9.00 |  15.0
@@ -37,17 +37,12 @@ Logan Webb                 Active       4/8 (0.50) |  5.36 |  1.41 |  8.14 |  45
 
 - **Sandy Alcantara** — LOW_K9  (Season: QS 7/12, ERA 4.66, WHIP 1.33, K/9 6.21)
 - **Michael McGreevy** — LOW_K9  (Season: QS 7/12, ERA 2.98, WHIP 1.10, K/9 5.97)
-- **Trevor Rogers** — HIGH_WHIP  (Season: QS 3/10, ERA 6.84, WHIP 1.56, K/9 7.03)
 
 ---
 ## Top Available SPs  (min 20 OUTS season, ranked QS → WHIP → K/9)
 
 Player                     Team     QS/GS  (rate) |   ERA |  WHIP |   K/9 |    IP
 ------                     ----     -----------------------------------------------
-Seth Lugo                  KC       8/12 (0.67) |  3.55 |  1.35 |  7.61 |  71.0
-  └ Last 14d                         2/2 (1.00) |  2.92 |  1.14 |  6.57 |  12.3
-  └ Last 28d                         3/5 (0.60) |  4.94 |  1.54 |  7.57 |  27.3
-
 Eduardo Rodriguez          Ari      7/12 (0.58) |  2.24 |  1.19 |  6.47 |  72.3
   └ Last 14d                         3/3 (1.00) |  1.42 |  1.00 |  6.16 |  19.0
   └ Last 28d                         4/5 (0.80) |  1.93 |  1.07 |  6.34 |  32.7
@@ -124,6 +119,10 @@ Tomoyuki Sugano            Col      3/12 (0.25) |  3.98 |  1.26 |  5.12 |  63.3
   └ Last 14d                         1/3 (0.33) |  3.86 |  1.29 |  6.06 |  16.3
   └ Last 28d                         1/5 (0.20) |  4.78 |  1.44 |  4.78 |  26.3
 
+Sean Burke                 ChW      3/10 (0.30) |  4.50 |  1.29 |  8.48 |  52.0
+  └ Last 14d                         1/3 (0.33) |  2.65 |  1.00 | 10.06 |  17.0
+  └ Last 28d                         1/5 (0.20) |  5.26 |  1.32 |  9.82 |  25.7
+
 ---
 ## Recommendations
 
@@ -131,31 +130,21 @@ Tomoyuki Sugano            Col      3/12 (0.25) |  3.98 |  1.26 |  5.12 |  63.3
 Season: QS 7/12 | ERA 4.66 | WHIP 1.33 | K/9 6.21
 
 Top replacements:
-  ADD **Seth Lugo** (KC)  QS 8 (+1) | WHIP 1.35 (+0.02) | K/9 7.61 (+1.40)
   ADD **Eduardo Rodriguez** (Ari)  QS 7 (+0) | WHIP 1.19 (-0.14) | K/9 6.47 (+0.26)
   ADD **Dustin May** (StL)  QS 7 (+0) | WHIP 1.29 (-0.04) | K/9 8.1 (+1.89)
   ADD **Tanner Bibee** (Cle)  QS 6 (-1) | WHIP 1.3 (-0.03) | K/9 7.83 (+1.62)
   ADD **Landen Roupp** (SF)  QS 5 (-2) | WHIP 1.31 (-0.02) | K/9 10.12 (+3.91)
+  ADD **Andrew Abbott** (Cin)  QS 5 (-2) | WHIP 1.44 (+0.11) | K/9 6.16 (-0.05)
 
 ### Drop candidate: Michael McGreevy  [LOW_K9]
 Season: QS 7/12 | ERA 2.98 | WHIP 1.10 | K/9 5.97
 
 Top replacements:
-  ADD **Seth Lugo** (KC)  QS 8 (+1) | WHIP 1.35 (+0.25) | K/9 7.61 (+1.64)
   ADD **Eduardo Rodriguez** (Ari)  QS 7 (+0) | WHIP 1.19 (+0.09) | K/9 6.47 (+0.50)
   ADD **Dustin May** (StL)  QS 7 (+0) | WHIP 1.29 (+0.19) | K/9 8.1 (+2.13)
   ADD **Tanner Bibee** (Cle)  QS 6 (-1) | WHIP 1.3 (+0.20) | K/9 7.83 (+1.86)
   ADD **Landen Roupp** (SF)  QS 5 (-2) | WHIP 1.31 (+0.21) | K/9 10.12 (+4.15)
-
-### Drop candidate: Trevor Rogers  [HIGH_WHIP]
-Season: QS 3/10 | ERA 6.84 | WHIP 1.56 | K/9 7.03
-
-Top replacements:
-  ADD **Seth Lugo** (KC)  QS 8 (+5) | WHIP 1.35 (-0.21) | K/9 7.61 (+0.58)
-  ADD **Eduardo Rodriguez** (Ari)  QS 7 (+4) | WHIP 1.19 (-0.37) | K/9 6.47 (-0.56)
-  ADD **Dustin May** (StL)  QS 7 (+4) | WHIP 1.29 (-0.27) | K/9 8.1 (+1.07)
-  ADD **Tanner Bibee** (Cle)  QS 6 (+3) | WHIP 1.3 (-0.26) | K/9 7.83 (+0.80)
-  ADD **Landen Roupp** (SF)  QS 5 (+2) | WHIP 1.31 (-0.25) | K/9 10.12 (+3.09)
+  ADD **Andrew Abbott** (Cin)  QS 5 (-2) | WHIP 1.44 (+0.34) | K/9 6.16 (+0.19)
 
 ---
 *Generated 2026-06-03 | Source: stats_mlb_boxscore_2026.csv + ESPN API*
