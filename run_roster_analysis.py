@@ -87,7 +87,7 @@ my_rps     = [p for p in my_roster if 'RP' in p.eligibleSlots
               and not any(s in hitter_slots for s in p.eligibleSlots)]
 
 # ── Load CSVs ─────────────────────────────────────────────────────────────────
-with open(os.path.join(BASE, f'stats_mlb_daily_{YEAR}.csv'), encoding='utf-8') as f:
+with open(os.path.join(BASE, f'stats_mlb_boxscore_{YEAR}.csv'), encoding='utf-8') as f:
     mlb_rows = list(csv.DictReader(f))
 batter_rows  = [r for r in mlb_rows if r['b_or_p'] == 'batter']
 pitcher_rows = [r for r in mlb_rows if r['b_or_p'] == 'pitcher']

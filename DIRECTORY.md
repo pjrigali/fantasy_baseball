@@ -23,7 +23,8 @@ These scripts fetch raw data from ESPN or MLB APIs and write to the Bronze data 
 |---|---|---|---|
 | `collect_stats_espn_daily.py` | **Primary daily pipeline.** Collects per-player stats for all teams in the ESPN league for a given date range. Handles column expansion, deduplication, and incremental append. Used by the `fantasy-collect-daily-espn-stats` workflow. | ESPN API | `stats_espn_daily_{YEAR}.csv` |
 | `fetch_stats_espn_daily.py` | Bulk historical stat fetch. Iterates all 195 scoring periods and saves a full-season CSV using `mp.fetch_league_matchup_data()`. | ESPN API | `stats_espn_daily_{YEAR}.csv` |
-| `fetch_stats_mlb_daily.py` | Fetches per-game hitting and pitching logs for all MLB players from the MLB Stats API. Processes raw JSON into flat rows with derived stats (QS, SVHD, OUTS). | MLB Stats API | `stats_mlb_daily_{SEASON}.csv` |
+| `fetch_stats_mlb_boxscore.py` | Fetches per-game hitting and pitching stats via the boxscore endpoint (~15 requests/day vs ~1000). Includes bench players with `did_play=0` for play-frequency tracking. | MLB Stats API | `stats_mlb_boxscore_{SEASON}.csv` |
+| `fetch_stats_mlb_daily.py` | **Archived** — superseded by `fetch_stats_mlb_boxscore.py`. Player-by-player game log fetcher (~1000 requests/day, no bench coverage). | MLB Stats API | `stats_mlb_daily_2026_archive.csv` |
 | `fetch_stats_mlb_scrape.py` | Scrapes season-level hitting and pitching leaderboards from MLB.com. Saves dated snapshots with full stat lines. | MLB Stats API | `stats_mlb_season_hitting_{SEASON}_{DATE}.csv`, `stats_mlb_season_pitching_{SEASON}_{DATE}.csv` |
 | `fetch_lineups_mlb_daily.py` | Scrapes today's MLB starting lineups via `mp.scrape_mlb_lineups()` and appends to the Bronze CSV with dedup. Used by the `fantasy-collect-mlb-lineups` workflow. | MLB.com | `lineups_mlb_batters_{YEAR}.csv` |
 | `fetch_activity_espn_season.py` | Fetches ESPN league activity (adds, drops, trades, waivers) via `mp.get_recent_activity()`. Appends with dedup on `(date_epoch, player_id, action_id, team_id)`. Used by the `fantasy-collect-activity-data` workflow. | ESPN API | `activity_espn_season_{YEAR}.csv` |
@@ -137,7 +138,7 @@ Active workflows in `.agent/workflows/` that invoke these scripts:
 | Workflow | Scripts Used |
 |---|---|
 | `fantasy-collect-daily-espn-stats` | `collect_stats_espn_daily.py` |
-| `fantasy-collect-daily-mlb-stats` | `fetch_stats_mlb_daily.py` (inline via `mlb_processing.py`) |
+| `fantasy-collect-daily-mlb-stats` | `fetch_stats_mlb_boxscore.py` |
 | `fantasy-collect-mlb-lineups` | `fetch_lineups_mlb_daily.py` |
 | `fantasy-collect-activity-data` | `fetch_activity_espn_season.py` |
 | `fantasy-collect-all-data` | Orchestrates all four collection workflows above |

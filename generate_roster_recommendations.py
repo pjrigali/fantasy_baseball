@@ -32,7 +32,7 @@ print(f"Data Path: {BASE_PATH}")
 
 # Define File Paths
 roster_path = os.path.join(BASE_PATH, f'roster_history_{SEASON}.csv')
-stats_path = os.path.join(BASE_PATH, f'stats_mlb_daily_{SEASON}.csv')
+stats_path = os.path.join(BASE_PATH, f'stats_mlb_boxscore_{SEASON}.csv')
 map_path = os.path.join(BASE_PATH, 'player_map.csv')
 
 # Validation: Check if season data exists
