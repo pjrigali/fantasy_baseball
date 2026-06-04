@@ -37,7 +37,7 @@ import os
 import sys
 import time
 import argparse
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fantasy_baseball import mlb_processing as mp
@@ -100,20 +100,30 @@ TEAM_ID_TO_NAME = {
 # Position codes that indicate a pitcher (exclude hitters/catchers/infielders)
 PITCHER_CODES = {'C', '1', 'S', 'P', 'SP', 'RP', 'TWP'}
 
+# Role inference tuning — applied over the rolling lookback window
+LOOKBACK_DAYS    = 14   # days of boxscore history to consider
+MIN_SV_CO_CLOSER = 2    # saves needed for a non-designated closer to qualify as co-closer
+MIN_HLD_SETUP    = 2    # holds needed in the window to be labeled Setup Man
+MAX_SETUP_MEN    = 2    # maximum setup men labeled per team
+
 OUTPUT_FIELDS = [
     'date_scraped',
     'team_id', 'team_name',
     'player_id', 'player_name',
     'throws',             # R / L / S  (from pitchHand.code)
     'position_code',      # C = Closer | 1 = Pitcher | S = Starting Pitcher
-    'role',               # "Closer" | "Pitcher" | "Starting Pitcher"
+    'role',               # official MLB roster designation
+    'inferred_role',      # role inferred from recent game data (see LOOKBACK_DAYS)
     'status',             # Active | Injured 15-Day | Injured 60-Day | etc.
-    'games',              # season appearances
+    'recent_sv',          # saves in the lookback window
+    'recent_hld',         # holds in the lookback window
+    'recent_games',       # appearances in the lookback window
+    'games',              # season appearances (full season)
     'innings_pitched',
     'era',
-    'sv',                 # saves
-    'hld',                # holds
-    'sd',                 # saves + holds (mirrors FanGraphs sd column)
+    'sv',                 # season saves
+    'hld',                # season holds
+    'sd',                 # season saves + holds (mirrors FanGraphs sd column)
     'save_opportunities',
     'blown_saves',
     'k9',                 # strikeouts per 9 innings
@@ -206,7 +216,11 @@ def extract_players(data: dict, team_id: int, season: int, today_str: str) -> li
             'throws':            throws,
             'position_code':     pos_code,
             'role':              pos_name,
+            'inferred_role':     '',          # populated by infer_roles()
             'status':            status_desc,
+            'recent_sv':         '',          # populated by infer_roles()
+            'recent_hld':        '',          # populated by infer_roles()
+            'recent_games':      '',          # populated by infer_roles()
             'games':             _safe_stat(stat_dict, 'gamesPitched'),
             'innings_pitched':   _safe_stat(stat_dict, 'inningsPitched'),
             'era':               _safe_stat(stat_dict, 'era'),
@@ -229,6 +243,174 @@ def extract_players(data: dict, team_id: int, season: int, today_str: str) -> li
         r['team_name'] = resolved_name
 
     return rows
+
+
+# ---------------------------------------------------------------------------
+# Role inference from recent boxscore data
+# ---------------------------------------------------------------------------
+
+def load_recent_boxscore_stats(boxscore_file: str, lookback_days: int) -> dict:
+    """
+    Aggregate saves and holds per pitcher from the last `lookback_days` days.
+
+    Returns a dict mapping player_id (str) ->
+        {'sv': int, 'hld': int, 'games': int}
+    Returns an empty dict if the boxscore file does not exist.
+    """
+    if not os.path.exists(boxscore_file):
+        return {}
+
+    cutoff = (date.today() - timedelta(days=lookback_days)).strftime('%Y-%m-%d')
+    stats: dict[str, dict] = {}
+
+    with open(boxscore_file, 'r', encoding='utf-8') as f:
+        for row in csv.DictReader(f):
+            if row.get('b_or_p') != 'pitcher':
+                continue
+            if row.get('date', '') < cutoff:
+                continue
+            if int(row.get('did_play', 0) or 0) == 0:
+                continue
+            # Exclude games where the pitcher started — we only want relief appearances
+            if int(row.get('GS', 0) or 0) > 0:
+                continue
+
+            pid = str(row['player_id'])
+            if pid not in stats:
+                stats[pid] = {'sv': 0, 'hld': 0, 'games': 0}
+            stats[pid]['sv']    += int(row.get('SV',  0) or 0)
+            stats[pid]['hld']   += int(row.get('HLD', 0) or 0)
+            stats[pid]['games'] += 1
+
+    return stats
+
+
+def infer_roles(players: list, recent_stats: dict,
+                min_sv_co_closer: int = MIN_SV_CO_CLOSER,
+                min_hld_setup: int    = MIN_HLD_SETUP,
+                max_setup_men: int    = MAX_SETUP_MEN) -> list:
+    """
+    Augment each player row with inferred_role, recent_sv, recent_hld,
+    recent_games based on actual save/hold data from recent games.
+
+    Role assignment logic (per team, applied in order):
+
+    1. Closers (API + game-data)
+       - 1 API Closer + no other reliever with >= min_sv_co_closer SVs
+           → "Closer"
+       - 1 API Closer + another reliever with >= min_sv_co_closer SVs
+           → both = "Co-Closer"
+       - 2 API Closers (committee designated by MLB)
+           → both = "Co-Closer"
+       - 3+ API Closers
+           → all = "Closer Committee"
+       - No API Closer, 1 pitcher with SVs
+           → that pitcher = "Closer"
+       - No API Closer, 2 pitchers with SVs, one has 3× more
+           → dominant = "Closer"
+       - No API Closer, 2 pitchers with comparable SVs
+           → both = "Co-Closer"
+       - No API Closer, 3+ pitchers with SVs
+           → all = "Closer Committee"
+
+    2. Setup Men
+       - After closers are labeled, top `max_setup_men` relievers
+         with >= min_hld_setup holds in the window → "Setup Man"
+
+    3. All other relievers → "Pitcher"
+    4. Starters → "Starting Pitcher" (unchanged)
+    """
+    from collections import defaultdict
+
+    # Attach recent window stats to every row
+    for p in players:
+        pid = str(p['player_id'])
+        s = recent_stats.get(pid, {})
+        p['recent_sv']    = str(s.get('sv',    0))
+        p['recent_hld']   = str(s.get('hld',   0))
+        p['recent_games'] = str(s.get('games', 0))
+
+    # Separate starters (skip them for role inference)
+    for p in players:
+        if p['role'] == 'Starting Pitcher':
+            p['inferred_role'] = 'Starting Pitcher'
+
+    # Group relievers by team
+    team_groups: dict = defaultdict(list)
+    for p in players:
+        if p.get('inferred_role') == 'Starting Pitcher':
+            continue
+        team_groups[str(p['team_id'])].append(p)
+
+    for team_id, relievers in team_groups.items():
+        api_closers = [p for p in relievers if p['position_code'] == 'C']
+
+        # ── Step 1: label closers ────────────────────────────────────────────
+        if api_closers:
+            if len(api_closers) == 1:
+                closer = api_closers[0]
+                co_candidates = [
+                    p for p in relievers
+                    if p['player_id'] != closer['player_id']
+                    and int(p['recent_sv']) >= min_sv_co_closer
+                ]
+                if co_candidates:
+                    # Another reliever is sharing closing duties
+                    closer['inferred_role'] = 'Co-Closer'
+                    for c in co_candidates:
+                        c['inferred_role'] = 'Co-Closer'
+                else:
+                    closer['inferred_role'] = 'Closer'
+
+            elif len(api_closers) == 2:
+                for c in api_closers:
+                    c['inferred_role'] = 'Co-Closer'
+
+            else:  # 3+ API closers
+                for c in api_closers:
+                    c['inferred_role'] = 'Closer Committee'
+
+        else:
+            # No API-designated closer — infer from saves in the window
+            pitchers_with_sv = sorted(
+                [p for p in relievers if int(p['recent_sv']) >= 1],
+                key=lambda p: int(p['recent_sv']), reverse=True
+            )
+            if len(pitchers_with_sv) == 0:
+                pass  # no save data — cannot infer
+            elif len(pitchers_with_sv) == 1:
+                pitchers_with_sv[0]['inferred_role'] = 'Closer'
+            elif len(pitchers_with_sv) == 2:
+                sv0 = int(pitchers_with_sv[0]['recent_sv'])
+                sv1 = int(pitchers_with_sv[1]['recent_sv'])
+                if sv1 == 0 or sv0 >= 3 * sv1:
+                    # One pitcher clearly dominant
+                    pitchers_with_sv[0]['inferred_role'] = 'Closer'
+                else:
+                    pitchers_with_sv[0]['inferred_role'] = 'Co-Closer'
+                    pitchers_with_sv[1]['inferred_role'] = 'Co-Closer'
+            else:
+                # 3+ pitchers sharing saves → committee
+                for p in pitchers_with_sv:
+                    p['inferred_role'] = 'Closer Committee'
+
+        # ── Step 2: label top setup men ─────────────────────────────────────
+        labeled = {p['player_id'] for p in relievers if p.get('inferred_role')}
+        setup_candidates = sorted(
+            [p for p in relievers
+             if p['player_id'] not in labeled
+             and int(p['recent_hld']) >= min_hld_setup],
+            key=lambda p: int(p['recent_hld']), reverse=True
+        )
+        for p in setup_candidates[:max_setup_men]:
+            p['inferred_role'] = 'Setup Man'
+
+        # ── Step 3: default remaining relievers ──────────────────────────────
+        for p in relievers:
+            if 'inferred_role' not in p:
+                p['inferred_role'] = 'Pitcher'
+
+    return players
 
 
 # ---------------------------------------------------------------------------
@@ -259,6 +441,10 @@ def main():
                         help='Season year (default: current year)')
     parser.add_argument('--dry-run', action='store_true',
                         help='Fetch and parse without writing to disk')
+    parser.add_argument('--force', action='store_true',
+                        help='Re-fetch and overwrite today\'s rows even if already current')
+    parser.add_argument('--lookback-days', type=int, default=LOOKBACK_DAYS,
+                        help=f'Days of boxscore history for role inference (default: {LOOKBACK_DAYS})')
     args = parser.parse_args()
 
     season    = args.year
@@ -271,9 +457,14 @@ def main():
     if not args.dry_run and os.path.exists(output_file):
         existing_rows, existing_keys = load_existing(output_file)
         already = sum(1 for k in existing_keys if k[0] == today_str)
-        if already > 0:
+        if already > 0 and not args.force:
             print(f'  Already current — {already} rows already recorded for {today_str}.')
             return
+        if args.force and already > 0:
+            # Strip today's rows so they are re-fetched with enriched columns
+            existing_rows = [r for r in existing_rows if r['date_scraped'] != today_str]
+            existing_keys = {(r['date_scraped'], r['player_id']) for r in existing_rows}
+            print(f'  --force: removed {already} existing rows for {today_str}, re-fetching.')
     else:
         existing_rows, existing_keys = [], set()
 
@@ -292,16 +483,40 @@ def main():
 
     print(f'  Total pitchers fetched: {len(all_players)} across {len(TEAM_IDS)} teams')
 
+    # ---- Role inference from recent boxscore data ----
+    boxscore_file = os.path.join(mp.DATA_PATH, f'stats_mlb_boxscore_{season}.csv')
+    recent_stats  = load_recent_boxscore_stats(boxscore_file, args.lookback_days)
+    if recent_stats:
+        all_players = infer_roles(all_players, recent_stats)
+        n_labeled = sum(
+            1 for p in all_players
+            if p.get('inferred_role') not in ('', 'Pitcher', 'Starting Pitcher')
+        )
+        print(f'  Role inference: {n_labeled} pitchers labeled beyond "Pitcher" '
+              f'(lookback={args.lookback_days}d, '
+              f'n={len(recent_stats)} pitchers in window)')
+    else:
+        print(f'  Role inference: skipped (boxscore file not found)')
+        for p in all_players:
+            p['inferred_role'] = p['role']
+            p['recent_sv']     = ''
+            p['recent_hld']    = ''
+            p['recent_games']  = ''
+
     # ---- Dry-run output ----
     if args.dry_run:
-        closers_only = [p for p in all_players if p['position_code'] == 'C']
+        key_roles = [p for p in all_players
+                     if p.get('inferred_role') not in ('Pitcher', 'Starting Pitcher', '')]
         print(f'\n[DRY-RUN] Would write {len(all_players)} rows -> {output_file}')
-        print(f'  Closers ({len(closers_only)}):')
-        print(f'  {"TEAM":<28} {"PLAYER":<26} {"STATUS":<22} {"SV":>3} {"HLD":>4} {"ERA":>6} {"K/9":>5}')
-        print('  ' + '-' * 97)
-        for p in sorted(closers_only, key=lambda x: x['team_name']):
-            print(f'  {p["team_name"]:<28} {p["player_name"]:<26} {p["status"]:<22} '
-                  f'{p["sv"]:>3} {p["hld"]:>4} {p["era"]:>6} {p["k9"]:>5}')
+        print(f'  Pitchers with inferred role ({len(key_roles)}):')
+        print(f'  {"TEAM":<28} {"PLAYER":<26} {"INFERRED":<20} {"STATUS":<22} '
+              f'{"RSV":>4} {"RHLD":>5} {"SV":>3} {"ERA":>6}')
+        print('  ' + '-' * 120)
+        for p in sorted(key_roles, key=lambda x: (x['inferred_role'], x['team_name'])):
+            print(f'  {p["team_name"]:<28} {p["player_name"]:<26} '
+                  f'{p["inferred_role"]:<20} {p["status"]:<22} '
+                  f'{p["recent_sv"]:>4} {p["recent_hld"]:>5} '
+                  f'{p["sv"]:>3} {p["era"]:>6}')
         return
 
     # ---- Dedup and write ----
@@ -322,9 +537,17 @@ def main():
         writer.writerows(new_rows)
 
     total = len(existing_rows) + len(new_rows)
-    closers_today = sum(1 for r in new_rows if r['position_code'] == 'C')
+    closers_today   = sum(1 for r in new_rows if r['position_code'] == 'C')
+    inferred_counts: dict = {}
+    for r in new_rows:
+        ir = r.get('inferred_role', 'Pitcher')
+        inferred_counts[ir] = inferred_counts.get(ir, 0) + 1
+    role_summary = ', '.join(
+        f'{v} {k}' for k, v in sorted(inferred_counts.items())
+        if k not in ('Pitcher', 'Starting Pitcher', '')
+    )
     print(f'[OK]    fetch_closer_depth_mlb: {len(new_rows)} rows written | {today_str} '
-          f'| {closers_today} closers designated')
+          f'| {closers_today} API closers | inferred: {role_summary or "none"}')
     print(f'  File total: {total} rows ({len(existing_rows)} prior + {len(new_rows)} new)')
 
     # ---- Write run log ----
