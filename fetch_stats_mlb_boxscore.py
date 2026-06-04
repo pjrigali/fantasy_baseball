@@ -269,7 +269,21 @@ def main():
                 existing_rows.append(row)
                 existing_keys.add((row['date'], str(row['player_id']), row['b_or_p']))
         if existing_rows:
-            start_date = max(r['date'] for r in existing_rows)  # one-day overlap, deduped
+            today_str = date.today().strftime('%Y-%m-%d')
+            # A real game day has hundreds of rows; stray/future-dated rows have far fewer.
+            # Ignore any date that is in the future or has fewer than MIN_ROWS_PER_DATE rows
+            # so a single bad row can never push start_date past today.
+            MIN_ROWS_PER_DATE = 50
+            date_counts: dict[str, int] = {}
+            for r in existing_rows:
+                d = r['date']
+                date_counts[d] = date_counts.get(d, 0) + 1
+            valid_dates = [
+                d for d, cnt in date_counts.items()
+                if d <= today_str and cnt >= MIN_ROWS_PER_DATE
+            ]
+            if valid_dates:
+                start_date = max(valid_dates)  # one-day overlap, deduped
 
     if args.start_date:
         start_date = args.start_date
