@@ -325,7 +325,7 @@ def main():
                 'csv_path'       : csv_path,
                 'csv_total_rows' : _csv_rows,
                 'rows_written'   : total_written,
-                'last_date_in_csv': dates[-1] if dates else '',
+                'last_date_in_csv': str(dates[-1]) if dates else '',
             }
             with open(os.path.join(_log_dir, 'fantasy-collect-espn-rankings.jsonl'), 'a', encoding='utf-8') as _f:
                 _f.write(json.dumps(_entry) + '\n')
