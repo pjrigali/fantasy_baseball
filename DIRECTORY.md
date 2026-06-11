@@ -60,16 +60,29 @@ These scripts consume data lake CSVs and produce reports or stdout analysis.
 | `generate_roster_recommendations.py` | Weekly checkpoint analysis: compares rolling 28-day z-score value of rostered players vs available free agents and flags missed opportunities. | `roster_history_{YEAR}.csv`, `stats_mlb_daily_{YEAR}.csv`, `player_map.csv` | `reports/roster_analysis_report_{YEAR}.md` |
 ---
 
-## Trade Analysis (`trade_analysis/`)
+## Ideas & Investigations (`ideas/`)
+
+Structured investigations into specific research topics (linked to `ideas.md`).
+
+### Idea 11: Mutually Beneficial Trade Finder (`ideas/idea_11_trade_finder/`)
 
 Scripts for identifying and evaluating mutually beneficial trades.
 
 | File | Description | Input Data | Output |
 |---|---|---|---|
-| `trade_analysis/analyze_trade_finder_espn_2026.py` | **Mutually beneficial trade finder.** Scans every team's roster, builds YTD and full-season projected category profiles, then enumerates all 1-for-1 same-type player swaps. Surfaces trades where both teams net-improve their H2H category rank count. Includes `balance_min` and `balance_diff` columns for fairness scoring. | `stats_espn_daily_2026.csv`, `player_batter_projections_2026.csv`, `player_pitcher_projections_2026.csv`, `activity_espn_season_2026.csv` | `analyze_trade_finder_espn_2026.csv` |
-| `trade_analysis/generate_trade_report_espn_2026.py` | Human-readable stdout wrapper over the trade finder CSV. Prints formatted trade blocks with projected stats, per-category rank changes, and plain-English gain/loss summaries. Supports `--team TEAM` and `--top N` flags. | `analyze_trade_finder_espn_2026.csv` | stdout |
-| `trade_analysis/generate_trade_summary_espn_2026.py` | Per-team markdown report. Groups all trades by team, splits into **Most Balanced** (sorted by min-gain fairness) and **Highest Impact** (top 2 by combined gain) sections. Top 5 balanced per team. | `analyze_trade_finder_espn_2026.csv` | `reports/trade_summary_espn_2026_{DATE}.md` |
+| `ideas/idea_11_trade_finder/analyze_trade_finder_espn_2026.py` | **Mutually beneficial trade finder.** Scans every team's roster, builds YTD and full-season projected category profiles, then enumerates all 1-for-1 same-type player swaps. Surfaces trades where both teams net-improve their H2H category rank count. Includes `balance_min` and `balance_diff` columns for fairness scoring. | `stats_espn_daily_2026.csv`, `player_batter_projections_2026.csv`, `player_pitcher_projections_2026.csv`, `activity_espn_season_2026.csv` | `analyze_trade_finder_espn_2026.csv` |
+| `ideas/idea_11_trade_finder/generate_trade_report_espn_2026.py` | Human-readable stdout wrapper over the trade finder CSV. Prints formatted trade blocks with projected stats, per-category rank changes, and plain-English gain/loss summaries. Supports `--team TEAM` and `--top N` flags. | `analyze_trade_finder_espn_2026.csv` | stdout |
+| `ideas/idea_11_trade_finder/generate_trade_summary_espn_2026.py` | Per-team markdown report. Groups all trades by team, splits into **Most Balanced** (sorted by min-gain fairness) and **Highest Impact** (top 2 by combined gain) sections. Top 5 balanced per team. | `analyze_trade_finder_espn_2026.csv` | `reports/trade_summary_espn_2026_{DATE}.md` |
 
+### Idea 14: Player Injury Data Analysis (`ideas/idea_14_injury_analysis/`)
+
+Scripts for fetching and analyzing Injured List (IL) stint histories and roster impact.
+
+| File | Description | Input Data | Output |
+|---|---|---|---|
+| `ideas/idea_14_injury_analysis/fetch_stats_mlb_transactions.py` | **MLB transactions crawler.** Queries `statsapi.mlb.com/api/v1/transactions` for player status changes (IL placements/activations) for a given year. | MLB Stats API | `stats_mlb_season_transactions_{YEAR}.csv` |
+| `ideas/idea_14_injury_analysis/analyze_stats_espn_injuries.py` | **Injury analysis engine.** Reconstructs player IL stints, categorizes injuries, and joins with daily ESPN roster stats to calculate positional frequency, duration, fantasy team roster drag, and manager reaction time. | `stats_mlb_season_transactions_{YEAR}.csv`, `stats_espn_daily_{YEAR}.csv`, `player_map.csv` | `reports/injury_analysis_report.md` |
+| `ideas/idea_14_injury_analysis/generate_detailed_injury_report.py` | **Detailed duration reporting.** Computes recovery stats for completed IL stints broken down by injury category, estimated day category, position, and MLB team. | `stats_mlb_season_transactions_{YEAR}.csv`, `player_map.csv`, `stats_espn_daily_{YEAR}.csv` | `reports/detailed_injury_duration_report.md` |
 ---
 
 ## Notebooks

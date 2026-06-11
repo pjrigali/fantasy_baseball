@@ -43,7 +43,7 @@ from collections import defaultdict
 from datetime import date
 
 # Allow importing mlb_processing from the parent fantasy_baseball/ directory
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 import mlb_processing as mp
@@ -70,14 +70,13 @@ MIN_PITCHER_IP = 5
 # ─── Path helpers ─────────────────────────────────────────────────────────────
 
 def _root():
-    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 def _dp():
-    return os.path.join(_root(), 'data-lake', '01_Bronze', 'fantasy_baseball')
+    return mp.DATA_PATH
 
 def _rpt_dir():
-    d = os.path.join(_root(), 'fantasy_baseball', 'reports')
-    os.makedirs(d, exist_ok=True)
+    d = os.path.dirname(os.path.abspath(__file__))
     return d
 
 

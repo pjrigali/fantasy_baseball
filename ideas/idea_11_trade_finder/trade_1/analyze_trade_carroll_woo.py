@@ -16,9 +16,19 @@ Outputs:
 """
 
 import csv
+import os
 from collections import defaultdict
 
-BASE = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball"
+# Go up 5 levels to get the workspace root containing .data_lake or data-lake
+_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+BASE = None
+for name in ('.data_lake', 'data-lake'):
+    p = os.path.join(_root, name, '01_Bronze', 'fantasy_baseball')
+    if os.path.isdir(p):
+        BASE = p
+        break
+if not BASE:
+    BASE = os.path.join(_root, '.data_lake', '01_Bronze', 'fantasy_baseball')
 
 CARROLL_ID = "682998"
 WOO_ID     = "693433"
@@ -59,6 +69,13 @@ PITCHER_COLS = ["OUTS", "ER", "W", "L", "SV", "K", "P_H", "P_BB", "QS", "HLD"]
 
 def aggregate_year(year):
     path = f"{BASE}\\stats_mlb_daily_{year}.csv"
+    if not os.path.exists(path):
+        path = f"{BASE}\\stats_mlb_boxscore_{year}.csv"
+    if not os.path.exists(path):
+        path = f"{BASE}\\stats_mlb_daily_{year}_archive.csv"
+    if not os.path.exists(path):
+        return defaultdict(float), defaultdict(float)
+
     carroll = defaultdict(float)
     woo     = defaultdict(float)
 

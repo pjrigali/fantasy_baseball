@@ -149,12 +149,6 @@
 
 ---
 
----
-
-# AI Suggested Ideas
-
----
-
 ## 6. Waiver Wire Timing and Transaction ROI
 
 **Status:** `Not Started`
@@ -262,7 +256,7 @@
 3. For the most compatible pairs, enumerate candidate player swaps and score each deal: `Δ = (Team A pts after) + (Team B pts after) - (Team A pts before) - (Team B pts before)`
 4. Rank all candidate swaps by combined Δ; filter to deals where both sides are positive
 
-**Connection to trade_analysis workflow:** Deals surfaced here can be fed directly into the `trade_analysis/trade_N/` pipeline for full scoring-system evaluation and write-up.
+**Connection to trade_analysis workflow:** Deals surfaced here can be fed directly into the `ideas/idea_11_trade_finder/trade_N/` pipeline for full scoring-system evaluation and write-up.
 
 **Possible output:** League-wide surplus/deficit heatmap (teams × positions); ranked list of mutually beneficial swap candidates with projected two-sided point gain; compatibility score matrix showing which team pairs have the most trade potential.
 
@@ -363,7 +357,7 @@
 
 ## 14. Player Injury Data Analysis — Duration, Frequency, and Predictability
 
-**Status:** `Not Started`
+**Status:** `Complete`
 
 **Motivation:** Injuries have a massive impact on fantasy performance. By capturing data around player injuries, we can understand the average duration by position, identify players who are systematically more prone to injury, and leverage historical injury data to better discount injury risk during drafts.
 

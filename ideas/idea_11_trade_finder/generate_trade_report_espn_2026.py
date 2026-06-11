@@ -43,13 +43,14 @@ PITCHER_STATS = ['K/9', 'QS', 'SVHD', 'ERA', 'WHIP']
 # ─── Path resolver ────────────────────────────────────────────────────────────
 
 def _csv_path(year):
-    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    p = os.path.join(root, 'data-lake', '01_Bronze', 'fantasy_baseball',
-                     f'analyze_trade_finder_espn_{year}.csv')
-    if os.path.isfile(p):
-        return p
-    raise FileNotFoundError(f"Trade finder CSV not found: {p}\n"
-                             "Run analyze_trade_finder_espn_*.py first.")
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    for name in ('.data_lake', 'data-lake'):
+        p = os.path.join(root, name, '01_Bronze', 'fantasy_baseball',
+                         f'analyze_trade_finder_espn_{year}.csv')
+        if os.path.isfile(p):
+            return p
+    raise FileNotFoundError(f"Trade finder CSV not found in {root} (searched .data_lake/data-lake)\n"
+                            "Run analyze_trade_finder_espn_*.py first.")
 
 
 # ─── Rank-change indicator ────────────────────────────────────────────────────

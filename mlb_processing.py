@@ -643,6 +643,35 @@ def get_league_transactions(league):
         
     return transaction_list
 
+def fetch_mlb_transactions(start_date: str, end_date: str, sport_id: int = 1) -> list:
+    """
+    Fetches MLB transaction data from the MLB Stats API for a given date range.
+
+    Args:
+        start_date (str): Start date in 'YYYY-MM-DD' format.
+        end_date (str): End date in 'YYYY-MM-DD' format.
+        sport_id (int): Sport ID filter (default is 1 for MLB).
+
+    Returns:
+        list: A list of dictionaries representing transactions.
+    """
+    url = "https://statsapi.mlb.com/api/v1/transactions"
+    params = {
+        "sportId": sport_id,
+        "startDate": start_date,
+        "endDate": end_date
+    }
+    
+    print(f"Querying {url} with params {params}...")
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("transactions", [])
+    except Exception as e:
+        print(f"Error querying MLB transactions API: {e}")
+        return []
+
 # Extended activity map — includes MOVED (188) and extra drop type (245)
 # that the default espn_api package does not cover.
 ACTIVITY_MAP = {
