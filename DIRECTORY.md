@@ -1,7 +1,7 @@
 # Fantasy Baseball — File Directory
 
 > Central reference for all files in the `fantasy_baseball/` repository.
-> Last updated: 2026-05-01
+> Last updated: 2026-06-14
 
 ---
 
@@ -94,6 +94,28 @@ Scripts for fetching and analyzing Injured List (IL) stint histories and roster 
 | `batting_order_analysis.ipynb` | Identifies where rostered batters hit in their real MLB lineups (batting order position trends). |
 | `regression_to_mean.ipynb` | Tracks how each batter's rolling 30-game Daily_Value drifts above and below their season-long mean; identifies hot/cold streaks and regression patterns. |
 | `draft_strategy_2026.ipynb` | Pre-draft strategy notebook: category rankings, position tiers, ADP analysis, and draft board for the 2026 season. **Gitignored.** |
+
+---
+
+## Player Name Resolution
+
+ESPN data uses plain-ASCII names (e.g. "Andres Munoz"); the MLB stats archive uses UTF-8 accented names (e.g. "Andrés Muñoz"). Use the lookup infrastructure below to translate between them — never do raw string matching against the archive.
+
+| File | Description | Input | Output |
+|---|---|---|---|
+| `generate_player_lookup.py` | Builds the base player lookup by cross-referencing `player_map.csv` against `stats_mlb_daily_2026_archive.csv` using accent-stripped fuzzy matching. Handles Jr./Sr. suffixes. Run first when refreshing. | `player_map.csv`, `stats_mlb_daily_2026_archive.csv` | `player_lookup.csv` |
+| `crosscheck_player_lookup.py` | Enriches `player_lookup.csv` against all MLB stats files in the data-lake (2023–2026 daily, boxscore, hitting, pitching). Adds archive-only players not in `player_map.csv`. Run second after `generate_player_lookup.py`. | All `stats_mlb_*` and `mlb_hitting/pitching_*` CSVs | `player_lookup.csv` (updated in-place) |
+| `player_lookup_utils.py` | Importable helpers for name resolution. Load once per process. | `player_lookup.csv` | N/A (library) |
+
+**`player_lookup.csv`** lives at `data-lake/01_Bronze/fantasy_baseball/player_lookup.csv`. Columns: `espn_player_id, espn_name, archive_name, b_or_p, statcast_player_id`. ~2,200 rows covering all players seen across 2023–2026 stats files.
+
+**Usage:**
+```python
+from fantasy_baseball.player_lookup_utils import get_archive_name, get_b_or_p
+archive_name = get_archive_name("Andres Munoz")  # -> "Andrés Muñoz"
+```
+
+**Data quality note — Aroldis Chapman:** Chapman appears as `b_or_p = "batter"` in `player_lookup.csv` and `keeper_performance_2026.csv` (a data artifact from the archive containing zeroed batter rows for him). He is a pitcher. Always filter `b_or_p == "pitcher"` when querying his archive stats. If regenerating the lookup, fix the dedup logic in `generate_player_lookup.py` to prefer pitcher rows when both types exist for the same player.
 
 ---
 
