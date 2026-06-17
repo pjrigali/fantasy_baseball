@@ -97,12 +97,37 @@ TEAM_ID_TO_NAME = {
     158: 'Milwaukee Brewers',
 }
 
+TEAM_NAME_TO_ABBREV = {
+    'Los Angeles Angels':    'LAA', 'Arizona Diamondbacks': 'ARI',
+    'Baltimore Orioles':     'BAL', 'Boston Red Sox':       'BOS',
+    'Chicago Cubs':          'CHC', 'Cincinnati Reds':      'CIN',
+    'Cleveland Guardians':   'CLE', 'Colorado Rockies':     'COL',
+    'Detroit Tigers':        'DET', 'Houston Astros':       'HOU',
+    'Kansas City Royals':    'KCR', 'Los Angeles Dodgers':  'LAD',
+    'Washington Nationals':  'WSN', 'New York Mets':        'NYM',
+    'Athletics':             'ATH', 'Pittsburgh Pirates':   'PIT',
+    'San Diego Padres':      'SDP', 'Seattle Mariners':     'SEA',
+    'San Francisco Giants':  'SFG', 'St. Louis Cardinals':  'STL',
+    'Tampa Bay Rays':        'TBR', 'Texas Rangers':        'TEX',
+    'Toronto Blue Jays':     'TOR', 'Minnesota Twins':      'MIN',
+    'Philadelphia Phillies': 'PHI', 'Atlanta Braves':       'ATL',
+    'Chicago White Sox':     'CHW', 'Miami Marlins':        'MIA',
+    'New York Yankees':      'NYY', 'Milwaukee Brewers':    'MIL',
+}
+
+FANGRAPHS_FIELDS = [
+    'date_scraped', 'team', 'player_name', 'throws', 'role',
+    'era', 'sv', 'hld', 'sd', 'md',
+    'k9', 'swstr_pct', 'k_pct', 'bb_pct',
+    'hot_seat', 'on_rise',
+]
+
 # Position codes that indicate a pitcher (exclude hitters/catchers/infielders)
 PITCHER_CODES = {'C', '1', 'S', 'P', 'SP', 'RP', 'TWP'}
 
 # Role inference tuning — season-wide rate metrics + rolling lookback window
 LOOKBACK_DAYS        = 14    # days of boxscore history for recent window
-MIN_SV_CO_CLOSER     = 2     # recent saves needed to flag a co-closer emerging
+MIN_SV_CO_CLOSER     = 3     # recent saves needed to flag a co-closer emerging
 MIN_SV_HLD_RATIO     = 0.51  # sv_hld_ratio threshold for Closer classification
 MIN_HLD_RATE_SETUP   = 0.15  # hld_rate threshold for Setup Man classification
 MIN_SV_RATE_COMMIT   = 0.08  # sv_rate threshold for Closer Committee membership
@@ -410,13 +435,18 @@ def infer_roles(players: list, recent_stats: dict,
     for team_id, relievers in team_groups.items():
 
         # ── Step 0: Long Reliever detection ─────────────────────────────────
+        # Exclude pitchers with 3+ saves — multi-inning closers exist and a
+        # true long reliever rarely accumulates meaningful save totals.
         for p in relievers:
-            if float(p['avg_outs']) > avg_outs_long:
+            if float(p['avg_outs']) > avg_outs_long and int(p.get('sv', 0) or 0) < 3:
                 p['inferred_role'] = 'Long Reliever'
 
         # Relievers still active for closer / setup classification
         active = [p for p in relievers if not p.get('inferred_role')]
-        api_closers = [p for p in active if p['position_code'] == 'C']
+        # Exclude 60-Day IL players — they can't pitch and shouldn't consume the Closer slot,
+        # which would block the data-driven Step 2 from finding the active replacement.
+        api_closers = [p for p in active if p['position_code'] == 'C'
+                       and 'Injured 60-Day' not in p.get('status', '')]
 
         # ── Step 1: API-designated closers ──────────────────────────────────
         if api_closers:
@@ -510,6 +540,67 @@ def load_existing(filepath: str):
                 rows.append(row)
                 keys.add((row['date_scraped'], row['player_id']))
     return rows, keys
+
+
+# ---------------------------------------------------------------------------
+# FanGraphs-format cross-write
+# ---------------------------------------------------------------------------
+
+def write_fangraphs_mirror(new_rows: list, season: int, today_str: str, dry_run: bool = False) -> int:
+    """
+    Append today's relievers to closer_depth_fangraphs_{season}.csv in the
+    FanGraphs schema so MLB-API runs can be compared against real FanGraphs
+    scrapes over time. Starters are excluded. Columns unavailable from the
+    MLB API (SwStr%, K%, BB%, MD, hot_seat, on_rise) are left blank.
+    Returns the number of rows written (0 on dry-run or if already current).
+    """
+    fg_file = os.path.join(mp.DATA_PATH, f'closer_depth_fangraphs_{season}.csv')
+
+    # Load existing to dedup on (date_scraped, player_name, team)
+    existing_rows, existing_keys = [], set()
+    if os.path.exists(fg_file):
+        with open(fg_file, 'r', encoding='utf-8') as f:
+            for row in csv.DictReader(f):
+                existing_rows.append(row)
+                existing_keys.add((row['date_scraped'], row['player_name'], row['team']))
+
+    fg_new = []
+    for p in new_rows:
+        if p.get('role') == 'Starting Pitcher':
+            continue
+        abbrev = TEAM_NAME_TO_ABBREV.get(p['team_name'], p['team_name'])
+        key = (today_str, p['player_name'], abbrev)
+        if key in existing_keys:
+            continue
+        fg_new.append({
+            'date_scraped': today_str,
+            'team':         abbrev,
+            'player_name':  p['player_name'],
+            'throws':       p['throws'],
+            'role':         p['inferred_role'],
+            'era':          p['era'],
+            'sv':           p['sv'],
+            'hld':          p['hld'],
+            'sd':           p['sd'],
+            'md':           '',
+            'k9':           p['k9'],
+            'swstr_pct':    '',
+            'k_pct':        '',
+            'bb_pct':       '',
+            'hot_seat':     False,
+            'on_rise':      False,
+        })
+
+    if dry_run or not fg_new:
+        return 0
+
+    with open(fg_file, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=FANGRAPHS_FIELDS, extrasaction='ignore')
+        writer.writeheader()
+        writer.writerows(existing_rows)
+        writer.writerows(fg_new)
+
+    return len(fg_new)
 
 
 # ---------------------------------------------------------------------------
@@ -647,6 +738,11 @@ def main():
     print(f'[OK]    fetch_closer_depth_mlb: {len(new_rows)} rows written | {today_str} '
           f'| {closers_today} API closers | inferred: {role_summary or "none"}')
     print(f'  File total: {total} rows ({len(existing_rows)} prior + {len(new_rows)} new)')
+
+    # ---- Mirror to FanGraphs-format CSV for future comparison ----
+    fg_written = write_fangraphs_mirror(new_rows, season, today_str, dry_run=args.dry_run)
+    if fg_written:
+        print(f'  FanGraphs mirror: {fg_written} rows -> closer_depth_fangraphs_{season}.csv')
 
     # ---- Write run log ----
     try:
