@@ -426,3 +426,73 @@
 - **Days held**: how long each player remained on the roster after pickup — filters out short-lived streamers vs sustained contributors
 
 **Possible output:** Ranked leaderboard of top 10–15 waiver/FA pickups by composite categorical contribution (batters and pitchers separately); per-team summary of total post-add value accumulated; "gems" list of high-value, low-ownership-at-pickup players; list of notable missed opportunities (dropped players who kept producing).
+
+---
+
+## 16. Waiver Wire Signal Detection — Pre-Pickup Indicators of Breakout Pickups
+
+**Status:** `Not Started`
+
+**Motivation:** Idea 15 identified *who* the best waiver pickups of 2026 were after the fact. This idea works backwards: given that ground truth, what could we have *known before* the acquisition date that predicted those players would be valuable? The goal is a set of prescriptive, threshold-based signals — concrete rules a manager can apply each week to identify the next Jordan Walker or Bryan Baker before someone else claims them.
+
+**Idea:** For every pickup in `best_pickups_espn_2026.csv`, build a pre-pickup feature profile using the 7, 14, and 21 days of game logs *before* the acquisition date. Separate the top-quartile pickups (high composite z) from the bottom-quartile pickups (low composite z). Measure which pre-pickup metrics differ most significantly between the two groups. Then translate those differences into prescriptive thresholds: "if a player shows X in the prior 7 days AND Y, they are a strong add candidate."
+
+Cross-validate using prior seasons (2024, 2025) where the same data exists — signals that hold across multiple seasons are more robust than single-year artifacts.
+
+**Questions to answer:**
+- Which pre-pickup metrics most reliably separate top-quartile from bottom-quartile pickups?
+- Do batters show a hitting streak, rising OPS, or batting order promotion before their breakout?
+- Do pitchers show a strikeout spike, innings load increase, or ERA improvement before their breakout?
+- How far in advance does the signal appear — 7 days, 14 days, or longer?
+- Does ownership % trajectory before the pickup (rising vs flat) predict post-add value, independent of the stat signal?
+- Do prior-season stats (the year before the pickup) predict who breaks out on the waiver wire, or is recent form the dominant signal?
+- Are there position-specific signals — e.g., does a reliever's saves opportunity (closer injury on their team) predict SVHD accumulation regardless of recent ERA?
+
+**Prescriptive signal targets (batters):**
+- **Rolling 7-day OPS ≥ X** — identify batters in a hot streak before the market reacts
+- **Rolling 7-day AB/G ≥ X** — confirms they're getting consistent plate appearances (not platooning)
+- **Batting order slot ≤ 3 for ≥ Y of last 7 games** — promoted to a high-value lineup position
+- **Prior-season SB ≥ X AND current stolen base pace below expectation** — speed likely to emerge
+- **Return from IL within last 14 days AND pre-IL OPS ≥ X** — post-IL bounce candidate
+- **Ownership % ≤ Y% AND pct_change trending upward** — market starting to notice, still claimable
+
+**Prescriptive signal targets (pitchers):**
+- **Rolling 7-day K/9 ≥ X** — strikeout spike indicating command improvement or opponent weakness
+- **Rolling 14-day ERA ≤ X with WHIP ≤ Y** — sustained quality, not a one-game outlier
+- **Team's primary closer on IL or struggling** — saves opportunities opening up; identify next saves source by team
+- **SVHD in ≥ Z of last 7 appearances** — already accumulating holds/saves at pace
+- **Starter recently demoted → reliever role** — K/9 typically spikes in shorter outings; flag high-K starters moved to bullpen
+- **Recent IP/G ≥ X for starters** — workload consistent with QS pace
+
+**Approach:**
+1. Load `best_pickups_espn_2026.csv` to get the labeled set — label each pickup as top-quartile (composite z ≥ 75th percentile within player type) or bottom-quartile (composite z ≤ 25th percentile)
+2. For each pickup, pull pre-pickup game logs from `stats_mlb_daily_2026.csv` and `stats_espn_daily_2026.csv` for the 7, 14, and 21 days before `acquisition_date`
+3. Compute pre-pickup feature vectors per player: rolling OPS/ERA/K9/WHIP, games played rate, batting order slot distribution, ownership trend slope from `rankings_espn_daily_2026.csv`
+4. For each feature, compute the mean and distribution for top-quartile vs bottom-quartile pickups; use a simple t-test or Mann-Whitney U to rank features by discriminative power
+5. Translate the top features into threshold rules: find the cutoff value for each metric that maximizes separation between the two groups (similar to a single-feature decision boundary)
+6. Combine the top 3–4 signals into a composite "add score" per signal combination — score = number of signals triggered
+7. Back-test the signal rules against 2024 and 2025 activity + stat data to measure precision (what % of flagged players become top-quartile pickups) and recall (what % of top-quartile pickups were flagged in advance)
+8. Report the final ruleset as concrete, actionable thresholds — e.g., "Batter with 7-day OPS ≥ .820, AB/G ≥ 3.5, ownership < 30%, and batting order slot ≤ 3 in 5+ of last 7 games: strong add"
+
+**Data sources:**
+- `data-lake/01_Bronze/fantasy_baseball/best_pickups_espn_2026.csv` — ground truth labels from idea 15 (top vs bottom pickup performers)
+- `stats_mlb_daily_2026.csv` / `2025.csv` / `2024.csv` — pre-pickup game logs for feature construction
+- `stats_espn_daily_2026.csv` / `2025.csv` / `2024.csv` — lineup slot, ownership context, fantasy points in the pre-pickup window
+- `rankings_espn_daily_2026.csv` / `2025.csv` / `2024.csv` — ownership %, pct_change, ESPN rank trend before the pickup date
+- `activity_espn_season_2026.csv` / prior seasons — pickup dates and which team made the claim (to reproduce the same analysis for 2024/2025)
+- `lineups_mlb_batters_2026.csv` — batting order slot history in the pre-pickup window (batter signal only)
+
+**Key metrics to derive:**
+- **Rolling 7/14-day OPS** (batters) — weighted by AB, same method as idea 15
+- **Rolling 7/14-day K/9, ERA, WHIP** (pitchers) — from aggregated OUTS, ER, P_H, P_BB, K totals
+- **Games played rate** — games with AB > 0 (batters) or OUTS > 0 (pitchers) per calendar day in window
+- **Batting order slot mode** — most frequent slot in the pre-pickup window; flag if ≤ 3 (batters)
+- **Ownership % slope** — linear regression of pct_owned over the 7 days before pickup; positive slope = market waking up
+- **Days since IL activation** — for players recently returned from injury
+- **Prior-season composite z** (from a prior-year run of idea 15 or season-aggregated stats) — flags known talent not yet re-claimed
+
+**Possible output:**
+- Ranked signal importance table: which pre-pickup features most separate good from bad pickups, with effect size and cross-season validation score
+- Prescriptive rulebook: a printed set of threshold-based rules per player type (batter / reliever / starter) with back-tested precision and recall on 2024–2025 data
+- Retrospective audit of 2026 top pickups: for each top-15 batter and pitcher from idea 15, show which signals were firing in the days before someone claimed them — and how many days in advance the signal was available
+- Weekly add-candidate watchlist generator: a script that reads the current week's `rankings_espn_daily` and `stats_mlb_daily` and outputs players currently meeting the signal thresholds who are still available (ownership < 50%)
