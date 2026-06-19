@@ -499,59 +499,141 @@ Cross-validate using prior seasons (2024, 2025) where the same data exists — s
 
 ---
 
-## 17. Waiver Wire Archetype Discovery — Unsupervised Clustering of Pre-Pickup Profiles
+## 17. Waiver Wire Signal Detection — Multi-Method Prescriptive Metric Discovery
 
 **Status:** `Not Started`
 
-**Motivation:** Idea 16 uses post-pickup composite z-scores as labels to supervise signal discovery — but that means the results are bounded by how well the labels reflect true player value. An unsupervised approach asks a different question: ignoring outcomes entirely, what natural groupings exist in the pre-pickup feature space? Once clusters are formed, we overlay post-pickup performance to see which archetypes consistently produce value. This approach can surface structure the supervised method misses — emergent player types that don't map cleanly to any single threshold but are identifiable as a combination.
+**Motivation:** Idea 16 establishes the supervised baseline — use post-pickup composite z as a label and derive threshold rules. This idea expands the toolkit with every other method class available for signal detection: unsupervised clustering, statistical change detection, Bayesian inference, time series forecasting, anomaly detection, market efficiency analysis, opportunity graph modeling, and sequential testing. Each method sees the pre-pickup feature space differently. The goal is to run all of them, compare what each finds, and consolidate into the most robust and cross-validated signal set possible. Methods that agree across approaches are the ones worth building a weekly runtime watchlist around.
 
-**Idea:** Build the same pre-pickup feature vectors as idea 16 (7/14-day rolling stats, ownership trend, batting order slot, opportunity signals) but feed them into clustering algorithms with no labels. Let the algorithm discover the natural groupings. After clusters stabilize, label each cluster with its median post-pickup composite z-score and interpret what the cluster centroid represents in baseball terms. The named archetypes become the framework — each week, classify available free agents into the archetypes and prioritize the ones that historically produce.
+**Idea:** Build the same pre-pickup feature vectors as idea 16 (7/14/21-day rolling stats, ownership trend, batting order slot, opportunity signals) and run the full suite of methods below. After each method produces its signals or cluster assignments, overlay post-pickup composite z (from idea 15) to validate which signals actually predict good pickups. Methods are grouped by category. The full approach is modular — each section can be built and evaluated independently.
 
-**Unsupervised methods:**
+---
 
-- **PCA first** — reduce the feature matrix to 2–3 principal components for visualization and to remove correlated noise before clustering. Inspect loadings to understand which features drive each component (e.g., PC1 might load heavily on recent OPS and batting order slot — a "hot hitter" axis; PC2 on ownership slope and days since IL return — a "market lag" axis)
-- **K-means** — cluster in PCA space; use silhouette score and elbow curve to select optimal k (expect 4–7 meaningful archetypes per player type). Cluster centroids are interpretable as archetype profiles
-- **DBSCAN** — density-based clustering as a complement; unlike K-means it doesn't force every player into a cluster, so it naturally isolates outlier breakout players who don't fit any archetype — these are worth inspecting individually since they may represent novel opportunity types
-- **Hierarchical clustering** — dendrogram to show how archetypes relate to each other; reveals whether "hot streak batter" and "IL return bounce" are siblings in the feature space or fully orthogonal
+### A. Unsupervised Clustering — Archetype Discovery
+
+Ignores post-pickup outcomes during training. Discovers natural groupings in the pre-pickup feature space, then overlays performance afterward to see which archetypes are predictive.
+
+- **PCA first** — reduce the feature matrix to 2–3 principal components for visualization and to remove correlated noise before clustering. Inspect loadings to name the principal axes (e.g., PC1 = "hot hitter" axis loading on recent OPS and batting order slot; PC2 = "market lag" axis loading on ownership slope and days since IL return)
+- **K-means** — cluster in PCA space; use silhouette score and elbow curve to select k (expect 4–7 meaningful archetypes per player type). Cluster centroids are the archetype profiles
+- **DBSCAN** — density-based clustering; unlike K-means it doesn't force every player into a cluster, naturally isolating outlier breakout players who don't fit any archetype — these are worth inspecting individually each season as potential novel opportunity types
+- **Hierarchical clustering** — dendrogram to show how archetypes relate; reveals whether "hot streak batter" and "IL return bounce" are siblings in feature space or fully orthogonal
 
 **Expected archetypes (hypotheses to test):**
 
-*Batters:*
-- **Hot Streak Riser** — high 7-day OPS, high AB/G, batting order ≤ 3, flat or slightly rising ownership; the player the market is just starting to notice
-- **Quiet Grinder** — steady moderate stats across the full 21-day window, no spike, low ownership; accumulates counting stats without flash
-- **IL Return Bounce** — recent IL activation, pre-IL OPS high, low recent game count (small sample), ownership declining before return
-- **Lineup Promoted** — batting order slot dropped significantly in the last 7 days (moved up 2+ spots), AB/G rising, OPS flat or improving
+*Batters:* Hot Streak Riser (high 7-day OPS, high AB/G, batting order ≤ 3, rising ownership), Quiet Grinder (steady moderate stats, no spike, low ownership), IL Return Bounce (recent IL activation, strong pre-IL OPS, ownership declining during absence), Lineup Promoted (batting order moved up 2+ spots in last 7 days)
 
-*Pitchers:*
-- **Closer Opportunity** — recent SVHD accumulation, team's primary closer on IL or cold, ERA and WHIP acceptable, low ownership
-- **Strikeout Spike** — K/9 sharply higher in the last 7 days vs prior 14 days, ERA and WHIP improving in tandem (not a luck outlier)
-- **Workload Builder** — IP/G steadily rising, QS pace consistent, low ownership (starter being stretched out or recently called up)
-- **Role Shift** — recently moved from starter to reliever or vice versa; K/9 typically spikes when starters move to high-leverage relief
+*Pitchers:* Closer Opportunity (SVHD accumulating, team's closer on IL or cold), Strikeout Spike (K/9 sharply higher in last 7 days vs prior 14), Workload Builder (IP/G steadily rising, QS pace consistent), Role Shift (starter moved to high-leverage relief — K/9 typically spikes)
 
-**Approach:**
-1. Build the pre-pickup feature matrix from `stats_mlb_daily`, `stats_espn_daily`, `rankings_espn_daily`, and `lineups_mlb_batters` — same construction as idea 16 but split into batter and pitcher feature sets separately
-2. Standardize all features (z-score each column across the full pickup population so no single feature dominates by scale)
-3. Run PCA; retain components explaining ≥ 85% of variance; inspect loadings to name the principal axes
-4. K-means on the PCA-reduced matrix: test k = 3 through 8, select by silhouette score; record cluster centroids in original feature space
-5. DBSCAN on the PCA-reduced matrix: tune `eps` and `min_samples` to isolate the dense core archetypes from outlier pickups
-6. After clustering: compute mean and median post-pickup composite z (from idea 15 output) per cluster — this is the validation step that tells us which archetypes are predictive without having used that label during training
-7. Name each cluster based on its centroid profile (see expected archetypes above); write a human-readable description of each
-8. Back-test: apply the same clustering pipeline to 2024 and 2025 pickup populations. Do the same archetypes emerge? Do the same archetypes produce high post-pickup z? Stability across seasons = robustness
-9. Build a classifier: once archetypes are defined, fit a nearest-centroid or KNN classifier to assign any new player's pre-pickup feature vector to the closest archetype. This is the runtime component — run it each week on available free agents
+---
 
-**Connection to idea 16:** The two approaches are complementary. Idea 16 produces threshold rules ("if OPS ≥ X AND slot ≤ 3, add"). Idea 17 produces archetype membership ("this player looks like a Closer Opportunity, which historically produces Z = +2.1 on average"). A player can trigger a threshold rule AND be assigned to a high-value archetype — when both agree, confidence is highest.
+### B. Statistical Change Detection — Pinpointing the Breakout Game
+
+Fixed rolling windows (7/14-day) smooth over the actual inflection point. Change detection algorithms find the exact game where a player's performance regime shifted.
+
+- **PELT (Pruned Exact Linear Time)** — efficient changepoint detection on a player's rolling game-log series (OPS per game for batters, ERA/K9 per outing for pitchers). Identifies the precise date of a regime shift — more actionable than "they've been hot recently"
+- **CUSUM (Cumulative Sum Control Chart)** — detects sustained directional drift in a stat series. A CUSUM signal on a batter's OPS series means the upward move has been consistent enough to cross a statistical threshold, not a single outlier game
+- **Bayesian changepoint detection** — probabilistic version; outputs a posterior distribution over the change date rather than a single point. Useful when the data is noisy (small sample sizes in short pre-pickup windows)
+
+*Why this matters:* Two players can have the same 14-day rolling OPS, but one player has been trending up for 14 straight days (sustained shift) while the other had one great week then cooled. Change detection distinguishes them.
+
+---
+
+### C. Bayesian Updating — Correctly Weighting Small Samples
+
+A player's 7-day hot streak means very different things depending on their prior track record. Bayesian methods incorporate both.
+
+- **Empirical Bayes** — estimate each player's prior distribution from their preseason projection or prior-season stats. Update the prior with in-season game logs using Bayes' rule. A player with a strong prior (projected .850 OPS) who is currently .900 gets more credit than a career .650 OPS player running .900 on 20 AB
+- **Beta-Binomial for rate stats** — model each player's "hit rate" (games above a threshold OPS) as a Beta distribution. Prior is set by prior-season performance; posterior is updated game by game. The posterior mean is the Bayesian estimate of true ability — shrinks hot streaks toward the mean appropriately
+- **Regression-to-mean modeling** — for a given pre-pickup OPS or ERA, estimate the expected post-pickup regression. Players whose hot stretch is backed by sustainable underlying rates (high contact quality, low BABIP relative to exit velocity, high K%) will regress less. Flag players where the pre-pickup stat is likely to *persist* vs players riding luck
+
+---
+
+### D. Sequential Testing — Earliest Possible Signal Detection
+
+SPRT and sequential methods are designed to reach a decision (real shift vs noise) with as few data points as possible — critical when the add window is short.
+
+- **Sequential Probability Ratio Test (SPRT)** — tests the null (player is performing at their prior level) vs the alternative (player has shifted to a higher level). Raises a signal the moment the likelihood ratio crosses a decision boundary. For a batter: raises an "add" signal after the minimum number of games needed to be confident the OPS improvement is real, not random
+- **One-sided CUSUM as a sequential test** — flag a player the first time their cumulative performance deviation from prior mean crosses a threshold. Identical to the control-chart application but framed as an alarm system: "this player crossed the signal threshold on Game N"
+
+*Output of this section:* For each pickup in the ground truth set (idea 15 top quartile), report on which game before the acquisition date the SPRT or CUSUM signal would have fired. Median lead time = how many days in advance the signal was available before anyone claimed the player.
+
+---
+
+### E. Anomaly Detection — Flagging the Unusual
+
+Train on the distribution of "normal" player stat profiles; flag anyone whose recent stats fall outside it. Catches breakouts without needing labeled outcomes or defined thresholds.
+
+- **Isolation Forest** — ensemble method that isolates anomalies by randomly partitioning the feature space. Points requiring fewer partitions to isolate are anomalies. Run on the rolling stat feature matrix; a high anomaly score in a player's recent window means their recent performance is unusual relative to the broader population — either a breakout or a collapse. Separates by direction using the sign of the deviation
+- **One-Class SVM** — train on the "normal" region of the feature space (the bulk of the player population in a given week); flag any player whose recent feature vector falls outside the learned boundary. Unlike isolation forest, the decision boundary is a smooth hypersurface in feature space
+
+*Key advantage over clustering:* anomaly detection requires no cluster assignment and no archetype label. Any player whose recent stats are unusually good relative to the population gets flagged automatically.
+
+---
+
+### F. Time Series Forecasting — Project the Next 7 Days
+
+Rather than describing what a player has done, forecast what they will do next week.
+
+- **Exponential smoothing (ETS)** — weighted average of recent observations with exponential decay; more recent games count more. Project each player's next-7-day OPS/ERA/K9 from their game log history. Players whose projected next-7 exceeds their ownership-implied value are add candidates
+- **ARIMA** — autoregressive model that captures both trend and autocorrelation in the performance series. More robust than simple smoothing when performance shows momentum (streaks) or mean-reversion patterns
+- **Comparison to idea 16 thresholds:** the forecasted next-7 stat can replace the raw rolling average as the input feature to idea 16's threshold rules. "Add if forecasted 7-day OPS ≥ X" is more forward-looking than "add if last 7-day OPS ≥ X"
+
+---
+
+### G. Market Efficiency Analysis — Where Is the Edge Largest?
+
+Treat ownership % as a prediction market. The lag between performance and market reaction is the add window.
+
+- **Ownership lag by position** — for each position group (C, MI, OF, SP, RP), compute the median number of days between a player posting a qualifying performance signal and the corresponding ownership spike (defined as +10% pct_owned in a single day). Position groups with the longest lag have the widest add windows — the market is slowest to react there
+- **Ownership slope vs performance decile** — bin all players by their rolling performance decile; plot mean ownership change rate per decile. The gap between performance rank and ownership response rate is the inefficiency to exploit
+- **Low-signal, high-ownership players** — the inverse: players whose ownership is high but recent performance is weak. These are drop candidates; their roster spots are the ones where competing managers are leaving value on the table
+
+---
+
+### H. Opportunity Graph — Lineup Dependency Modeling
+
+Sometimes a player's add value isn't about their own stats — it's about a structural change in their opportunity.
+
+- **Batting order dependency** — for each MLB team, model which batting slots feed run-scoring opportunities to each other (e.g., leadoff OBP drives runs for the 2-3-4 hitters). When a high-OBP leadoff hitter gets injured and the 2-hole batter moves up, the 2-hole batter's R/RBI opportunity increases even if their own stats haven't changed yet
+- **Saves opportunity cascade** — when a team's closer goes to the IL, the SVHD opportunity flows to the next arm in the bullpen hierarchy. Map each team's closer depth (from `closer_depth_mlb_2026.csv`) and flag the next-in-line relievers as add candidates whenever a closer event (IL, poor ERA, blown saves) occurs
+- **Platoon detection** — identify players who are platooning (alternating starts vs LHP/RHP). A platoon partner going to the IL means the remaining player suddenly gets full-time at-bats — a structural opportunity increase not visible in their own recent stats
+
+---
+
+### I. Multi-Armed Bandit — Add Decision as Explore/Exploit
+
+Frame the weekly waiver claim as a sequential decision problem under uncertainty.
+
+- **Epsilon-greedy** — with probability ε, add a lower-signal player (explore); otherwise, add the highest-expected-value available player (exploit). Calibrate ε to the manager's add budget and weeks remaining in the season — exploration is more valuable early in the season when there's more time to benefit from a found gem
+- **Thompson sampling** — maintain a Beta distribution over each available player's "add quality" (probability of being a top-quartile pickup). Sample from each distribution; claim the player whose sample is highest. Naturally balances exploration and exploitation; updates the distribution after each claim based on actual post-add performance
+- **Contextual bandit** — extend to include context (matchup difficulty, bye weeks, injury news) as features that modify the expected reward. The archetype assignment from section A is one such context feature
+
+---
+
+### Approach (combined pipeline):
+
+1. Build the pre-pickup feature matrix from `stats_mlb_daily`, `stats_espn_daily`, `rankings_espn_daily`, and `lineups_mlb_batters`; standardize all features; split into batter and pitcher sets
+2. Run sections A–I sequentially, recording for each player which methods flagged them and what signal each produced
+3. Overlay post-pickup composite z (idea 15) for validation — compute precision and recall for each method's flags
+4. Rank methods by predictive power; identify the subset that agree most consistently across 2024–2026 seasons (cross-season stability = robustness)
+5. For each top-15 batter and pitcher from idea 15, produce a retrospective audit: which methods would have fired before the pickup date, and how many days in advance?
+6. Consolidate into a runtime watchlist script: each week, run all methods on the current available player pool and output a ranked add-candidate list with the methods that fired for each player
+
+**Connection to idea 16:** Idea 16 produces threshold rules from the supervised approach. Idea 17 produces signals from every other method class. A player who triggers an idea 16 threshold rule AND is flagged by 3+ idea 17 methods is the highest-confidence add. The combined signal count is the confidence score.
 
 **Data sources:** Same as idea 16.
-- `data-lake/01_Bronze/fantasy_baseball/best_pickups_espn_2026.csv` — post-pickup composite z used only for cluster validation (not training)
+- `data-lake/01_Bronze/fantasy_baseball/best_pickups_espn_2026.csv` — post-pickup composite z for validation only
 - `stats_mlb_daily_2026.csv` / `2025.csv` / `2024.csv` — pre-pickup game logs
-- `stats_espn_daily_2026.csv` / `2025.csv` / `2024.csv` — lineup slot, ownership, fantasy points in pre-pickup window
-- `rankings_espn_daily_2026.csv` / `2025.csv` / `2024.csv` — ownership % and trend
-- `lineups_mlb_batters_2026.csv` — batting order slot history (batter clusters only)
+- `stats_espn_daily_2026.csv` / `2025.csv` / `2024.csv` — lineup slot, ownership, fantasy points
+- `rankings_espn_daily_2026.csv` / `2025.csv` / `2024.csv` — ownership %, pct_change trend
+- `lineups_mlb_batters_2026.csv` — batting order slot history
+- `closer_depth_mlb_2026.csv` — bullpen hierarchy for saves opportunity cascade (section H)
 
 **Possible output:**
-- PCA biplot showing pickup population in 2D with cluster membership colored — visually shows how archetypes separate in feature space
-- Cluster archetype cards: one card per cluster with centroid feature values, cluster size, median post-pickup composite z, and a named description (e.g., "Hot Streak Riser — median Z = +3.4, n=42 pickups")
-- Dendrogram (hierarchical clustering) showing archetype relationships — useful for understanding which archetypes are most similar
-- DBSCAN outlier list: the breakout players who didn't fit any archetype — inspect manually each season for novel opportunity types
-- Cross-season stability report: do the same archetypes emerge in 2024 and 2025 data, and do their relative post-pickup composite z rankings hold?
-- Runtime archetype classifier: a script that ingests a player's current rolling stats and outputs their archetype assignment plus the historical median composite z for that archetype
+- Per-method validation table: precision, recall, and cross-season stability score for each of sections A–I
+- PCA biplot with cluster membership and anomaly scores overlaid
+- Changepoint audit: for each idea 15 top pickup, which game did the SPRT/CUSUM signal fire, and how many days before the actual acquisition date?
+- Archetype cards: one card per cluster with centroid features, cluster size, median composite z, and name
+- Market lag table by position: median days between signal and ownership spike, ranked — shows where add windows are widest
+- Opportunity graph per MLB team: closer depth hierarchy, lineup dependency map
+- Weekly runtime watchlist script: ingests current week's data, runs all methods, outputs ranked add candidates with signal count and contributing methods per player
