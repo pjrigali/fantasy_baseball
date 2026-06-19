@@ -381,3 +381,48 @@
 5. Analyze positional injury rates (e.g., starting pitchers vs. outfielders).
 
 **Possible output:** A player "injury risk" score/index based on historical IL stints; average injury duration tables by position; a list of "high-risk" draft targets based on their propensity for injury.
+
+---
+
+## 15. Best Waiver Pickups of the Season — Post-Acquisition Categorical Contribution
+
+**Status:** `Complete`
+
+> **TODO (end of season):** Rerun `fantasy_baseball/ideas/idea_15_best_pickups/analyze_best_pickups_espn_2026.py` once the full season's data is available. Update `best_pickups_espn_2026.md` and republish `pjrigali.github.io/pages/fantasy-baseball/31_Fantasy_Baseball_Best_Pickups_2026.md`. The mid-season run used data through 2026-06-16.
+
+**Motivation:** Not every roster-building win happens at the draft. Waiver wire adds and free agent pickups can swing weekly matchups and shift league standings. By isolating all non-draft acquisitions and measuring each player's statistical contribution across all 10 scoring categories from the moment they were picked up, we can objectively rank the best in-season roster moves of the year.
+
+**Idea:** Filter `activity_espn_season_2026.csv` to adds that were not the result of the initial draft. For each add, record the acquisition date and compute that player's cumulative stats in the 5 batting categories (R, HR, RBI, SB, OPS) and 5 pitching categories (K/9, QS, SVHD, ERA, WHIP) from their pickup date through the end of the available data window. Rank pickups by their post-acquisition categorical value to surface the players who delivered the most real scoring-category impact after being claimed.
+
+**Questions to answer:**
+- Which non-drafted players have contributed the most across the 5x5 categories since being picked up?
+- Which team made the single best waiver claim of the season, measured by post-add categorical output?
+- Are the best pickups concentrated in a specific position (e.g., breakout SP, hot-streak RP, emerging OF)?
+- How does the pickup date affect value — do early-season adds outperform late-season streamers by total contribution, and do late-season adds win on a per-week basis?
+- Which players were picked up and dropped quickly despite going on to produce significant value elsewhere (missed opportunities)?
+- Is there a team that has consistently found high-value waiver adds throughout the season vs one that has made mostly low-return claims?
+
+**Data sources:**
+- `activity_espn_season_2026.csv` — acquisition type (waiver, free agent, trade) and date; used to isolate non-draft adds and set the post-acquisition start date
+- `stats_espn_daily_2026.csv` — daily stats per player to accumulate post-add totals for R, HR, RBI, SB, OPS
+- `stats_mlb_daily_2026.csv` — game-level box score data for pitching categories (K/9, QS, SVHD, ERA, WHIP) from the pickup date forward
+- `rankings_espn_daily_2026.csv` — ownership % at pickup date as a proxy for how overlooked the player was when claimed
+
+**Approach:**
+1. Filter activity log to adds where acquisition type is not "Draft" — include waiver claims and free agent adds
+2. For each add, join to `stats_espn_daily` and `stats_mlb_daily` on `(player_name, date >= acquisition_date)` to build a post-add stat window
+3. Aggregate to cumulative totals: counting stats (R, HR, RBI, SB, QS, SVHD, K) and rate stats (OPS, ERA, WHIP, K/9) over the post-add window
+4. **Scale contributions using z-scores**: for each of the 10 categories, compute the mean and standard deviation across all pickups in that category, then express each player's value as `(player_stat - mean) / std_dev`. This normalizes for distributional differences — HR has a tight distribution, so a single HR above the mean carries a larger z-score than a single R above the mean in the wider-spread R distribution. For inverse categories (ERA, WHIP), negate the z-score so that lower = better still reads as positive contribution.
+5. Sum the 10 z-scores to produce a **composite z-score** per pickup — this is the primary ranking metric. A player who is +1.5 SD in HR contributes more to the composite than a player who is +1.5 SD in R, reflecting the inherent scarcity of power.
+6. Separate batter and pitcher leaderboards (batters scored on 5 batting z-scores, pitchers on 5 pitching z-scores), then produce a combined overall list using all applicable categories per player type
+7. Flag the ownership % at pickup date from `rankings_espn_daily` to highlight steals — high composite z-score at low ownership = true waiver gem
+
+**Key metrics:**
+- **Post-add cumulative counting stats**: R, HR, RBI, SB, QS, SVHD per player since acquisition
+- **Post-add rate stats**: OPS, ERA, WHIP, K/9 over their active games since pickup
+- **Per-category z-score**: each stat normalized to `(value - category_mean) / category_std` across all pickups — the unit of comparison that accounts for distributional scale differences between categories
+- **Composite z-score**: sum of all applicable per-category z-scores — primary ranking metric (higher = more cross-category value delivered)
+- **Ownership % at pickup**: from `rankings_espn_daily` on or near the acquisition date — low ownership + high composite z-score = overlooked gem
+- **Days held**: how long each player remained on the roster after pickup — filters out short-lived streamers vs sustained contributors
+
+**Possible output:** Ranked leaderboard of top 10–15 waiver/FA pickups by composite categorical contribution (batters and pitchers separately); per-team summary of total post-add value accumulated; "gems" list of high-value, low-ownership-at-pickup players; list of notable missed opportunities (dropped players who kept producing).
