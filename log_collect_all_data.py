@@ -35,8 +35,8 @@ if os.path.exists(os.path.join(root, 'data-lake')):
     BASE    = os.path.join(root, 'data-lake', '01_Bronze', 'fantasy_baseball')
     LOG_DIR = os.path.join(root, 'data-lake', '00_Logs', 'fantasy_baseball')
 else:
-    BASE    = os.path.join(root, '.data_lake', '01_Bronze', 'fantasy_baseball')
-    LOG_DIR = os.path.join(root, '.data_lake', '00_Logs', 'fantasy_baseball')
+    BASE    = os.path.join(root, 'data-lake', '01_Bronze', 'fantasy_baseball')
+    LOG_DIR = os.path.join(root, 'data-lake', '00_Logs', 'fantasy_baseball')
 
 LOG_PATH = os.path.join(LOG_DIR, 'fantasy-collect-all-data.jsonl')
 

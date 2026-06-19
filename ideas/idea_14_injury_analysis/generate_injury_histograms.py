@@ -16,7 +16,7 @@ import numpy as np
 # Resolve paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
-DATA_PATH = os.path.join(PROJECT_ROOT, '.data_lake', '01_Bronze', 'fantasy_baseball')
+DATA_PATH = os.path.join(PROJECT_ROOT, 'data-lake', '01_Bronze', 'fantasy_baseball')
 IMAGE_DIR = os.path.join(PROJECT_ROOT, 'pjrigali.github.io', 'assets', 'images')
 
 def log_event(message):

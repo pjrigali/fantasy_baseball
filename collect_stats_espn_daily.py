@@ -10,7 +10,7 @@ Inputs:
                            --year NNNN        (defaults to 2026)
 
 Outputs:
-  - .data_lake/01_bronze/fantasy_baseball/stats_espn_daily_{year}.csv
+  - data-lake/01_bronze/fantasy_baseball/stats_espn_daily_{year}.csv
     Appended with one row per player per team for the target date.
     Duplicate rows (same date + team_id + player_id) are skipped.
 

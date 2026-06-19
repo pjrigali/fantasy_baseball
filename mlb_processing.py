@@ -69,7 +69,7 @@ TEAM_SLUG_MAP = {
 # Resolves the Bronze data lake path across machines, checked in order:
 #   1. data-lake/01_Bronze/fantasy_baseball  (inside repo — work machine)
 #   2. ../data-lake/01_Bronze/fantasy_baseball (sibling of repo — legacy layout)
-#   3. .data_lake/01_bronze/fantasy_baseball  (inside repo — home machine)
+#   3. data-lake/01_bronze/fantasy_baseball  (inside repo — home machine)
 def _resolve_data_path():
     _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     # Work machine (primary): data-lake inside the repo
@@ -81,8 +81,8 @@ def _resolve_data_path():
     sibling_path = os.path.join(parent_dir, 'data-lake', '01_Bronze', 'fantasy_baseball')
     if os.path.isdir(sibling_path):
         return sibling_path
-    # Home machine fallback: .data_lake inside the repo (created on first use)
-    return os.path.join(_project_root, '.data_lake', '01_bronze', 'fantasy_baseball')
+    # Home machine fallback: data-lake inside the repo (created on first use)
+    return os.path.join(_project_root, 'data-lake', '01_bronze', 'fantasy_baseball')
 
 DATA_PATH = _resolve_data_path()
 

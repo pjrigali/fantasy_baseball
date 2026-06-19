@@ -31,14 +31,14 @@ def _paths(year):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     csv_in = None
-    for name in ('.data_lake', 'data-lake'):
+    for name in ('data-lake', 'data-lake'):
         p = os.path.join(root, name, '01_Bronze', 'fantasy_baseball',
                          f'analyze_trade_finder_espn_{year}.csv')
         if os.path.isfile(p):
             csv_in = p
             break
     if not csv_in:
-        csv_in = os.path.join(root, '.data_lake', '01_Bronze', 'fantasy_baseball',
+        csv_in = os.path.join(root, 'data-lake', '01_Bronze', 'fantasy_baseball',
                               f'analyze_trade_finder_espn_{year}.csv')
     md_out  = os.path.join(script_dir, f'trade_summary_espn_{year}_{date.today()}.md')
     return csv_in, md_out

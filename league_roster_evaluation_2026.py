@@ -62,7 +62,7 @@ def calculate_z_scores(df, categories, invert_categories=None):
     return result, z_cols
 
 def main():
-    bronze_path = r"c:\Users\peter\Desktop\vscode\main\.data_lake\01_bronze\fantasy_baseball"
+    bronze_path = r"c:\Users\peter\Desktop\vscode\main\data-lake\01_bronze\fantasy_baseball"
     batters_path = os.path.join(bronze_path, "player_batter_projections_2026.csv")
     pitchers_path = os.path.join(bronze_path, "player_pitcher_projections_2026.csv")
     draft_path = os.path.join(bronze_path, "draft_results_espn_2026.csv")

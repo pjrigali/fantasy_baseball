@@ -44,12 +44,12 @@ PITCHER_STATS = ['K/9', 'QS', 'SVHD', 'ERA', 'WHIP']
 
 def _csv_path(year):
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-    for name in ('.data_lake', 'data-lake'):
+    for name in ('data-lake', 'data-lake'):
         p = os.path.join(root, name, '01_Bronze', 'fantasy_baseball',
                          f'analyze_trade_finder_espn_{year}.csv')
         if os.path.isfile(p):
             return p
-    raise FileNotFoundError(f"Trade finder CSV not found in {root} (searched .data_lake/data-lake)\n"
+    raise FileNotFoundError(f"Trade finder CSV not found in {root} (searched data-lake/data-lake)\n"
                             "Run analyze_trade_finder_espn_*.py first.")
 
 

@@ -10,7 +10,7 @@ Description: Fetches daily player ownership, trending, and positional ranking da
 Source Data: ESPN Fantasy Baseball API (kona_player_info view). Credentials read from
              config.ini under [BASEBALL]: BB_LEAGUE_ID, BB_SWID, BB_ESPN_2.
 
-Outputs: .data_lake/01_Bronze/fantasy_baseball/rankings_espn_daily_{year}.csv
+Outputs: data-lake/01_Bronze/fantasy_baseball/rankings_espn_daily_{year}.csv
          One row per player per date. Deduplicates on (date, player_id).
 """
 

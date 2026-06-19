@@ -2,7 +2,7 @@
 Description: Fetch player status changes (Injured List placements and activations) from the MLB Stats API
              for a given year and save to the Bronze layer of the data lake.
 Source Data: statsapi.mlb.com/api/v1/transactions
-Outputs: c:/Users/peter/Desktop/vscode/main/.data_lake/01_Bronze/fantasy_baseball/stats_mlb_season_transactions_{year}.csv
+Outputs: c:/Users/peter/Desktop/vscode/main/data-lake/01_Bronze/fantasy_baseball/stats_mlb_season_transactions_{year}.csv
 """
 import os
 import csv
@@ -13,8 +13,8 @@ from datetime import datetime
 # Resolve paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
-DATA_PATH = os.path.join(PROJECT_ROOT, '.data_lake', '01_Bronze', 'fantasy_baseball')
-LOG_PATH = os.path.join(PROJECT_ROOT, '.data_lake', '00_Logs', 'fantasy_baseball')
+DATA_PATH = os.path.join(PROJECT_ROOT, 'data-lake', '01_Bronze', 'fantasy_baseball')
+LOG_PATH = os.path.join(PROJECT_ROOT, 'data-lake', '00_Logs', 'fantasy_baseball')
 
 def log_event(message):
     """Logs an event message to the console and to the log file."""

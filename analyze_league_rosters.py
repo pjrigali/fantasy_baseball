@@ -14,7 +14,7 @@ import numpy as np
 
 
 
-BASE_PATH = r'c:\Users\peter\Desktop\vscode\main\.data_lake\01_Bronze\fantasy_baseball'
+BASE_PATH = r'c:\Users\peter\Desktop\vscode\main\data-lake\01_Bronze\fantasy_baseball'
 OUTPUT_PATH = r'c:\Users\peter\.gemini\antigravity\brain\ad8af236-c6c6-4f16-8110-5d46378f456d\league_analysis_report.md'
 
 print("Loading data...")

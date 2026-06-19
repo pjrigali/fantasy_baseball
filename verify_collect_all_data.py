@@ -33,7 +33,7 @@ root = os.getcwd()
 if os.path.exists(os.path.join(root, 'data-lake')):
     BASE = os.path.join(root, 'data-lake', '01_Bronze', 'fantasy_baseball')
 else:
-    BASE = os.path.join(root, '.data_lake', '01_Bronze', 'fantasy_baseball')
+    BASE = os.path.join(root, 'data-lake', '01_Bronze', 'fantasy_baseball')
 
 FILES = {
     'ESPN Daily Stats': f'stats_espn_daily_{YEAR}.csv',

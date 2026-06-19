@@ -168,7 +168,7 @@ Retired or one-off scripts moved out of the root for cleanliness.
 
 ## Workflow Reference
 
-Active workflows in `.agent/workflows/` that invoke these scripts:
+Active workflows in `agent/workflows/` that invoke these scripts:
 
 | Workflow | Scripts Used |
 |---|---|

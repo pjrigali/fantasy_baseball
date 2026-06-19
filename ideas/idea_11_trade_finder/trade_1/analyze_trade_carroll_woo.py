@@ -19,16 +19,16 @@ import csv
 import os
 from collections import defaultdict
 
-# Go up 5 levels to get the workspace root containing .data_lake or data-lake
+# Go up 5 levels to get the workspace root containing data-lake or data-lake
 _root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 BASE = None
-for name in ('.data_lake', 'data-lake'):
+for name in ('data-lake', 'data-lake'):
     p = os.path.join(_root, name, '01_Bronze', 'fantasy_baseball')
     if os.path.isdir(p):
         BASE = p
         break
 if not BASE:
-    BASE = os.path.join(_root, '.data_lake', '01_Bronze', 'fantasy_baseball')
+    BASE = os.path.join(_root, 'data-lake', '01_Bronze', 'fantasy_baseball')
 
 CARROLL_ID = "682998"
 WOO_ID     = "693433"

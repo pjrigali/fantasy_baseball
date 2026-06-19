@@ -13,9 +13,9 @@ from collections import defaultdict, Counter
 # Resolve paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
-DATA_PATH = os.path.join(PROJECT_ROOT, '.data_lake', '01_Bronze', 'fantasy_baseball')
+DATA_PATH = os.path.join(PROJECT_ROOT, 'data-lake', '01_Bronze', 'fantasy_baseball')
 REPORT_PATH = SCRIPT_DIR
-LOG_PATH = os.path.join(PROJECT_ROOT, '.data_lake', '00_Logs', 'fantasy_baseball')
+LOG_PATH = os.path.join(PROJECT_ROOT, 'data-lake', '00_Logs', 'fantasy_baseball')
 
 def log_event(message):
     """Logs an event message to the console and to the log file."""

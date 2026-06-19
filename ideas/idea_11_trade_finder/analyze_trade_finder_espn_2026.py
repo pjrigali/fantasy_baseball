@@ -81,11 +81,11 @@ MAX_TRADES_OUT = 500
 
 def _data_path():
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-    for name in ('.data_lake', 'data-lake'):
+    for name in ('data-lake', 'data-lake'):
         p = os.path.join(root, name, '01_Bronze', 'fantasy_baseball')
         if os.path.isdir(p):
             return p
-    raise FileNotFoundError(f"Bronze data path not found in {root} (searched .data_lake/data-lake)")
+    raise FileNotFoundError(f"Bronze data path not found in {root} (searched data-lake/data-lake)")
 
 
 # ─── Utilities ────────────────────────────────────────────────────────────────

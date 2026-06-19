@@ -70,7 +70,7 @@ def main():
 
     out_dir = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        "..", ".data_lake", "01_Bronze", "fantasy_baseball",
+        "..", "data-lake", "01_Bronze", "fantasy_baseball",
     )
 
     print(f"=== MLB Stats Scraper ===")
