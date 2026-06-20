@@ -2,14 +2,21 @@
 Description: Evaluates weekly roster checkpoints for a target team by comparing each
              rostered player's trailing 28-day z-score value against available free agents.
              Flags players where a significantly better FA exists (value delta > 0.75).
-Source Data: {YEAR}_mlb_stats_daily.csv, {YEAR}_espn_roster_history.csv, player_map.csv
+             Identity (mlbam game-log id -> espn roster id) is resolved through the
+             canonical player_map.csv via its mlbam_player_id <-> espn_player_id bridge.
+Source Data: {YEAR}_mlb_stats_boxscore.csv, {YEAR}_espn_roster_history.csv, player_map.csv
 Outputs:     fantasy_baseball/reports/roster_analysis_report_{YEAR}.md
+
+Notes: csv + numpy only (no pandas). Rows loaded as list[dict].
 """
 
-import pandas as pd
-import numpy as np
+import csv
 import os
 import sys
+from collections import defaultdict
+from datetime import datetime, timedelta
+
+import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fantasy_baseball import mlb_processing as mp
@@ -18,186 +25,217 @@ from fantasy_baseball import mlb_processing as mp
 SEASON = 2026
 WINDOW = 28
 TEAM_ABBREV = 'PJR'
+VALUE_DELTA = 0.75
 
-BASE_PATH  = mp.DATA_PATH
+BASE_PATH = mp.DATA_PATH
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPORT_DIR = os.path.join(SCRIPT_DIR, 'reports')
-
 os.makedirs(REPORT_DIR, exist_ok=True)
-
 OUTPUT_PATH = os.path.join(REPORT_DIR, f'roster_analysis_report_{SEASON}.md')
 
-print(f"Running Analysis for {SEASON}")
-print(f"Data Path: {BASE_PATH}")
+ROSTER_PATH = os.path.join(BASE_PATH, f'{SEASON}_espn_roster_history.csv')
+STATS_PATH = os.path.join(BASE_PATH, f'{SEASON}_mlb_stats_boxscore.csv')
+MAP_PATH = os.path.join(BASE_PATH, 'player_map.csv')
 
-# Define File Paths
-roster_path = os.path.join(BASE_PATH, f'{SEASON}_espn_roster_history.csv')
-stats_path = os.path.join(BASE_PATH, f'{SEASON}_mlb_stats_boxscore.csv')
-map_path = os.path.join(BASE_PATH, 'player_map.csv')
+BATTER_STATS = ['R', 'HR', 'RBI', 'SB']
+PITCHER_POSITIVE = ['QS', 'SVHD', 'K']
 
-# Validation: Check if season data exists
-if not os.path.exists(roster_path) or not os.path.exists(stats_path):
-    print(f"\n[WARNING] Data files for {SEASON} not found.")
-    print(f"Expected:\n - {roster_path}\n - {stats_path}")
-    print("Skipping analysis (likely pre-season).")
-    sys.exit(0)
 
-print("Loading data...")
-try:
-    roster_df = pd.read_csv(roster_path)
-    stats_df = pd.read_csv(stats_path)
-    player_map_df = pd.read_csv(map_path)
-except Exception as e:
-    print(f"Error loading data: {e}")
-    sys.exit(1)
+def read_csv(path):
+    with open(path, encoding='utf-8-sig', errors='replace') as f:
+        return list(csv.DictReader(f))
 
-# Preprocess
-stats_df['date'] = pd.to_datetime(stats_df['date'])
-roster_df['start_date'] = pd.to_datetime(roster_df['start_date'])
-roster_df['end_date'] = pd.to_datetime(roster_df['end_date'])
 
-# Handle current date (replace NaT end_date with today or max date)
-max_date = stats_df['date'].max()
-roster_df['end_date'] = roster_df['end_date'].fillna(max_date)
+def parse_date(s):
+    s = (s or '').strip()
+    if not s:
+        return None
+    for fmt in ('%Y-%m-%d', '%Y-%m-%d %H:%M:%S', '%m/%d/%Y'):
+        try:
+            return datetime.strptime(s[:19], fmt).date()
+        except ValueError:
+            continue
+    return None
 
-player_map_df['espn_player_id'] = player_map_df['espn_player_id'].astype(str)
-player_map_df['statcast_player_id'] = player_map_df['statcast_player_id'].astype(str).str.replace(r'\.0$', '', regex=True)
-stats_df['player_id'] = stats_df['player_id'].astype(str)
-roster_df['player_id'] = roster_df['player_id'].astype(str)
 
-print("Merging data...")
-stats_merged = stats_df.merge(player_map_df, left_on='player_id', right_on='statcast_player_id', how='left')
+def to_float(v):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return 0.0
 
-# Value Calculation
-batter_stats = ['R', 'HR', 'RBI', 'SB']
-pitcher_positive = ['QS', 'SVHD', 'K']
 
-# Per-day z-score via transform — pandas 3.0 compatible (groupby.apply drops key column)
-stats_merged['Daily_Value'] = 0.0
+def main():
+    print(f"Running Analysis for {SEASON}")
+    print(f"Data Path: {BASE_PATH}")
 
-for col in batter_stats + pitcher_positive:
-    if col in stats_merged.columns:
-        day_mean = stats_merged.groupby('date')[col].transform('mean')
-        day_std  = stats_merged.groupby('date')[col].transform('std').fillna(1).replace(0, 1)
-        stats_merged['Daily_Value'] += ((stats_merged[col] - day_mean) / day_std).fillna(0)
+    if not os.path.exists(ROSTER_PATH) or not os.path.exists(STATS_PATH):
+        print(f"\n[WARNING] Data files for {SEASON} not found.")
+        print(f"Expected:\n - {ROSTER_PATH}\n - {STATS_PATH}")
+        print("Skipping analysis (likely pre-season).")
+        sys.exit(0)
 
-if 'P_H' in stats_merged.columns and 'P_BB' in stats_merged.columns:
-    stats_merged['_whip'] = stats_merged['P_H'] + stats_merged['P_BB']
-    day_mean = stats_merged.groupby('date')['_whip'].transform('mean')
-    day_std  = stats_merged.groupby('date')['_whip'].transform('std').fillna(1).replace(0, 1)
-    stats_merged['Daily_Value'] -= ((stats_merged['_whip'] - day_mean) / day_std).fillna(0)
-    stats_merged.drop(columns=['_whip'], inplace=True)
+    print("Loading data...")
+    roster_rows = read_csv(ROSTER_PATH)
+    stats_rows = read_csv(STATS_PATH)
+    map_rows = read_csv(MAP_PATH)
 
-if 'ER' in stats_merged.columns:
-    day_mean = stats_merged.groupby('date')['ER'].transform('mean')
-    day_std  = stats_merged.groupby('date')['ER'].transform('std').fillna(1).replace(0, 1)
-    stats_merged['Daily_Value'] -= ((stats_merged['ER'] - day_mean) / day_std).fillna(0)
+    # mlbam game-log id -> (espn_id, name) bridge from the canonical file
+    mlbam_to_espn = {}
+    for r in map_rows:
+        mlbam = (r.get('mlbam_player_id') or '').strip()
+        espn = (r.get('espn_player_id') or '').strip()
+        if mlbam and espn:
+            mlbam_to_espn[mlbam] = (espn, (r.get('espn_name') or r.get('mlb_name') or '').strip())
 
-daily_stats = stats_merged.copy()
+    # ── Parse stats; attach espn id; group rows by date ──────────────────────────
+    rows_by_date = defaultdict(list)
+    max_date = None
+    for r in stats_rows:
+        d = parse_date(r.get('date'))
+        if d is None:
+            continue
+        mlbam = (r.get('player_id') or '').strip()
+        bridge = mlbam_to_espn.get(mlbam)
+        if not bridge:
+            continue  # no espn mapping -> excluded (same as old how='left' + dropna on key)
+        espn_id, name = bridge
+        r['_date'] = d
+        r['_espn_id'] = espn_id
+        r['_name'] = name or (r.get('player_name') or '')
+        rows_by_date[d].append(r)
+        if max_date is None or d > max_date:
+            max_date = d
 
-# Rolling Value
-print(f"Calculating {WINDOW}-day rolling value...")
-player_daily = daily_stats[['date', 'espn_player_id', 'player_name', 'Daily_Value']].copy()
-# Aggregate multi-game days
-player_daily = player_daily.groupby(['date', 'espn_player_id', 'player_name']).sum().reset_index()
+    # ── Per-date z-score Daily_Value, aggregated to (date, espn_id) ───────────────
+    print("Computing per-day z-score values...")
+    # daily_value[(date, espn_id)] = summed value; name_of[espn_id] = name
+    daily_value = defaultdict(float)
+    name_of = {}
+    for d, rows in rows_by_date.items():
+        def zscores(values):
+            arr = np.array(values, dtype=float)
+            mean = arr.mean()
+            std = arr.std(ddof=1) if len(arr) > 1 else 0.0
+            std = std if std else 1.0
+            return (arr - mean) / std
 
-# Pivot for rolling calc
-pivot_val = player_daily.pivot(index='date', columns='espn_player_id', values='Daily_Value').fillna(0)
-rolling_val = pivot_val.rolling(window=WINDOW).mean()
+        n = len(rows)
+        contrib = np.zeros(n)
+        for col in BATTER_STATS + PITCHER_POSITIVE:
+            if rows and col in rows[0]:
+                contrib += zscores([to_float(r.get(col)) for r in rows])
+        if rows and 'P_H' in rows[0] and 'P_BB' in rows[0]:
+            contrib -= zscores([to_float(r.get('P_H')) + to_float(r.get('P_BB')) for r in rows])
+        if rows and 'ER' in rows[0]:
+            contrib -= zscores([to_float(r.get('ER')) for r in rows])
 
-# Unstack back to long format
-rolling_long = rolling_val.stack().reset_index()
-rolling_long.columns = ['date', 'player_id', 'Rolling_Value']
+        for r, c in zip(rows, contrib):
+            daily_value[(d, r['_espn_id'])] += float(c)
+            name_of[r['_espn_id']] = r['_name']
 
-# Add Player Names back
-name_map = player_daily[['espn_player_id', 'player_name']].drop_duplicates()
-rolling_long = rolling_long.merge(name_map, left_on='player_id', right_on='espn_player_id', how='left')
+    # ── 28-day rolling mean over the sorted distinct dates ───────────────────────
+    print(f"Calculating {WINDOW}-day rolling value...")
+    dates = sorted({d for (d, _) in daily_value})
+    players = sorted({p for (_, p) in daily_value})
+    date_idx = {d: i for i, d in enumerate(dates)}
+    # matrix [date, player] of daily value (0-filled like the old pivot.fillna(0))
+    mat = np.zeros((len(dates), len(players)))
+    pcol = {p: j for j, p in enumerate(players)}
+    for (d, p), v in daily_value.items():
+        mat[date_idx[d], pcol[p]] = v
 
-# Analyze PJR Roster - Weekly Checkpoints
-print("Analyzing Roster moves (Weekly Checkpoints)...")
+    # rolling mean: row i uses rows [i-WINDOW+1, i]; NaN until WINDOW rows available
+    rolling = np.full(mat.shape, np.nan)
+    csum = np.cumsum(mat, axis=0)
+    for i in range(len(dates)):
+        if i >= WINDOW - 1:
+            window_sum = csum[i] - (csum[i - WINDOW] if i - WINDOW >= 0 else 0)
+            rolling[i] = window_sum / WINDOW
 
-# Get list of Mondays in the season
-season_start = stats_df['date'].min()
-season_end = stats_df['date'].max()
-mondays = pd.date_range(start=season_start, end=season_end, freq='W-MON')
+    def rolling_value(d, espn_id):
+        i = date_idx.get(d)
+        j = pcol.get(espn_id)
+        if i is None or j is None:
+            return None
+        v = rolling[i, j]
+        return None if np.isnan(v) else float(v)
 
-recommendations = []
+    # ── Parse roster history ─────────────────────────────────────────────────────
+    rosters = []
+    season_start = None
+    for r in roster_rows:
+        sd = parse_date(r.get('start_date'))
+        ed = parse_date(r.get('end_date')) or max_date
+        if sd is None:
+            continue
+        rosters.append({
+            'team_abbrev': (r.get('team_abbrev') or '').strip(),
+            'player_id': (r.get('player_id') or '').strip(),
+            'player_name': (r.get('player_name') or '').strip(),
+            'start_date': sd, 'end_date': ed,
+        })
+        if season_start is None or sd < season_start:
+            season_start = sd
 
-for check_date in mondays:
-    # 1. Identify PJR Roster on this date
-    # Overlap: start <= check_date <= end
-    current_roster = roster_df[
-        (roster_df['team_abbrev'] == TEAM_ABBREV) & 
-        (roster_df['start_date'] <= check_date) & 
-        (roster_df['end_date'] >= check_date)
-    ]
-    
-    if current_roster.empty: continue
-    
-    # Get values for this date (from rolling_long)
-    # rolling_long has 'date', 'player_id', 'Rolling_Value'
-    day_stats = rolling_long[rolling_long['date'] == check_date]
-    
-    if day_stats.empty: continue
-    
-    # 2. Identify Available Free Agents on this date
-    # Find all players rostered by ANYONE on this date
-    all_rostered = roster_df[
-        (roster_df['start_date'] <= check_date) & 
-        (roster_df['end_date'] >= check_date)
-    ]['player_id'].unique()
-    
-    # Potential FAs: Players in day_stats NOT in all_rostered
-    # Filter day_stats for FAs
-    fa_stats = day_stats[~day_stats['player_id'].isin(all_rostered)]
-    
-    # Top FAs
-    top_fas = fa_stats.sort_values('Rolling_Value', ascending=False).head(20)
-    
-    # 3. Compare PJR Players to FAs
-    for _, row in current_roster.iterrows():
-        p_id = row['player_id']
-        p_name = row['player_name']
-        
-        # Get my player's value
-        my_stat = day_stats[day_stats['player_id'] == p_id]
-        if my_stat.empty:
-            my_val = -999 # No stats recently?
-        else:
-            my_val = my_stat['Rolling_Value'].values[0]
-            
-        # Find better FAs
-        better = top_fas[top_fas['Rolling_Value'] > my_val + 0.75] # Higher threshold to be sure
-        
-        if not better.empty:
-            # Pick top 2
-            top_opts = []
-            for _, fa_row in better.head(2).iterrows():
-                fa_name = fa_row['player_name']
-                fa_val = fa_row['Rolling_Value']
-                top_opts.append(f"{fa_name} ({fa_val:.2f})")
-            
-            recommendations.append({
-                'Date': check_date.strftime('%Y-%m-%d'),
-                'My_Player': p_name,
-                'My_Value': f"{my_val:.2f}",
-                'Better_FA': ", ".join(top_opts)
-            })
+    # ── Weekly Monday checkpoints ────────────────────────────────────────────────
+    print("Analyzing Roster moves (Weekly Checkpoints)...")
+    mondays = []
+    if season_start and max_date:
+        d = season_start + timedelta(days=(7 - season_start.weekday()) % 7)  # first Monday >= start
+        while d <= max_date:
+            mondays.append(d)
+            d += timedelta(days=7)
 
-# Generate Report
-print("Generating report...")
-with open(OUTPUT_PATH, 'w') as f:
-    f.write(f"# Roster Checkpoint Report for {TEAM_ABBREV}\n\n")
-    f.write(f"**Evaluation Window:** {WINDOW} Days (Trailing)\n")
-    f.write("**Methodology:** On every Monday, compared trailing 28-day performance of your roster vs. available Free Agents.\n")
-    f.write("**Threshold:** FA Value must be > My Player Value + 0.75 Z-Score.\n\n")
-    f.write("| Date | Drop Consideration | Value | Better Available Options (Value) |\n")
-    f.write("|---|---|---|---|\n")
-    
-    if not recommendations:
-        f.write("\nNo clear missed opportunities found based on the criteria.\n")
-    
-    for r in recommendations:
-        f.write(f"| {r['Date']} | {r['My_Player']} | {r['My_Value']} | {r['Better_FA']} |\n")
+    recommendations = []
+    for check_date in mondays:
+        active = [r for r in rosters if r['start_date'] <= check_date <= r['end_date']]
+        pjr = [r for r in active if r['team_abbrev'] == TEAM_ABBREV]
+        if not pjr:
+            continue
+        rostered_ids = {r['player_id'] for r in active}
 
-print(f"Report saved to {OUTPUT_PATH}")
+        # FA pool: players with a rolling value this date, not rostered by anyone
+        fa = []
+        for p in players:
+            if p in rostered_ids:
+                continue
+            rv = rolling_value(check_date, p)
+            if rv is not None:
+                fa.append((p, rv))
+        fa.sort(key=lambda x: x[1], reverse=True)
+        top_fas = fa[:20]
+
+        for r in pjr:
+            my_val = rolling_value(check_date, r['player_id'])
+            if my_val is None:
+                my_val = -999.0
+            better = [(p, v) for (p, v) in top_fas if v > my_val + VALUE_DELTA]
+            if better:
+                opts = [f"{name_of.get(p, p)} ({v:.2f})" for p, v in better[:2]]
+                recommendations.append({
+                    'Date': check_date.strftime('%Y-%m-%d'),
+                    'My_Player': r['player_name'],
+                    'My_Value': f"{my_val:.2f}",
+                    'Better_FA': ", ".join(opts),
+                })
+
+    # ── Report ───────────────────────────────────────────────────────────────────
+    print("Generating report...")
+    with open(OUTPUT_PATH, 'w', encoding='utf-8') as f:
+        f.write(f"# Roster Checkpoint Report for {TEAM_ABBREV}\n\n")
+        f.write(f"**Evaluation Window:** {WINDOW} Days (Trailing)\n")
+        f.write("**Methodology:** On every Monday, compared trailing 28-day performance of your roster vs. available Free Agents.\n")
+        f.write(f"**Threshold:** FA Value must be > My Player Value + {VALUE_DELTA} Z-Score.\n\n")
+        f.write("| Date | Drop Consideration | Value | Better Available Options (Value) |\n")
+        f.write("|---|---|---|---|\n")
+        if not recommendations:
+            f.write("\nNo clear missed opportunities found based on the criteria.\n")
+        for r in recommendations:
+            f.write(f"| {r['Date']} | {r['My_Player']} | {r['My_Value']} | {r['Better_FA']} |\n")
+
+    print(f"Report saved to {OUTPUT_PATH}")
+
+
+if __name__ == '__main__':
+    main()

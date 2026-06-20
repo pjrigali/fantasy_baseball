@@ -58,7 +58,7 @@ These scripts consume data lake CSVs and produce reports or stdout analysis.
 | `analyze_league_rosters.py` | Deep-dive league-wide roster management analysis: optimal evaluation window, roster patience (hold time), churn rate, team success correlation, and Mermaid visualizations. | `2025_espn_roster_history.csv`, `2025_mlb_stats_daily.csv`, `player_map.csv` | markdown report |
 | `analyze_quick_lineup_impact.py` | Evaluates whether ESPN's Quick Lineup feature costs teams stats by attributing bench placements (quick vs manual vs default) and measuring missed counting stats. | `2026_espn_activity_season.csv`, `2026_espn_stats_daily.csv` | stdout + `2026_local_quick_lineup_bench.csv` |
 | `generate_roster_recommendations.py` | Weekly checkpoint analysis: compares rolling 28-day z-score value of rostered players vs available free agents and flags missed opportunities. | `{YEAR}_espn_roster_history.csv`, `{YEAR}_mlb_stats_daily.csv`, `player_map.csv` | `reports/roster_analysis_report_{YEAR}.md` |
-| `watch_waiver_signals_espn.py` | **Daily waiver wire watchlist.** Scans all players with `pct_owned < 80%` from the latest rankings snapshot, builds 7d/14d feature vectors, and scores against the Idea 16 signal thresholds. Appends all players with ≥ 1 signal firing. Run as Step 7 of `fantasy-collect-all-data`. Accepts `--max-owned`, `--dry-run`. | `{YEAR}_espn_rankings_daily.csv`, `{YEAR}_mlb_stats_boxscore.csv`, `{YEAR}_mlb_lineups_batters.csv`, `player_lookup.csv` | `{YEAR}_espn_waiver_watchlist.csv` |
+| `watch_waiver_signals_espn.py` | **Daily waiver wire watchlist.** Scans all players with `pct_owned < 80%` from the latest rankings snapshot, builds 7d/14d feature vectors, and scores against the Idea 16 signal thresholds. Appends all players with ≥ 1 signal firing. Run as Step 7 of `fantasy-collect-all-data`. Accepts `--max-owned`, `--dry-run`. | `{YEAR}_espn_rankings_daily.csv`, `{YEAR}_mlb_stats_boxscore.csv`, `{YEAR}_mlb_lineups_batters.csv`, `player_map.csv` | `{YEAR}_espn_waiver_watchlist.csv` |
 ---
 
 ## Ideas & Investigations (`ideas/`)
@@ -81,7 +81,7 @@ Identifies the highest-value waiver pickups by aggregating game stats across eac
 
 | File | Description | Input Data | Output |
 |---|---|---|---|
-| `ideas/idea_15_best_pickups/analyze_best_pickups_espn_2026.py` | **2026 best-pickups engine.** Uses `2026_espn_activity_season.csv` for real pickup dates; aggregates MLB archive stats over each player's held tenure; z-scores R, HR, RBI, SB, OPS (batters) and K/9, QS, SVHD, ERA, WHIP (pitchers) into a composite. | `2026_espn_activity_season.csv`, `2026_mlb_stats_daily_archive.csv`, `player_lookup.csv` | `2026_espn_best_pickups.csv` |
+| `ideas/idea_15_best_pickups/analyze_best_pickups_espn_2026.py` | **2026 best-pickups engine.** Uses `2026_espn_activity_season.csv` for real pickup dates; aggregates MLB archive stats over each player's held tenure; z-scores R, HR, RBI, SB, OPS (batters) and K/9, QS, SVHD, ERA, WHIP (pitchers) into a composite. | `2026_espn_activity_season.csv`, `2026_mlb_stats_daily_archive.csv` | `2026_espn_best_pickups.csv` |
 ---
 
 ### Idea 16: Waiver Wire Signal Detection (`ideas/idea_16_waiver_signals/`)
@@ -92,6 +92,30 @@ Pre-pickup signal analysis: which rolling stats, ownership trends, and batting-o
 |---|---|---|---|
 | `ideas/idea_16_waiver_signals/analyze_best_pickups_espn_2025.py` | **2025 best-pickups engine (cross-year prerequisite).** No activity CSV available for 2025; uses first-appearance detection from `2025_espn_stats_daily.csv` (any player appearing at scoring_period > 1 is treated as a waiver pickup). Converts scoring periods to calendar dates via `2025_espn_schedule_matchup.csv`. Run this first to produce `2025_espn_best_pickups.csv` before running the signal detector. | `2025_espn_stats_daily.csv`, `2025_espn_schedule_matchup.csv` | `2025_espn_best_pickups.csv` |
 | `ideas/idea_16_waiver_signals/analyze_waiver_signals_espn_2026.py` | **Pre-pickup signal detector.** Labels top/bottom quartile pickups from idea 15 ground truth, builds 7-day and 14-day rolling feature vectors (OPS, K/9, ERA, WHIP, ownership trend, batting order slot), ranks features by Mann-Whitney rank-biserial correlation, and derives F1-optimal threshold rules per player type. Includes a cross-year validation section comparing 2026 r values against 2025 (game-log features only). | `2026_espn_best_pickups.csv`, `2026_mlb_stats_daily_archive.csv`, `2026_espn_rankings_daily.csv`, `2026_mlb_lineups_batters.csv`, `player_lookup.csv`, `2025_espn_best_pickups.csv` (optional), `2025_mlb_stats_daily.csv` (optional) | `reports/waiver_signals_2026.md` |
+
+---
+
+### Idea 17: Multi-Method Signal Detection (`ideas/idea_17_multi_method_signals/`)
+
+Runs every non-supervised method class on the same pre-pickup feature matrix as idea 16, validates each against the idea 15 composite_z ground truth, and consolidates into a multi-method confidence score + weekly runtime watchlist. All algorithms hand-rolled with numpy/scipy/statsmodels (no scikit-learn or ruptures in the venv). 2026 game logs come from the **boxscore** file (resolved via the canonical `player_map` — its `player_id` is the MLBAM id, not ESPN); 2025 is the cross-season check.
+
+| File | Description | Input Data | Output |
+|---|---|---|---|
+| `ideas/idea_17_multi_method_signals/waiver_common.py` | Shared paths, parsing helpers, and quartile labeling. Library. | — | N/A |
+| `ideas/idea_17_multi_method_signals/waiver_features.py` | **Central feature builder.** Three views of each pickup: 7/14/21-day window aggregates, per-game series, and a standardized/imputed numeric matrix. Reuses idea 16's `compute_*` stat helpers. Library. | `2026_mlb_stats_boxscore.csv`, `2026_espn_rankings_daily.csv`, `2026_mlb_lineups_batters.csv`, `2026_mlb_closers_depth.csv`, `player_map.csv`, `2025_mlb_stats_daily.csv` | N/A |
+| `ideas/idea_17_multi_method_signals/waiver_validation.py` | Shared validation harness: precision/recall/F1/lift and rank-biserial scoring of any method's flags vs the labels. Library. | — | N/A |
+| `ideas/idea_17_multi_method_signals/method_a_clustering.py` | **Section A** — PCA + K-means + DBSCAN + hierarchical archetype discovery. | feature matrix | `reports/method_a_clustering.md` |
+| `ideas/idea_17_multi_method_signals/method_b_changepoint.py` | **Section B** — CUSUM, PELT-style changepoint, Bayesian changepoint on per-game series. | per-game series | `reports/method_b_changepoint.md` |
+| `ideas/idea_17_multi_method_signals/method_c_bayesian.py` | **Section C** — empirical-Bayes Beta-Binomial shrinkage + regression-to-mean. | per-game series | `reports/method_c_bayesian.md` |
+| `ideas/idea_17_multi_method_signals/method_d_sequential.py` | **Section D** — SPRT + one-sided CUSUM with lead-time analysis (~8–18 days). | per-game series | `reports/method_d_sequential.md` |
+| `ideas/idea_17_multi_method_signals/method_e_anomaly.py` | **Section E** — hand-rolled Isolation Forest + Mahalanobis one-class, direction-split. | feature matrix | `reports/method_e_anomaly.md` |
+| `ideas/idea_17_multi_method_signals/method_f_forecast.py` | **Section F** — ETS + ARIMA next-game forecast (statsmodels); beats raw rolling avg. | per-game series | `reports/method_f_forecast.md` |
+| `ideas/idea_17_multi_method_signals/method_g_market.py` | **Section G** — market efficiency: ownership lag, slope-vs-decile, drop candidates. Honest negative result (ownership hype attaches to busts too). | rankings + features | `reports/method_g_market.md` |
+| `ideas/idea_17_multi_method_signals/method_h_opportunity.py` | **Section H** — lineup-promotion + saves-cascade opportunity flags. | lineups + closers depth | `reports/method_h_opportunity.md` |
+| `ideas/idea_17_multi_method_signals/method_i_bandit.py` | **Section I** — Thompson sampling + epsilon-greedy over Section A archetypes. | feature matrix | `reports/method_i_bandit.md` |
+| `ideas/idea_17_multi_method_signals/multi_method_flags.py` | **Shared flag engine.** One canonical add-flag per method; fits label-dependent methods (A, I) on a training pool and applies to any pool. Used by both consolidation and runtime. Library. | — | N/A |
+| `ideas/idea_17_multi_method_signals/consolidate_signals.py` | **Consolidation deliverable.** Multi-method confidence score, per-method lift ranking, cross-season stability, fusion with the idea 16 supervised rule, retrospective audit. | all of the above | `reports/multi_method_signals_2026.md` |
+| `ideas/idea_17_multi_method_signals/watch_multi_method_signals.py` | **Weekly runtime watchlist.** Scores the current FA pool (`pct_owned < --max-owned`, default 80) with all methods; ranks by idea-16 pass then confidence score. Accepts `--max-owned`, `--top`, `--dry-run`. | `2026_espn_rankings_daily.csv`, feature sources, `2026_espn_best_pickups.csv` | `2026_local_multi_method_watchlist.csv` |
 
 ---
 
@@ -118,25 +142,43 @@ Scripts for fetching and analyzing Injured List (IL) stint histories and roster 
 
 ---
 
-## Player Name Resolution
+## Player Identity (Single Source of Truth)
 
-ESPN data uses plain-ASCII names (e.g. "Andres Munoz"); the MLB stats archive uses UTF-8 accented names (e.g. "Andrés Muñoz"). Use the lookup infrastructure below to translate between them — never do raw string matching against the archive.
+There are **three player-id spaces** in this project: the **ESPN player_id** (used by every `espn_*` file), the **MLBAM/statcast id** (used by every `mlb_*` stats file — this is what the boxscore/daily `player_id` columns actually contain), and player **names** (ESPN uses plain ASCII "Andres Munoz"; MLB uses accented UTF-8 "Andrés Muñoz"). A single canonical file bridges all three so downstream joins can be **by ID, not fuzzy name**.
+
+**`player_map.csv`** — the canonical identity file — lives at `data-lake/01_Bronze/fantasy_baseball/player_map.csv`. One row per player, primary key `mlbam_player_id`, stable-sorted by `normalized_name`.
+
+| Column | Meaning |
+|---|---|
+| `mlbam_player_id` | MLBAM/statcast id (PK; the inclusion key). Populated for ~100% of rows. |
+| `espn_player_id` | ESPN id; blank for MLB players never in the ESPN league. |
+| `mlb_name` | Accented MLB name (the old `archive_name`). |
+| `espn_name` | Plain-ASCII ESPN name. |
+| `normalized_name` | Accent-stripped, lowercased, suffix-stripped join key. |
+| `b_or_p` | `batter` / `pitcher` / `both` (authoritative from the MLB Stats API position). |
+| `primary_position`, `eligible_slots`, `pro_team` | Position (MLB), ESPN eligible slots, team. |
+| `id_source` | how ESPN↔MLBAM was bridged: `direct` (curated statcast id) / `name_match` / `api` (statsapi people/search) / `mlb_only` (no ESPN). |
+| `seen_in` | provenance: every MLB/ESPN source + season the player was found in. |
+| `first_seen_year`, `last_seen_year`, `last_verified_date` | audit fields. |
+
+**Scope / inclusion gate:** every MLB player who appears in at least one **MLB stats source dated 2023+** (live MLB Stats API season rosters and/or the data-lake MLB stats files), and **only** those. ESPN-only players with no 2023+ MLB stats (prospects, speculative adds) and pre-2023 retirees are **excluded**. ~2,275 players; MLBAM-id coverage ~100% (was ~15% via the old sparse `statcast_player_id`), ESPN-id coverage ~92%.
 
 | File | Description | Input | Output |
 |---|---|---|---|
-| `generate_player_lookup.py` | Builds the base player lookup by cross-referencing `player_map.csv` against `2026_mlb_stats_daily_archive.csv` using accent-stripped fuzzy matching. Handles Jr./Sr. suffixes. Run first when refreshing. | `player_map.csv`, `2026_mlb_stats_daily_archive.csv` | `player_lookup.csv` |
-| `crosscheck_player_lookup.py` | Enriches `player_lookup.csv` against all MLB stats files in the data-lake (2023–2026 daily, boxscore, hitting, pitching). Adds archive-only players not in `player_map.csv`. Run second after `generate_player_lookup.py`. | All `stats_mlb_*` and `mlb_hitting/pitching_*` CSVs | `player_lookup.csv` (updated in-place) |
-| `player_lookup_utils.py` | Importable helpers for name resolution. Load once per process. | `player_lookup.csv` | N/A (library) |
-
-**`player_lookup.csv`** lives at `data-lake/01_Bronze/fantasy_baseball/player_lookup.csv`. Columns: `espn_player_id, espn_name, archive_name, b_or_p, statcast_player_id`. ~2,200 rows covering all players seen across 2023–2026 stats files.
+| `generate_player_map.py` | **Canonical builder.** Queries three systems — MLB Stats API (`sports/1/players` per season for the universe + authoritative position, fixing the Chapman label; `people/search` to bridge spelling variants), the live ESPN league universe + all `espn_*` data-lake files, and the curated statcast ids — then gates to MLB-2023+, resolves the ESPN↔MLBAM bridge (namesake-aware, claim-once for uniqueness), and writes `player_map.csv` idempotently. `--offline` skips network; `--dry-run` reports without writing. | MLB/ESPN APIs + all `mlb_*`/`espn_*` data-lake CSVs + `espn_player_universe.csv` | `player_map.csv` |
+| `player_map_utils.py` | **Canonical loader** (replaces `player_lookup_utils.py`). Resolve by ESPN id, MLBAM id, or name; ID-centric getters + bridge dicts (`espn_id_to_mlbam`, `mlbam_to_record`). Legacy aliases (`get_archive_name`, `get_b_or_p`, …) kept for drop-in migration. | `player_map.csv` | N/A (library) |
+| `espn_player_universe.csv` | Preserved snapshot of the original ESPN-side reference (espn_id, names, eligible slots, curated statcast ids); a build **input**, not a competing identity file. | — | — |
 
 **Usage:**
 ```python
-from fantasy_baseball.player_lookup_utils import get_archive_name, get_b_or_p
-archive_name = get_archive_name("Andres Munoz")  # -> "Andrés Muñoz"
+from fantasy_baseball.player_map_utils import get_mlbam_id, get_b_or_p, espn_id_to_mlbam
+get_mlbam_id(espn_id="41217")   # Rocchio -> "677587"  (join MLB stats by id)
+get_b_or_p("Aroldis Chapman")   # -> "pitcher"
 ```
 
-**Data quality note — Aroldis Chapman:** Chapman appears as `b_or_p = "batter"` in `player_lookup.csv` and `2026_local_keepers_performance.csv` (a data artifact from the archive containing zeroed batter rows for him). He is a pitcher. Always filter `b_or_p == "pitcher"` when querying his archive stats. If regenerating the lookup, fix the dedup logic in `generate_player_lookup.py` to prefer pitcher rows when both types exist for the same player.
+> **Retired:** `player_lookup.csv`, `generate_player_lookup.py`, `crosscheck_player_lookup.py` are gone. `player_lookup_utils.py` remains only as a thin deprecation shim forwarding to `player_map_utils`.
+>
+> **Aroldis Chapman** is now correctly `b_or_p = "pitcher"` (the builder uses the MLB Stats API's authoritative position and prefers the pitcher row on any batter/pitcher tie), so the old name-resolution workaround is no longer required.
 
 ---
 

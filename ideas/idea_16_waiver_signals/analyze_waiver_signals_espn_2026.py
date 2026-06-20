@@ -12,7 +12,7 @@ Source Data (2026):
     - data-lake/01_Bronze/fantasy_baseball/2026_mlb_stats_daily_archive.csv
     - data-lake/01_Bronze/fantasy_baseball/2026_espn_rankings_daily.csv
     - data-lake/01_Bronze/fantasy_baseball/2026_mlb_lineups_batters.csv
-    - data-lake/01_Bronze/fantasy_baseball/player_lookup.csv
+    - data-lake/01_Bronze/fantasy_baseball/player_map.csv (canonical identity; was player_lookup.csv)
 
 Source Data (2025 cross-validation):
     - data-lake/01_Bronze/fantasy_baseball/2025_espn_best_pickups.csv
@@ -41,7 +41,7 @@ BEST_PICKUPS_FILE  = os.path.join(DATA_DIR, '2026_espn_best_pickups.csv')
 MLB_ARCHIVE_FILE   = os.path.join(DATA_DIR, '2026_mlb_stats_daily_archive.csv')
 RANKINGS_FILE      = os.path.join(DATA_DIR, '2026_espn_rankings_daily.csv')
 LINEUPS_FILE       = os.path.join(DATA_DIR, '2026_mlb_lineups_batters.csv')
-PLAYER_LOOKUP_FILE = os.path.join(DATA_DIR, 'player_lookup.csv')
+PLAYER_LOOKUP_FILE = os.path.join(DATA_DIR, 'player_map.csv')  # canonical (was player_lookup.csv)
 
 BEST_PICKUPS_2025_FILE = os.path.join(DATA_DIR, '2025_espn_best_pickups.csv')
 MLB_ARCHIVE_2025_FILE  = os.path.join(DATA_DIR, '2025_mlb_stats_daily.csv')
@@ -111,7 +111,7 @@ def load_player_lookup():
     with open(PLAYER_LOOKUP_FILE, encoding='utf-8', errors='replace') as f:
         for row in csv.DictReader(f):
             eid = row['espn_player_id'].strip()
-            aname = row.get('archive_name', '').strip()
+            aname = (row.get('mlb_name') or '').strip()  # was archive_name
             if eid and aname:
                 lookup[eid] = normalize_name(aname)
     return lookup
@@ -657,7 +657,7 @@ def build_report(batters, pitchers, batter_results, pitcher_results,
     A('')
     A('- **Sample size:** ~30–35 players per quartile group per type — effect sizes are directional, not definitive.')
     A('- **2025 cross-validation:** Game-log features only — no prior-year ownership or batting-order data in the lake.')
-    A('- **Name coverage:** Players without a `player_lookup.csv` entry have no archive features.')
+    A('- **Name coverage:** Players without a `player_map.csv` entry have no archive features.')
     A('- **Archive gaps:** `2026_mlb_stats_daily_archive.csv` is the legacy per-player fetcher; bench players not included.')
     A('')
     A('**Next steps:**')

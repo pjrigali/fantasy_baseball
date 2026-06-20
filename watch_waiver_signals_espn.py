@@ -13,7 +13,7 @@ Source Data:
   - data-lake/01_Bronze/fantasy_baseball/{YEAR}_espn_rankings_daily.csv
   - data-lake/01_Bronze/fantasy_baseball/{YEAR}_mlb_stats_boxscore.csv
   - data-lake/01_Bronze/fantasy_baseball/{YEAR}_mlb_lineups_batters.csv
-  - data-lake/01_Bronze/fantasy_baseball/player_lookup.csv
+  - data-lake/01_Bronze/fantasy_baseball/player_map.csv (canonical identity; was player_lookup.csv)
 
 Outputs:
   - fantasy_baseball/ideas/idea_16_waiver_signals/reports/waiver_watchlist_{DATE}.md
@@ -188,12 +188,14 @@ def batting_slot_mode(lineup_rows):
 # ---------------------------------------------------------------------------
 
 def load_player_lookup(year):
-    path = os.path.join(DATA_DIR, 'player_lookup.csv')
+    # Canonical single source of truth (was player_lookup.csv); mlb_name is the
+    # accented MLB/archive name -> normalize_name(mlb_name) is the same join key.
+    path = os.path.join(DATA_DIR, 'player_map.csv')
     lookup = {}
     with open(path, encoding='utf-8', errors='replace') as f:
         for row in csv.DictReader(f):
             eid   = row.get('espn_player_id', '').strip()
-            aname = row.get('archive_name', '').strip()
+            aname = (row.get('mlb_name') or '').strip()
             if eid and aname:
                 lookup[eid] = normalize_name(aname)
     return lookup

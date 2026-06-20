@@ -87,8 +87,8 @@ def load_player_positions():
             with open(map_file, "r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    name = row.get("full_name")
-                    slots = row.get("player_eligible_slots", "")
+                    name = row.get("espn_name") or row.get("mlb_name")  # was full_name
+                    slots = row.get("eligible_slots", "")  # was player_eligible_slots
                     pos = "UTIL"
                     if "SP" in slots: pos = "SP"
                     elif "RP" in slots: pos = "RP"

@@ -512,7 +512,7 @@ Cross-validate using prior seasons (2024, 2025) where the same data exists — s
 
 ## 17. Waiver Wire Signal Detection — Multi-Method Prescriptive Metric Discovery
 
-**Status:** `Not Started`
+**Status:** `Complete` (2026-06-19) — all sections A–I + consolidation + runtime watchlist in `ideas/idea_17_multi_method_signals/`. All algorithms hand-rolled (numpy/scipy/statsmodels; no sklearn/ruptures in venv). Robust-core methods: clustering (A), sequential/SPRT (D), anomaly (E), forecast (F), bandit (I). Section G (market) is an honest negative result. Cross-season scope is 2026 + 2025 (2024 infeasible — no ESPN ground truth).
 
 **Motivation:** Idea 16 establishes the supervised baseline — use post-pickup composite z as a label and derive threshold rules. This idea expands the toolkit with every other method class available for signal detection: unsupervised clustering, statistical change detection, Bayesian inference, time series forecasting, anomaly detection, market efficiency analysis, opportunity graph modeling, and sequential testing. Each method sees the pre-pickup feature space differently. The goal is to run all of them, compare what each finds, and consolidate into the most robust and cross-validated signal set possible. Methods that agree across approaches are the ones worth building a weekly runtime watchlist around.
 

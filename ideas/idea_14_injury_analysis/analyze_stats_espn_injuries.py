@@ -64,9 +64,9 @@ def load_player_maps():
             reader = csv.DictReader(f)
             for row in reader:
                 espn_id = row.get("espn_player_id")
-                mlb_id = row.get("statcast_player_id")
-                full_name = row.get("full_name")
-                
+                mlb_id = row.get("mlbam_player_id")          # was statcast_player_id
+                full_name = row.get("espn_name") or row.get("mlb_name")  # was full_name
+
                 if espn_id:
                     if mlb_id:
                         mlb_to_espn[mlb_id] = espn_id
