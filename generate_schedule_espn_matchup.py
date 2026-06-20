@@ -1,7 +1,8 @@
 """
 Description: Generates a scoring-period <-> matchup-period <-> calendar-date mapping
-             for the ESPN fantasy league. Uses league settings + a heuristic
-             even-distribution of scoring periods across matchups.
+             for the ESPN fantasy league. Uses the authoritative per-matchup day
+             membership reported by ESPN (home/away pointsByScoringPeriod), not a
+             heuristic distribution. Only periods that have begun are emitted.
 Source Data: ESPN Fantasy API (league settings via mlb_processing).
 Outputs: data-lake/01_Bronze/fantasy_baseball/<YEAR>_espn_schedule_matchup.csv
 """
@@ -58,23 +59,30 @@ def main():
     reg_season_count = league.settings.reg_season_count
     print(f"Details: Final SP={final_sp}, Total Matchups={total_matchups}, Reg Season={reg_season_count}")
 
-    days_per_matchup = final_sp // total_matchups
-    remainder = final_sp % total_matchups
+    # Authoritative matchup-period -> scoring-period mapping pulled directly from ESPN's
+    # matchup objects (home/away pointsByScoringPeriod). settings.matchupPeriods is unreliable
+    # for this daily league (it returns 1:1 week indices), and an even-distribution heuristic
+    # drifts badly mid-season, so we use the exact day membership ESPN reports per matchup.
+    # Note: only periods that have begun (have points data) are emitted.
+    sched_data = league.espn_request.league_get(params={'view': ['mMatchupScore', 'mScoreboard']})
+    mp_to_sps = defaultdict(set)
+    for m in sched_data.get('schedule', []):
+        mp_id = m.get('matchupPeriodId')
+        if mp_id is None:
+            continue
+        for side in ('home', 'away'):
+            pbsp = (m.get(side) or {}).get('pointsByScoringPeriod') or {}
+            mp_to_sps[mp_id].update(int(k) for k in pbsp.keys())
 
     rows = []
-    sp_counter = 1
-    for mp_id in range(1, total_matchups + 1):
-        days = days_per_matchup + (1 if mp_id <= remainder else 0)
-        for _ in range(days):
-            if sp_counter > final_sp:
-                break
-            game_date = opening_day + timedelta(days=sp_counter - 1)
+    for mp_id in sorted(mp_to_sps):
+        for sp in sorted(mp_to_sps[mp_id]):
+            game_date = opening_day + timedelta(days=sp - 1)
             rows.append({
                 'matchup_period': mp_id,
-                'scoring_period': sp_counter,
+                'scoring_period': sp,
                 'date': game_date.isoformat(),
             })
-            sp_counter += 1
 
     by_mp = defaultdict(list)
     for r in rows:

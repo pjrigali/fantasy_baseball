@@ -156,7 +156,7 @@ Ideas and investigations being tracked in [`ideas.md`](ideas.md). See that file 
 | 2 | Gini Analysis — Box Score Concentration by Player and Team | Apply Gini/Lorenz analysis to fantasy scoring to surface value-concentrated players and keeper candidates. | `Not Started` |
 | 3 | Batting Order Position vs Batter Stats | Join batting order position data to game-level stats to measure how lineup slot affects fantasy production. | `Not Started` |
 | 4 | Batter Consistency — Streakiness, Slumps, and the OBP Drag Problem | Quantify per-game OBP variance to identify batters whose season averages mask frequent zero-contribution days. | `Not Started` |
-| 5 | Box Score Stat Relationships — Correlation, Redundancy, and Scoring System Audit | Build a stat correlation matrix and audit ESPN scoring weights against actual fantasy point drivers. | `Not Started` |
+| 5 | Box Score Stat Relationships — Correlation, Redundancy, and Category-System Audit | Build a multi-year (2023–2026) stat correlation matrix and audit the redundancy/independence of the 10 H2H scoring categories, surfacing player archetypes and roster-construction levers. | `Complete` |
 | 6 | Waiver Wire Timing and Transaction ROI | Measure post-acquisition fantasy point ROI for every waiver add and drop to rank teams by transaction quality. | `Not Started` |
 | 7 | Ownership Lag — Finding Market Inefficiencies Before ESPN Catches Up | Detect the lag between a player's breakout game logs and ESPN ownership movement to surface buy windows. | `Not Started` |
 | 8 | Roster Slot Efficiency — Are Teams Wasting Positional Slots? | Compare each team's per-slot fantasy production against league averages to identify positional dead weight. | `Not Started` |

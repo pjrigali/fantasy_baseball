@@ -119,33 +119,53 @@
 
 ---
 
-## 5. Box Score Stat Relationships — Correlation, Redundancy, and Scoring System Audit
+## 5. Box Score Stat Relationships — Correlation, Redundancy, and Category-System Audit
 
-**Status:** `Not Started`
+**Status:** `Complete` (2026-06-20)
 
-**Observation:** Fantasy scoring systems typically assign fixed point values to each stat (R, HR, RBI, SB, OPS, K, ERA, WHIP, etc.), but those stats are not independent. HR drives RBI and R simultaneously, meaning power hitters get amplified credit while a walk-heavy, low-power player may be undervalued. Understanding the correlation structure exposes which stats are redundant, which are independent signals, and whether the current scoring weights reflect actual value.
+> **Execution prompt:** [`ideas/idea_05_stat_relationships/PROMPT.md`](ideas/idea_05_stat_relationships/PROMPT.md)
 
-**Idea:** Build a full correlation matrix across all box score stats for both batters and pitchers, then audit the current ESPN scoring weights against what the data actually shows. Identify the player archetypes that emerge from the stat clusters.
+**Deliverables:**
+- `ideas/idea_05_stat_relationships/analyze_stat_relationships_espn_2026.py` — multi-year (2023–2026) correlation engine: Pearson/Spearman matrices, 5x5 category redundancy audit, hand-rolled PCA (numpy SVD) effective-dimensionality, and PCA+k-means archetype discovery (scipy; no sklearn in venv). MLB game logs are the single locked stat source; ESPN is overlay-only.
+- `reports/stat_relationships_2026.md` — full write-up with per-season + pooled category tables, redundancy/scarcity flags, archetype cards, team-holdings + market-valuation overlays, and roster-construction takeaways. Heatmaps: `reports/stat_relationships_2026_{batter,pitcher}_corr.png`.
+- Derived CSVs in Bronze: `2026_local_stat_correlations_{batter,pitcher}.csv`, `2026_local_category_corr_by_season_{batter,pitcher}.csv`, `2026_local_archetypes_{batter,pitcher}.csv`, `2026_local_proposed_scoring.csv`, `2026_local_rescore_results.csv`.
+- **Season re-scoring** (report) — replays the 11 completed, fully-covered matchup periods (MP1–11, through SP85) under each scenario from **active-lineup** category totals, with per-team W-L-T deltas at both category and matchup level. Pipeline validated at **95%** (52/55) against ESPN's actual matchup winners. Matchup outcomes that flip vs current: **A 14/55, B 13/55, C 5/55** — C is the least disruptive, B/A reshuffle standings most (teams reliant on the redundant power bundle lose ground; speed/ratio/saves-built teams gain). Required fixing `generate_schedule_espn_matchup.py` to use ESPN's authoritative `pointsByScoringPeriod` day-membership (the old heuristic drifted and only validated at 53%).
+- **Proposed Metrics** section (report) — rebalances the two sides so batting and pitching carry equal internal independence. **Scenario A (Mirror, minimal change):** keep batting as-is, swap pitching to `ERA, WHIP, BB/9, K/BB, H/9` (parallel run-prevention tied trio ERA/WHIP/H/9); balance gap 1.41 → 0.25. **Scenario B (from scratch, max breadth):** batting is the binding side (5 hitting cats top out ~2.7 effective axes vs pitching's ~4.6), so cap pitching at batting's ceiling — `SB, SLG, AVG, BB, SO` vs `K, WHIP, W, K/BB, H/9`, both 2.70 axes (gap 0.00). HR-inclusive variant `HR, SB, OBP, AVG, SO` is equally independent and recommended for adoptability. **Scenario C (keep 5x5, add one → 6x6):** add the most-independent batting category (**AVG**, raises batting 1.88 → 2.13) and the most-redundant pitching category (**H/9**, lowers pitching 3.30 → 3.07 and forms an ERA/WHIP/H/9 tied trio mirroring R/HR/RBI); gap 1.41 → 0.95. Least disruptive (nothing removed) but only partial — batting's halo limits how far one addition can de-redundantize it.
+
+**Key findings (2026, stable across 2023–2026):**
+- *Batting redundancy:* **R/HR/RBI are effectively one category** (pairwise r 0.86–0.92, cross-season std ≤0.04). The five batting categories collapse to ~1.9 effective independent axes of 5.
+- *Batting differentiator:* **SB** is the most independent batting category (mean |r| 0.37) — won deliberately, not "for free" with the power bundle.
+- *Pitching:* **ERA↔WHIP** are redundant (r=0.79); **K/9, QS, SVHD are three independent levers** (≈3.3 effective axes of 5) won by roster construction, not ace quality.
+- *Archetypes:* batters → Power / Speed-Contact / Contact / Free-Swinger; pitchers → Reliever (SV/HD) / Starter / Swingman-Volatile. Market overlay flags Speed-Contact bats as underowned (~28%) relative to Power (~52%) despite SB being the batting differentiator.
+
+**Scoring context (important):** This is a **Head-to-Head 5x5 Categories** league (see [`scoring.md`](scoring.md)), **not** a points league — there are no per-stat point weights to audit, and the `points` column in `2026_espn_stats_daily.csv` is `0.0` everywhere. The five batting categories are **R, HR, RBI, SB, OPS**; the five pitching categories are **K/9, QS, SVHD, ERA, WHIP**. Each category is won or lost independently per matchup week. The "audit" therefore asks how many *effectively independent* axes the 10 categories represent, not what their point weights should be.
+
+**Observation:** The scoring categories are not independent. HR drives RBI and R simultaneously, so a roster built to win one of those tends to win all three "for free" — meaning the five batting categories are not five independent levers. On pitching, ERA and WHIP move together. Understanding the correlation structure exposes which categories are redundant (low-leverage, ride along with others), which are the scarce/orthogonal differentiators (likely SB and SVHD) where matchups are actually decided, and which player archetypes dominate each.
+
+**Idea:** Build a full correlation matrix across all box score stats for both batters and pitchers, audit the redundancy/independence structure of the 10 scoring categories in **categories terms** (no invented point weights), and identify the player archetypes that emerge from the stat clusters — then translate the findings into concrete roster-construction guidance for this category set.
 
 **Questions to answer:**
-- Which stats are highly correlated (e.g. HR↔RBI, K↔ERA) and therefore effectively double-counted in the scoring system?
-- Which stats are independent signals that capture value not already reflected elsewhere (e.g. SB, BB, HBP)?
-- Are there stats not currently scored that have strong relationships with fantasy outcomes and should be added?
-- Are there stats being scored that are nearly redundant with higher-weighted stats and could be dropped or reweighted?
-- What player archetypes emerge when clustering by stat profile — speedsters, power bats, contact hitters, strikeout pitchers, ground-ball pitchers — and which fantasy teams hold which archetypes?
-- Do certain archetypes consistently over- or under-perform their ESPN scoring relative to their actual MLB contribution?
+- Which scoring categories are highly correlated (e.g. HR↔RBI↔R, ERA↔WHIP) and therefore effectively redundant — winning one tends to win the others?
+- Which scoring categories are independent/scarce (likely SB, SVHD) and are therefore the true differentiators to build around or contest?
+- Are there unscored stats (e.g. BB/OBP-only value, holds vs saves split) that carry strong independent signal the category set fails to capture?
+- Is any scored category nearly redundant with another, making it low-leverage / streamable?
+- What player archetypes emerge when clustering by stat profile — speedsters, power bats, contact/OBP hitters, strikeout pitchers, ground-ball pitchers, high-leverage relievers — and which fantasy teams hold which archetypes?
+- Which archetypes does the market (ownership/ADP) over- or under-value relative to their actual contribution to this league's categories?
 
-**Data sources:**
-- `2026_mlb_stats_daily.csv` — full per-game stat vectors for batters and pitchers
-- `2026_espn_stats_daily.csv` — ESPN fantasy points (the scoring output to audit against)
-- `2026_espn_rankings_daily.csv` — ownership and ADP as a market proxy for perceived value
+**Data sources (multi-year):** MLB daily game logs go back to **2023**, so the correlation/redundancy/archetype analysis should be run across **2023–2026** to confirm the structure is stable year over year, not a single-season artifact. League/roster/market context only exists for 2025–2026, so team-holdings and market overlays are limited to those seasons.
+- `2023_mlb_stats_daily.csv`, `2024_mlb_stats_daily.csv`, `2025_mlb_stats_daily.csv` — per-game stat vectors for batters and pitchers (shared schema using `b_or_p`, `playerName`). All 10 categories are derivable from these (OPS from OBP+SLG components; K/9, ERA, WHIP from OUTS).
+- `2026_mlb_stats_boxscore.csv` / `2026_mlb_stats_daily_archive.csv` — 2026 game logs (same stat columns; identity columns renamed to `player_id`/`player_name`). Note: there is no `2026_mlb_stats_daily.csv` — these are its equivalents.
+- `2026_espn_stats_daily.csv` (and `2025_espn_stats_daily.csv`) — full box-score vector already aligned to fantasy rosters/league context; `player_type` splits batter/pitcher. Provides team-holdings overlay.
+- `2026_espn_rankings_daily.csv` — ownership and ADP as a market proxy for perceived value.
 
 **Approach:**
-- Pearson correlation matrix across all numeric stat columns, split by batter/pitcher
-- PCA or clustering (k-means) on season-aggregated stat profiles to surface archetypes
-- Regression of individual stats against ESPN fantasy points to back out implied weights vs actual ESPN weights
+- Harmonize the 2023–2026 MLB daily schemas; aggregate daily rows to per-player season totals, recomputing rate stats (OPS, ERA, WHIP, K/9) from summed components rather than averaging averages; apply minimum-sample filters.
+- Pearson **and** Spearman correlation matrices across all numeric stat columns, split by batter/pitcher; report where they disagree (stat distributions are skewed).
+- Isolate the 5x5 category correlation block; use PCA on the batting and pitching category sets to measure effective dimensionality and flag redundant pairs vs. orthogonal/scarce categories.
+- PCA + k-means (silhouette/elbow for k) on standardized season-aggregated stat profiles to surface archetypes; profile centroids, name representative players, overlay team holdings and market valuation.
+- Repeat the category correlation block per season (2023–2026) to confirm robustness.
 
-**Possible output:** Correlation heatmap (batters and pitchers separately); archetype cluster profiles with representative players named; a side-by-side of current ESPN scoring weights vs regression-implied weights to flag candidates for rebalancing.
+**Possible output:** Correlation heatmaps (batters and pitchers separately, per season); a 5x5 category redundancy/independence table flagging redundant pairs and scarce differentiators; PCA effective-dimensionality summary; archetype cluster cards with representative players, team-holdings and market-valuation overlays; a plain-English roster-construction takeaways section for playing this categories league.
 
 ---
 
