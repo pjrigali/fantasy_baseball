@@ -431,7 +431,18 @@
 
 ## 16. Waiver Wire Signal Detection — Pre-Pickup Indicators of Breakout Pickups
 
-**Status:** `Not Started`
+**Status:** `Complete`
+
+**Deliverables:**
+- `ideas/idea_16_waiver_signals/analyze_waiver_signals_espn_2026.py` — signal analysis engine; Mann-Whitney rank-biserial correlation ranking across 19 batter / 15 pitcher features; F1-optimal thresholds; cross-year validation vs 2025
+- `ideas/idea_16_waiver_signals/analyze_best_pickups_espn_2025.py` — 2025 best-pickups engine using first-appearance detection as a proxy for pickup dates (no activity CSV available for 2025)
+- `ideas/idea_16_waiver_signals/reports/waiver_signals_2026.md` — full signal report with ranked feature table, prescriptive rules, retrospective audit, and 2025 cross-year validation
+- `watch_waiver_signals_espn.py` — daily watcher script; scores all healthy free agents against the derived thresholds; appends to `waiver_watchlist_espn_{YEAR}.csv`; runs as Step 7 of `fantasy-collect-all-data`
+- `data-lake/01_Bronze/fantasy_baseball/waiver_watchlist_espn_2026.csv` — live daily watchlist CSV, deduped on `(date, player_id)`
+
+**Top signals (2026, cross-validated vs 2025):**
+- *Batters:* `pct_owned_at_pickup ≥ 22.8` (r=0.70), `hr_per_game_7d ≥ 0.14` (r=0.48), `batting_slot_mode_7d ≤ 7` (r=−0.42)
+- *Pitchers:* `pct_change_mean_7d ≥ 1.04` (r=0.50), `era_14d ≤ 2.25` (r=−0.40), `ownership_slope_14d ≥ 0.53` (r=0.39)
 
 **Motivation:** Idea 15 identified *who* the best waiver pickups of 2026 were after the fact. This idea works backwards: given that ground truth, what could we have *known before* the acquisition date that predicted those players would be valuable? The goal is a set of prescriptive, threshold-based signals — concrete rules a manager can apply each week to identify the next Jordan Walker or Bryan Baker before someone else claims them.
 

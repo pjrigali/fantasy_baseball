@@ -58,6 +58,7 @@ These scripts consume data lake CSVs and produce reports or stdout analysis.
 | `analyze_league_rosters.py` | Deep-dive league-wide roster management analysis: optimal evaluation window, roster patience (hold time), churn rate, team success correlation, and Mermaid visualizations. | `roster_history_2025.csv`, `stats_mlb_daily_2025.csv`, `player_map.csv` | markdown report |
 | `analyze_quick_lineup_impact.py` | Evaluates whether ESPN's Quick Lineup feature costs teams stats by attributing bench placements (quick vs manual vs default) and measuring missed counting stats. | `activity_espn_season_2026.csv`, `stats_espn_daily_2026.csv` | stdout + `quick_lineup_bench_performances_2026.csv` |
 | `generate_roster_recommendations.py` | Weekly checkpoint analysis: compares rolling 28-day z-score value of rostered players vs available free agents and flags missed opportunities. | `roster_history_{YEAR}.csv`, `stats_mlb_daily_{YEAR}.csv`, `player_map.csv` | `reports/roster_analysis_report_{YEAR}.md` |
+| `watch_waiver_signals_espn.py` | **Daily waiver wire watchlist.** Scans all players with `pct_owned < 80%` from the latest rankings snapshot, builds 7d/14d feature vectors, and scores against the Idea 16 signal thresholds. Appends all players with ≥ 1 signal firing. Run as Step 7 of `fantasy-collect-all-data`. Accepts `--max-owned`, `--dry-run`. | `rankings_espn_daily_{YEAR}.csv`, `stats_mlb_boxscore_{YEAR}.csv`, `lineups_mlb_batters_{YEAR}.csv`, `player_lookup.csv` | `waiver_watchlist_espn_{YEAR}.csv` |
 ---
 
 ## Ideas & Investigations (`ideas/`)
@@ -73,6 +74,26 @@ Scripts for identifying and evaluating mutually beneficial trades.
 | `ideas/idea_11_trade_finder/analyze_trade_finder_espn_2026.py` | **Mutually beneficial trade finder.** Scans every team's roster, builds YTD and full-season projected category profiles, then enumerates all 1-for-1 same-type player swaps. Surfaces trades where both teams net-improve their H2H category rank count. Includes `balance_min` and `balance_diff` columns for fairness scoring. | `stats_espn_daily_2026.csv`, `player_batter_projections_2026.csv`, `player_pitcher_projections_2026.csv`, `activity_espn_season_2026.csv` | `analyze_trade_finder_espn_2026.csv` |
 | `ideas/idea_11_trade_finder/generate_trade_report_espn_2026.py` | Human-readable stdout wrapper over the trade finder CSV. Prints formatted trade blocks with projected stats, per-category rank changes, and plain-English gain/loss summaries. Supports `--team TEAM` and `--top N` flags. | `analyze_trade_finder_espn_2026.csv` | stdout |
 | `ideas/idea_11_trade_finder/generate_trade_summary_espn_2026.py` | Per-team markdown report. Groups all trades by team, splits into **Most Balanced** (sorted by min-gain fairness) and **Highest Impact** (top 2 by combined gain) sections. Top 5 balanced per team. | `analyze_trade_finder_espn_2026.csv` | `reports/trade_summary_espn_2026_{DATE}.md` |
+
+### Idea 15: Best Waiver Pickups (`ideas/idea_15_best_pickups/`)
+
+Identifies the highest-value waiver pickups by aggregating game stats across each player's held tenure and z-scoring across 5×5 categories into a composite score.
+
+| File | Description | Input Data | Output |
+|---|---|---|---|
+| `ideas/idea_15_best_pickups/analyze_best_pickups_espn_2026.py` | **2026 best-pickups engine.** Uses `activity_espn_season_2026.csv` for real pickup dates; aggregates MLB archive stats over each player's held tenure; z-scores R, HR, RBI, SB, OPS (batters) and K/9, QS, SVHD, ERA, WHIP (pitchers) into a composite. | `activity_espn_season_2026.csv`, `stats_mlb_daily_2026_archive.csv`, `player_lookup.csv` | `best_pickups_espn_2026.csv` |
+---
+
+### Idea 16: Waiver Wire Signal Detection (`ideas/idea_16_waiver_signals/`)
+
+Pre-pickup signal analysis: which rolling stats, ownership trends, and batting-order features predict top-quartile waiver pickups.
+
+| File | Description | Input Data | Output |
+|---|---|---|---|
+| `ideas/idea_16_waiver_signals/analyze_best_pickups_espn_2025.py` | **2025 best-pickups engine (cross-year prerequisite).** No activity CSV available for 2025; uses first-appearance detection from `stats_espn_daily_2025.csv` (any player appearing at scoring_period > 1 is treated as a waiver pickup). Converts scoring periods to calendar dates via `schedule_espn_matchup_2025.csv`. Run this first to produce `best_pickups_espn_2025.csv` before running the signal detector. | `stats_espn_daily_2025.csv`, `schedule_espn_matchup_2025.csv` | `best_pickups_espn_2025.csv` |
+| `ideas/idea_16_waiver_signals/analyze_waiver_signals_espn_2026.py` | **Pre-pickup signal detector.** Labels top/bottom quartile pickups from idea 15 ground truth, builds 7-day and 14-day rolling feature vectors (OPS, K/9, ERA, WHIP, ownership trend, batting order slot), ranks features by Mann-Whitney rank-biserial correlation, and derives F1-optimal threshold rules per player type. Includes a cross-year validation section comparing 2026 r values against 2025 (game-log features only). | `best_pickups_espn_2026.csv`, `stats_mlb_daily_2026_archive.csv`, `rankings_espn_daily_2026.csv`, `lineups_mlb_batters_2026.csv`, `player_lookup.csv`, `best_pickups_espn_2025.csv` (optional), `stats_mlb_daily_2025.csv` (optional) | `reports/waiver_signals_2026.md` |
+
+---
 
 ### Idea 14: Player Injury Data Analysis (`ideas/idea_14_injury_analysis/`)
 
