@@ -2,7 +2,7 @@
 Description: Calculate Z-score performance deltas based on scoring.md metrics
              and generate a 3x2 grid of histograms separating Batters (Left) and Pitchers (Right)
              by their respective IL lengths.
-Source Data: stats_mlb_season_transactions_{year}.csv, stats_mlb_daily_{year}.csv, stats_mlb_boxscore_2026.csv
+Source Data: {year}_mlb_transactions_season.csv, {year}_mlb_stats_daily.csv, 2026_mlb_stats_boxscore.csv
 Outputs: c:/Users/peter/Desktop/vscode/main/pjrigali.github.io/assets/images/injury_performance_histograms.png
 """
 import os
@@ -90,7 +90,7 @@ def parse_il_duration(description):
     return 10
 
 def reconstruct_completed_stints(year):
-    csv_file = os.path.join(DATA_PATH, f"stats_mlb_season_transactions_{year}.csv")
+    csv_file = os.path.join(DATA_PATH, f"{year}_mlb_transactions_season.csv")
     if not os.path.exists(csv_file):
         return []
         
@@ -167,9 +167,9 @@ def did_player_participate(row, b_or_p):
 
 def load_daily_stats_lookup(year):
     if year == 2026:
-        filename = "stats_mlb_boxscore_2026.csv"
+        filename = "2026_mlb_stats_boxscore.csv"
     else:
-        filename = f"stats_mlb_daily_{year}.csv"
+        filename = f"{year}_mlb_stats_daily.csv"
         
     csv_file = os.path.join(DATA_PATH, filename)
     if not os.path.exists(csv_file):

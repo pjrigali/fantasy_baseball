@@ -8,11 +8,11 @@ Description: Ranks the best non-draft player acquisitions (FA ADDED) of the 2026
              collapsed data to produce a composite ranking score.
              Also identifies the worst drops: players released who went on to contribute
              meaningfully on other fantasy teams, ranked by post-drop composite z-score.
-Source Data: data-lake/01_Bronze/fantasy_baseball/activity_espn_season_2026.csv
-             data-lake/01_Bronze/fantasy_baseball/stats_espn_daily_2026.csv
+Source Data: data-lake/01_Bronze/fantasy_baseball/2026_espn_activity_season.csv
+             data-lake/01_Bronze/fantasy_baseball/2026_espn_stats_daily.csv
 Outputs:     stdout — top 15 batters, top 15 pitchers, per-team leaderboard, wasted pickups,
                       top 10 worst batter drops, top 10 worst pitcher drops
-             data-lake/01_Bronze/fantasy_baseball/best_pickups_espn_2026.csv
+             data-lake/01_Bronze/fantasy_baseball/2026_espn_best_pickups.csv
 """
 
 import csv
@@ -28,9 +28,9 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 
 import mlb_processing as mp
 
-ACTIVITY_FILE = os.path.join(mp.DATA_PATH, 'activity_espn_season_2026.csv')
-STATS_FILE    = os.path.join(mp.DATA_PATH, 'stats_espn_daily_2026.csv')
-OUTPUT_FILE   = os.path.join(mp.DATA_PATH, 'best_pickups_espn_2026.csv')
+ACTIVITY_FILE = os.path.join(mp.DATA_PATH, '2026_espn_activity_season.csv')
+STATS_FILE    = os.path.join(mp.DATA_PATH, '2026_espn_stats_daily.csv')
+OUTPUT_FILE   = os.path.join(mp.DATA_PATH, '2026_espn_best_pickups.csv')
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -87,7 +87,7 @@ def print_table(header, rows, widths):
 
 def load_pickups():
     """
-    Reads activity_espn_season_2026.csv. Returns one dict per FA ADDED event.
+    Reads 2026_espn_activity_season.csv. Returns one dict per FA ADDED event.
     For the same (player_id, team_name) picked up multiple times, each stint's
     end_date is capped at (next_add_date - 1 day) so stat windows never overlap.
     """
@@ -137,7 +137,7 @@ def load_pickups():
 # ---------------------------------------------------------------------------
 
 def load_stats():
-    """Reads stats_espn_daily_2026.csv and returns a dict: player_id -> [rows]."""
+    """Reads 2026_espn_stats_daily.csv and returns a dict: player_id -> [rows]."""
     stats = defaultdict(list)
     with open(STATS_FILE, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)

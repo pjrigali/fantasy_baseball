@@ -130,12 +130,12 @@
 
 | File | Used For |
 |------|----------|
-| `stats_mlb_daily_2023.csv` | Carroll & Woo 2023 per-game box scores |
-| `stats_mlb_daily_2024.csv` | Carroll & Woo 2024 per-game box scores |
-| `stats_mlb_daily_2025.csv` | Carroll & Woo 2025 per-game box scores |
-| `stats_mlb_daily_2026.csv` | Carroll & Woo 2026 YTD per-game box scores |
-| `player_batter_projections_2026.csv` | Carroll 2026 full-season projection |
-| `player_pitcher_projections_2026.csv` | Woo 2026 full-season projection |
+| `2023_mlb_stats_daily.csv` | Carroll & Woo 2023 per-game box scores |
+| `2024_mlb_stats_daily.csv` | Carroll & Woo 2024 per-game box scores |
+| `2025_mlb_stats_daily.csv` | Carroll & Woo 2025 per-game box scores |
+| `2026_mlb_stats_daily.csv` | Carroll & Woo 2026 YTD per-game box scores |
+| `2026_ext_projections_batter.csv` | Carroll 2026 full-season projection |
+| `2026_ext_projections_pitcher.csv` | Woo 2026 full-season projection |
 
 Players are matched by player_id (`682998` = Carroll, `693433` = Woo). The daily files use `playerId` in 2023–2025 and `player_id` in 2026 — both are handled.
 
@@ -155,8 +155,8 @@ QS uses the actual `QS` column from each daily stats file for all years (2023–
 
 ### Projection File Notes
 
-- `player_batter_projections_2026.csv` — UTF-8 BOM encoding, non-breaking spaces (`\xa0`) in player names. TB derived as `H + 2B + 2×3B + 3×HR`.
-- `player_pitcher_projections_2026.csv` — no QS column; estimated at 65% of GS.
+- `2026_ext_projections_batter.csv` — UTF-8 BOM encoding, non-breaking spaces (`\xa0`) in player names. TB derived as `H + 2B + 2×3B + 3×HR`.
+- `2026_ext_projections_pitcher.csv` — no QS column; estimated at 65% of GS.
 
 ---
 

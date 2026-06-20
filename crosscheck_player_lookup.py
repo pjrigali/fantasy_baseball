@@ -3,21 +3,21 @@ Description:
     Cross-checks player_lookup.csv against every MLB stats file in the data-lake to
     find players that appear in the stats data but are missing from (or mismatched in)
     the lookup table. Also adds any new archive-name entries discovered in files other
-    than stats_mlb_daily_2026_archive.csv and writes an updated player_lookup.csv.
+    than 2026_mlb_stats_daily_archive.csv and writes an updated player_lookup.csv.
 
 Source Data:
     - data-lake/01_Bronze/fantasy_baseball/player_lookup.csv
-    - data-lake/01_Bronze/fantasy_baseball/stats_mlb_daily_2023.csv
-    - data-lake/01_Bronze/fantasy_baseball/stats_mlb_daily_2024.csv
-    - data-lake/01_Bronze/fantasy_baseball/stats_mlb_daily_2025.csv
-    - data-lake/01_Bronze/fantasy_baseball/stats_mlb_daily_2026_archive.csv
-    - data-lake/01_Bronze/fantasy_baseball/stats_mlb_boxscore_2026.csv
-    - data-lake/01_Bronze/fantasy_baseball/mlb_hitting_2023_20260216.csv
-    - data-lake/01_Bronze/fantasy_baseball/mlb_hitting_2024_20260216.csv
-    - data-lake/01_Bronze/fantasy_baseball/mlb_hitting_2025_20260215.csv
-    - data-lake/01_Bronze/fantasy_baseball/mlb_pitching_2023_20260216.csv
-    - data-lake/01_Bronze/fantasy_baseball/mlb_pitching_2024_20260216.csv
-    - data-lake/01_Bronze/fantasy_baseball/mlb_pitching_2025_20260215.csv
+    - data-lake/01_Bronze/fantasy_baseball/2023_mlb_stats_daily.csv
+    - data-lake/01_Bronze/fantasy_baseball/2024_mlb_stats_daily.csv
+    - data-lake/01_Bronze/fantasy_baseball/2025_mlb_stats_daily.csv
+    - data-lake/01_Bronze/fantasy_baseball/2026_mlb_stats_daily_archive.csv
+    - data-lake/01_Bronze/fantasy_baseball/2026_mlb_stats_boxscore.csv
+    - data-lake/01_Bronze/fantasy_baseball/2023_mlb_hitting_season_20260216.csv
+    - data-lake/01_Bronze/fantasy_baseball/2024_mlb_hitting_season_20260216.csv
+    - data-lake/01_Bronze/fantasy_baseball/2025_mlb_hitting_season_20260215.csv
+    - data-lake/01_Bronze/fantasy_baseball/2023_mlb_pitching_season_20260216.csv
+    - data-lake/01_Bronze/fantasy_baseball/2024_mlb_pitching_season_20260216.csv
+    - data-lake/01_Bronze/fantasy_baseball/2025_mlb_pitching_season_20260215.csv
 
 Outputs:
     - data-lake/01_Bronze/fantasy_baseball/player_lookup.csv  (updated in-place)
@@ -61,17 +61,17 @@ def detect_encoding(path: str) -> str:
 # Each entry: (filename, name_column, id_column, type_hint)
 # type_hint: 'batter', 'pitcher', or None (mixed / unknown)
 FILE_CATALOGUE = [
-    ("stats_mlb_daily_2023.csv",        "playerName", "playerId",   None),
-    ("stats_mlb_daily_2024.csv",        "playerName", "playerId",   None),
-    ("stats_mlb_daily_2025.csv",        "playerName", "playerId",   None),
-    ("stats_mlb_daily_2026_archive.csv","player_name","player_id",  None),
-    ("stats_mlb_boxscore_2026.csv",     "player_name","player_id",  None),
-    ("mlb_hitting_2023_20260216.csv",   "player_name","player_id",  "batter"),
-    ("mlb_hitting_2024_20260216.csv",   "player_name","player_id",  "batter"),
-    ("mlb_hitting_2025_20260215.csv",   "player_name","player_id",  "batter"),
-    ("mlb_pitching_2023_20260216.csv",  "player_name","player_id",  "pitcher"),
-    ("mlb_pitching_2024_20260216.csv",  "player_name","player_id",  "pitcher"),
-    ("mlb_pitching_2025_20260215.csv",  "player_name","player_id",  "pitcher"),
+    ("2023_mlb_stats_daily.csv",        "playerName", "playerId",   None),
+    ("2024_mlb_stats_daily.csv",        "playerName", "playerId",   None),
+    ("2025_mlb_stats_daily.csv",        "playerName", "playerId",   None),
+    ("2026_mlb_stats_daily_archive.csv","player_name","player_id",  None),
+    ("2026_mlb_stats_boxscore.csv",     "player_name","player_id",  None),
+    ("2023_mlb_hitting_season_20260216.csv",   "player_name","player_id",  "batter"),
+    ("2024_mlb_hitting_season_20260216.csv",   "player_name","player_id",  "batter"),
+    ("2025_mlb_hitting_season_20260215.csv",   "player_name","player_id",  "batter"),
+    ("2023_mlb_pitching_season_20260216.csv",  "player_name","player_id",  "pitcher"),
+    ("2024_mlb_pitching_season_20260216.csv",  "player_name","player_id",  "pitcher"),
+    ("2025_mlb_pitching_season_20260215.csv",  "player_name","player_id",  "pitcher"),
 ]
 
 # ── Load existing lookup ──────────────────────────────────────────────────────

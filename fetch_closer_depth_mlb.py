@@ -24,7 +24,7 @@ Source Data: MLB Stats API
                /api/v1/teams/{teamId}/roster?rosterType=depthChart
                &hydrate=person(pitchHand,stats(type=season,group=pitching,season={year}))
 
-Outputs: data-lake/01_Bronze/fantasy_baseball/closer_depth_mlb_{year}.csv
+Outputs: data-lake/01_Bronze/fantasy_baseball/{year}_mlb_closers_depth.csv
          Columns: date_scraped, team_id, team_name, player_id, player_name,
                   throws, position_code, role, status,
                   games, innings_pitched, era, sv, hld, sd,
@@ -537,7 +537,7 @@ def main():
 
     season    = args.year
     today_str = date.today().strftime('%Y-%m-%d')
-    output_file = os.path.join(mp.DATA_PATH, f'closer_depth_mlb_{season}.csv')
+    output_file = os.path.join(mp.DATA_PATH, f'{season}_mlb_closers_depth.csv')
 
     print(f'=== MLB Closer Depth Chart — {today_str} (season {season}) ===')
 
@@ -572,7 +572,7 @@ def main():
     print(f'  Total pitchers fetched: {len(all_players)} across {len(TEAM_IDS)} teams')
 
     # ---- Role inference from recent boxscore data ----
-    boxscore_file = os.path.join(mp.DATA_PATH, f'stats_mlb_boxscore_{season}.csv')
+    boxscore_file = os.path.join(mp.DATA_PATH, f'{season}_mlb_stats_boxscore.csv')
     recent_stats  = load_recent_boxscore_stats(boxscore_file, args.lookback_days)
     if recent_stats:
         all_players = infer_roles(all_players, recent_stats)

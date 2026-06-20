@@ -4,11 +4,11 @@ Description: Keeper value analysis for the 2026 draft. Blends 2025 actual perfor
              z-score per player. Calculates ADP surplus (keeper cost vs projected ADP round)
              to identify which players are worth keeping and at what draft-round cost.
              Covers all 10 teams; your team (MY_TEAM_ID) is marked with a star.
-Source Data: stats_espn_daily_2025.csv, roster_espn_season_2025.csv, teams_espn_season_2025.csv,
-             player_batter_projections_2026.csv, player_pitcher_projections_2026.csv,
-             overall_ADP_2026.csv, draft_results_espn_2025.csv, actual_keepers_2026.csv,
-             draft_order_2026.csv (data-lake/01_Bronze/fantasy_baseball)
-Outputs:     data-lake/01_Bronze/fantasy_baseball/projected_keepers_2026.csv
+Source Data: 2025_espn_stats_daily.csv, 2025_espn_roster_season.csv, 2025_espn_teams_season.csv,
+             2026_ext_projections_batter.csv, 2026_ext_projections_pitcher.csv,
+             2026_ext_adp_season.csv, 2025_espn_draft_results.csv, 2026_local_keepers_actual.csv,
+             2026_espn_draft_order.csv (data-lake/01_Bronze/fantasy_baseball)
+Outputs:     data-lake/01_Bronze/fantasy_baseball/2026_local_keepers_projected.csv
              data-lake/01_Bronze/fantasy_baseball/keeper_report_2026.txt
 """
 
@@ -32,7 +32,7 @@ MY_TEAM_ID = 2  # Datalickmyballs (Peter Rigali)
 NUM_KEEPERS = 5
 
 # Keeper costs: player name -> round it costs to keep them
-# Dynamic loading from actual_keepers_2026.csv will be used instead.
+# Dynamic loading from 2026_local_keepers_actual.csv will be used instead.
 MY_OWNER = 'Pete'
 
 # PA/IP thresholds for 2025 Z-score inclusion
@@ -110,7 +110,7 @@ def adp_to_round(adp_rank, num_teams=10):
 # ═══════════════════════════════════════════════════════════════════════════════
 def load_2025_stats():
     """Load and aggregate ESPN daily stats into season totals per player."""
-    path = os.path.join(mp.DATA_PATH, 'stats_espn_daily_2025.csv')
+    path = os.path.join(mp.DATA_PATH, '2025_espn_stats_daily.csv')
     if not os.path.exists(path):
         print(f"ERROR: {path} not found"); return None
 
@@ -149,7 +149,7 @@ def load_2025_stats():
 
 def load_current_rosters():
     """Load the most recent ESPN roster snapshot."""
-    path = os.path.join(mp.DATA_PATH, 'roster_espn_season_2025.csv')
+    path = os.path.join(mp.DATA_PATH, '2025_espn_roster_season.csv')
     if not os.path.exists(path):
         print("WARNING: No current roster file found"); return None
     df = pd.read_csv(path)
@@ -159,7 +159,7 @@ def load_current_rosters():
 
 def load_team_map():
     """team_id -> {name, abbrev, owner}"""
-    path = os.path.join(mp.DATA_PATH, 'teams_espn_season_2025.csv')
+    path = os.path.join(mp.DATA_PATH, '2025_espn_teams_season.csv')
     if not os.path.exists(path):
         return {}
     tdf = pd.read_csv(path).sort_values('date')  # latest row wins
@@ -175,7 +175,7 @@ def load_team_map():
 def load_projections():
     """Load 2026 batter + pitcher projections keyed by clean player name."""
     proj = {}
-    bp = os.path.join(mp.DATA_PATH, f'player_batter_projections_{DRAFT_YEAR}.csv')
+    bp = os.path.join(mp.DATA_PATH, f'{DRAFT_YEAR}_ext_projections_batter.csv')
     if os.path.exists(bp):
         bdf = pd.read_csv(bp)
         for _, r in bdf.iterrows():
@@ -186,7 +186,7 @@ def load_projections():
                 'RBI': float(r.get('RBI', 0)), 'SB': float(r.get('SB', 0)),
                 'OPS': float(r.get('OPS', 0)),
             }
-    pp = os.path.join(mp.DATA_PATH, f'player_pitcher_projections_{DRAFT_YEAR}.csv')
+    pp = os.path.join(mp.DATA_PATH, f'{DRAFT_YEAR}_ext_projections_pitcher.csv')
     if os.path.exists(pp):
         pdf = pd.read_csv(pp)
         for _, r in pdf.iterrows():
@@ -203,7 +203,7 @@ def load_projections():
 
 def load_adp():
     """ADP lookup keyed by clean player name."""
-    path = os.path.join(mp.DATA_PATH, f'overall_ADP_{DRAFT_YEAR}.csv')
+    path = os.path.join(mp.DATA_PATH, f'{DRAFT_YEAR}_ext_adp_season.csv')
     if not os.path.exists(path):
         return {}
     adf = pd.read_csv(path)
@@ -216,7 +216,7 @@ def load_adp():
 
 def load_draft_costs():
     """player_id (str) -> round drafted in 2025 (proxy for keeper cost)."""
-    path = os.path.join(mp.DATA_PATH, 'draft_results_espn_2025.csv')
+    path = os.path.join(mp.DATA_PATH, '2025_espn_draft_results.csv')
     if not os.path.exists(path):
         return {}
     ddf = pd.read_csv(path)
@@ -230,7 +230,7 @@ def load_actual_keepers():
     import pandas as pd
     import fantasy_baseball.mlb_processing as mp
     
-    path = os.path.join(mp.DATA_PATH, f'actual_keepers_{DRAFT_YEAR}.csv')
+    path = os.path.join(mp.DATA_PATH, f'{DRAFT_YEAR}_local_keepers_actual.csv')
     if not os.path.exists(path):
         return {}
     kdf = pd.read_csv(path)
@@ -243,7 +243,7 @@ def load_actual_keepers():
 
 def load_draft_order():
     """team_name -> first-round pick number."""
-    path = os.path.join(mp.DATA_PATH, 'draft_order_2026.csv')
+    path = os.path.join(mp.DATA_PATH, '2026_espn_draft_order.csv')
     if not os.path.exists(path):
         return {}
     odf = pd.read_csv(path)
@@ -511,7 +511,7 @@ def main():
 
     # CSV
     results_df = pd.DataFrame(all_results)
-    csv_path = os.path.join(mp.DATA_PATH, 'projected_keepers_2026.csv')
+    csv_path = os.path.join(mp.DATA_PATH, '2026_local_keepers_projected.csv')
     results_df.to_csv(csv_path, index=False)
     print(f"\n📊 CSV saved: {csv_path}")
 

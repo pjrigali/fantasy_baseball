@@ -15,11 +15,11 @@ Description:
 
 Source Data:
     ESPN API  (live roster pull via mlb_processing.setup_league)
-    data-lake/01_Bronze/fantasy_baseball/stats_espn_daily_2026.csv
-    data-lake/01_Bronze/fantasy_baseball/activity_espn_season_2026.csv
-    data-lake/01_Bronze/fantasy_baseball/player_batter_projections_2026.csv
-    data-lake/01_Bronze/fantasy_baseball/player_pitcher_projections_2026.csv
-    data-lake/01_Bronze/fantasy_baseball/stats_mlb_daily_2023.csv  (and 2024, 2025, 2026)
+    data-lake/01_Bronze/fantasy_baseball/2026_espn_stats_daily.csv
+    data-lake/01_Bronze/fantasy_baseball/2026_espn_activity_season.csv
+    data-lake/01_Bronze/fantasy_baseball/2026_ext_projections_batter.csv
+    data-lake/01_Bronze/fantasy_baseball/2026_ext_projections_pitcher.csv
+    data-lake/01_Bronze/fantasy_baseball/2023_mlb_stats_daily.csv  (and 2024, 2025, 2026)
 
 Outputs:
     fantasy_baseball/reports/trade_analysis_{PlayerA}_{PlayerB}_{DATE}.md
@@ -294,7 +294,7 @@ def load_historical_stats(dp, years, target_norms):
     results = {n: {} for n in target_norms}
 
     for year in years:
-        path = os.path.join(dp, f'stats_mlb_daily_{year}.csv')
+        path = os.path.join(dp, f'{year}_mlb_stats_daily.csv')
         if not os.path.isfile(path):
             continue
 
@@ -700,10 +700,10 @@ def main():
     (team_names, player_current,
      player_bat_acc, player_pit_acc,
      team_bat_ytd, team_pit_ytd) = load_espn_daily(
-        os.path.join(dp, 'stats_espn_daily_2026.csv'))
+        os.path.join(dp, '2026_espn_stats_daily.csv'))
 
     free_agents = load_free_agents(
-        os.path.join(dp, 'activity_espn_season_2026.csv'))
+        os.path.join(dp, '2026_espn_activity_season.csv'))
 
     # Find ESPN player IDs for the traded players (include IL, exclude FA)
     pid_a = pid_b = None
@@ -723,9 +723,9 @@ def main():
     # ── Projections ───────────────────────────────────────────────────────────
     print('Loading projections...', file=sys.stderr)
     bat_projs = load_batter_projections(
-        os.path.join(dp, 'player_batter_projections_2026.csv'))
+        os.path.join(dp, '2026_ext_projections_batter.csv'))
     pit_projs = load_pitcher_projections(
-        os.path.join(dp, 'player_pitcher_projections_2026.csv'))
+        os.path.join(dp, '2026_ext_projections_pitcher.csv'))
 
     # ── Historical MLB stats 2023–2026 ────────────────────────────────────────
     print('Loading historical MLB stats (2023–2026)...', file=sys.stderr)

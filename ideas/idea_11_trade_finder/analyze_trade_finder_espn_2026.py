@@ -34,12 +34,12 @@ Description:
         between players are unaffected by this choice.
 
 Source Data:
-    data-lake/01_Bronze/fantasy_baseball/stats_espn_daily_2026.csv
-    data-lake/01_Bronze/fantasy_baseball/player_batter_projections_2026.csv
-    data-lake/01_Bronze/fantasy_baseball/player_pitcher_projections_2026.csv
+    data-lake/01_Bronze/fantasy_baseball/2026_espn_stats_daily.csv
+    data-lake/01_Bronze/fantasy_baseball/2026_ext_projections_batter.csv
+    data-lake/01_Bronze/fantasy_baseball/2026_ext_projections_pitcher.csv
 
 Outputs:
-    data-lake/01_Bronze/fantasy_baseball/analyze_trade_finder_espn_2026.csv
+    data-lake/01_Bronze/fantasy_baseball/2026_local_trade_finder.csv
 """
 
 import csv
@@ -118,7 +118,7 @@ def normalize_name(name: str) -> str:
 
 def load_espn_daily(path):
     """
-    Single-pass read of stats_espn_daily_2026.csv.
+    Single-pass read of 2026_espn_stats_daily.csv.
 
     Returns
     -------
@@ -226,7 +226,7 @@ def load_batter_projections(path):
 
 def load_free_agents(path):
     """
-    Read activity_espn_season_2026.csv and return the set of player_ids who are
+    Read 2026_espn_activity_season.csv and return the set of player_ids who are
     currently free agents (most recent action is DROPPED with no later re-add).
     """
     last_add  = {}   # pid -> date of most recent FA ADDED / WAIVER ADDED
@@ -528,21 +528,21 @@ def main():
     print(f"Loading ESPN daily stats (year={year})...")
     (team_bat_ytd, team_pit_ytd, team_names,
      player_current, player_bat_acc, player_pit_acc) = load_espn_daily(
-        os.path.join(dp, f'stats_espn_daily_{year}.csv'))
+        os.path.join(dp, f'{year}_espn_stats_daily.csv'))
     print(f"  {len(team_names)} teams, {len(player_current)} players tracked")
 
     # ── Load activity — determines who is actually on a roster right now ─────
     print("Loading activity log to identify current free agents...")
-    free_agents = load_free_agents(os.path.join(dp, f'activity_espn_season_{year}.csv'))
+    free_agents = load_free_agents(os.path.join(dp, f'{year}_espn_activity_season.csv'))
     n_fa = sum(1 for pid in player_current if pid in free_agents)
     print(f"  {n_fa} players in ESPN daily history are now free agents — excluded from analysis")
 
     # ── Load projections ───────────────────────────────────────────────────────
     print("Loading projections...")
     bat_projs = load_batter_projections(
-        os.path.join(dp, f'player_batter_projections_{year}.csv'))
+        os.path.join(dp, f'{year}_ext_projections_batter.csv'))
     pit_projs = load_pitcher_projections(
-        os.path.join(dp, f'player_pitcher_projections_{year}.csv'))
+        os.path.join(dp, f'{year}_ext_projections_pitcher.csv'))
     print(f"  {len(bat_projs)} batter projections, {len(pit_projs)} pitcher projections")
 
     # ── Build active rosters (exclude IL and free agents) ─────────────────────
@@ -632,7 +632,7 @@ def main():
     results.sort(key=lambda r: (r['combined'], r['net_a'] + r['net_b']), reverse=True)
 
     # ── Write output CSV ───────────────────────────────────────────────────────
-    out_path = os.path.join(dp, f'analyze_trade_finder_espn_{year}.csv')
+    out_path = os.path.join(dp, f'{year}_local_trade_finder.csv')
 
     cat_rank_cols = []
     for c in ALL_CATS:

@@ -1,22 +1,22 @@
 """
 Description:
     Waiver Wire Signal Detection — Pre-Pickup Indicators of Breakout Pickups (Idea 16).
-    Works backwards from best_pickups_espn_{YEAR}.csv (idea 15 ground truth) to identify
+    Works backwards from {YEAR}_espn_best_pickups.csv (idea 15 ground truth) to identify
     what pre-pickup metrics predict top-quartile vs bottom-quartile waiver adds. Runs on
     both 2026 (full feature set: game logs + ownership + batting order) and 2025 (game-log
     features only — no prior-year rankings or lineups in the data lake). Cross-year
     comparison isolates which game-stat signals hold across both seasons.
 
 Source Data (2026):
-    - data-lake/01_Bronze/fantasy_baseball/best_pickups_espn_2026.csv
-    - data-lake/01_Bronze/fantasy_baseball/stats_mlb_daily_2026_archive.csv
-    - data-lake/01_Bronze/fantasy_baseball/rankings_espn_daily_2026.csv
-    - data-lake/01_Bronze/fantasy_baseball/lineups_mlb_batters_2026.csv
+    - data-lake/01_Bronze/fantasy_baseball/2026_espn_best_pickups.csv
+    - data-lake/01_Bronze/fantasy_baseball/2026_mlb_stats_daily_archive.csv
+    - data-lake/01_Bronze/fantasy_baseball/2026_espn_rankings_daily.csv
+    - data-lake/01_Bronze/fantasy_baseball/2026_mlb_lineups_batters.csv
     - data-lake/01_Bronze/fantasy_baseball/player_lookup.csv
 
 Source Data (2025 cross-validation):
-    - data-lake/01_Bronze/fantasy_baseball/best_pickups_espn_2025.csv
-    - data-lake/01_Bronze/fantasy_baseball/stats_mlb_daily_2025.csv
+    - data-lake/01_Bronze/fantasy_baseball/2025_espn_best_pickups.csv
+    - data-lake/01_Bronze/fantasy_baseball/2025_mlb_stats_daily.csv
 
 Outputs:
     - fantasy_baseball/ideas/idea_16_waiver_signals/reports/waiver_signals_2026.md
@@ -37,14 +37,14 @@ DATA_DIR = os.path.join(BASE_DIR, 'data-lake', '01_Bronze', 'fantasy_baseball')
 REPORTS_DIR = os.path.join(SCRIPT_DIR, 'reports')
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
-BEST_PICKUPS_FILE  = os.path.join(DATA_DIR, 'best_pickups_espn_2026.csv')
-MLB_ARCHIVE_FILE   = os.path.join(DATA_DIR, 'stats_mlb_daily_2026_archive.csv')
-RANKINGS_FILE      = os.path.join(DATA_DIR, 'rankings_espn_daily_2026.csv')
-LINEUPS_FILE       = os.path.join(DATA_DIR, 'lineups_mlb_batters_2026.csv')
+BEST_PICKUPS_FILE  = os.path.join(DATA_DIR, '2026_espn_best_pickups.csv')
+MLB_ARCHIVE_FILE   = os.path.join(DATA_DIR, '2026_mlb_stats_daily_archive.csv')
+RANKINGS_FILE      = os.path.join(DATA_DIR, '2026_espn_rankings_daily.csv')
+LINEUPS_FILE       = os.path.join(DATA_DIR, '2026_mlb_lineups_batters.csv')
 PLAYER_LOOKUP_FILE = os.path.join(DATA_DIR, 'player_lookup.csv')
 
-BEST_PICKUPS_2025_FILE = os.path.join(DATA_DIR, 'best_pickups_espn_2025.csv')
-MLB_ARCHIVE_2025_FILE  = os.path.join(DATA_DIR, 'stats_mlb_daily_2025.csv')
+BEST_PICKUPS_2025_FILE = os.path.join(DATA_DIR, '2025_espn_best_pickups.csv')
+MLB_ARCHIVE_2025_FILE  = os.path.join(DATA_DIR, '2025_mlb_stats_daily.csv')
 
 REPORT_FILE = os.path.join(REPORTS_DIR, 'waiver_signals_2026.md')
 
@@ -476,7 +476,7 @@ def build_cross_year_section(batter_results_26, pitcher_results_26,
     A = lines.append
     A('## Cross-Year Validation — 2026 vs 2025 (Game-Log Features Only)')
     A('')
-    A('2025 signals use only `stats_mlb_daily_2025.csv` (no ownership or batting-order data).')
+    A('2025 signals use only `2025_mlb_stats_daily.csv` (no ownership or batting-order data).')
     A('Features that show **consistent direction and similar |r|** across both seasons are the most robust.')
     A('')
 
@@ -521,7 +521,7 @@ def build_report(batters, pitchers, batter_results, pitcher_results,
     A('# Waiver Wire Signal Detection — Pre-Pickup Indicator Analysis (2026)')
     A('')
     A('**Analysis date:** 2026-06-19  ')
-    A('**Ground truth source:** `best_pickups_espn_2026.csv` (Idea 15)  ')
+    A('**Ground truth source:** `2026_espn_best_pickups.csv` (Idea 15)  ')
     A(f'**Total pickups:** {total_pickups} '
       f'({len(batters)} batters, {len(pitchers)} pitchers)  ')
     A(f'**Archive coverage:** {coverage_batters:.0%} of batters, '
@@ -534,7 +534,7 @@ def build_report(batters, pitchers, batter_results, pitcher_results,
     A('1. **Label quartiles** — top-quartile: composite_z ≥ 75th pct (within player type);'
       ' bottom-quartile: composite_z ≤ 25th pct; middle excluded from testing')
     A('2. **Build pre-pickup features** — 7-day and 14-day rolling windows before `acquisition_date`'
-      ' from `stats_mlb_daily_2026_archive`, `rankings_espn_daily`, and `lineups_mlb_batters`')
+      ' from `2026_mlb_stats_daily_archive`, `espn_rankings_daily`, and `mlb_lineups_batters`')
     A('3. **Rank features** — Mann-Whitney U rank-biserial correlation r ∈ [−1, 1]:'
       ' |r| near 1 means the feature consistently separates top from bottom pickups')
     A('4. **Find thresholds** — single-feature decision boundary that maximises F1 score'
@@ -658,7 +658,7 @@ def build_report(batters, pitchers, batter_results, pitcher_results,
     A('- **Sample size:** ~30–35 players per quartile group per type — effect sizes are directional, not definitive.')
     A('- **2025 cross-validation:** Game-log features only — no prior-year ownership or batting-order data in the lake.')
     A('- **Name coverage:** Players without a `player_lookup.csv` entry have no archive features.')
-    A('- **Archive gaps:** `stats_mlb_daily_2026_archive.csv` is the legacy per-player fetcher; bench players not included.')
+    A('- **Archive gaps:** `2026_mlb_stats_daily_archive.csv` is the legacy per-player fetcher; bench players not included.')
     A('')
     A('**Next steps:**')
     A('1. Build the weekly runtime watchlist script that applies these thresholds to the current available player pool')
@@ -686,7 +686,7 @@ def main():
     print(f'  {len(mlb_archive):,} players in MLB archive')
     print(f'  {len(rankings_data):,} players in rankings')
     print(f'  {len(lineups_data):,} players in lineups')
-    print(f'  {len(pickups):,} pickups in best_pickups_espn_2026.csv')
+    print(f'  {len(pickups):,} pickups in 2026_espn_best_pickups.csv')
 
     batters  = [p for p in pickups if p['player_type'] == 'batter']
     pitchers = [p for p in pickups if p['player_type'] == 'pitcher']

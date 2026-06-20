@@ -5,8 +5,8 @@ Roster Resource Closer Depth Chart. Compares FanGraphs season stats and role lab
 against recent 14-day boxscore performance.
 
 Source Data:
-  - closer_depth_fangraphs_2026.csv  (multi-date snapshot; uses most-recent date)
-  - stats_mlb_boxscore_2026.csv      (daily pitcher game lines)
+  - 2026_fangraphs_closers_depth.csv  (multi-date snapshot; uses most-recent date)
+  - 2026_mlb_stats_boxscore.csv      (daily pitcher game lines)
 
 Outputs: Printed report to stdout.
 """
@@ -18,8 +18,8 @@ from collections import defaultdict
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-FG_FILE = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\closer_depth_fangraphs_2026.csv"
-BOX_FILE = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\stats_mlb_boxscore_2026.csv"
+FG_FILE = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\2026_fangraphs_closers_depth.csv"
+BOX_FILE = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\2026_mlb_stats_boxscore.csv"
 
 # ---------------------------------------------------------------------------
 # Helpers

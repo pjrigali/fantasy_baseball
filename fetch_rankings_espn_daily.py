@@ -10,7 +10,7 @@ Description: Fetches daily player ownership, trending, and positional ranking da
 Source Data: ESPN Fantasy Baseball API (kona_player_info view). Credentials read from
              config.ini under [BASEBALL]: BB_LEAGUE_ID, BB_SWID, BB_ESPN_2.
 
-Outputs: data-lake/01_Bronze/fantasy_baseball/rankings_espn_daily_{year}.csv
+Outputs: data-lake/01_Bronze/fantasy_baseball/{year}_espn_rankings_daily.csv
          One row per player per date. Deduplicates on (date, player_id).
 """
 
@@ -270,7 +270,7 @@ def main():
         return
 
     os.makedirs(DATA_PATH, exist_ok=True)
-    csv_path = os.path.join(DATA_PATH, f'rankings_espn_daily_{year}.csv')
+    csv_path = os.path.join(DATA_PATH, f'{year}_espn_rankings_daily.csv')
     existing_keys = load_existing_keys(csv_path)
 
     total_written = 0

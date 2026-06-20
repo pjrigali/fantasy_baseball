@@ -1,10 +1,10 @@
 """
-Description: Builds roster_history_{YEAR}.csv tracking each player's ownership period on
+Description: Builds {YEAR}_espn_roster_history.csv tracking each player's ownership period on
              each fantasy team. Reconstructs periods from draft picks (initial roster) and
              activity events (FA ADDED opens a period, DROPPED closes it). MOVED events
              (lineup slot changes) are ignored. Players still on a roster get end_date = ''.
-Source Data: draft_results_espn_{YEAR}.csv, activity_espn_season_{YEAR}.csv
-Outputs:     data-lake/01_Bronze/fantasy_baseball/roster_history_{YEAR}.csv
+Source Data: {YEAR}_espn_draft_results.csv, {YEAR}_espn_activity_season.csv
+Outputs:     data-lake/01_Bronze/fantasy_baseball/{YEAR}_espn_roster_history.csv
 """
 
 import csv, os, sys
@@ -18,9 +18,9 @@ YEAR       = 2026
 DRAFT_DATE = f'{YEAR}-03-23'
 BASE       = mp.DATA_PATH
 
-draft_path    = os.path.join(BASE, f'draft_results_espn_{YEAR}.csv')
-activity_path = os.path.join(BASE, f'activity_espn_season_{YEAR}.csv')
-out_path      = os.path.join(BASE, f'roster_history_{YEAR}.csv')
+draft_path    = os.path.join(BASE, f'{YEAR}_espn_draft_results.csv')
+activity_path = os.path.join(BASE, f'{YEAR}_espn_activity_season.csv')
+out_path      = os.path.join(BASE, f'{YEAR}_espn_roster_history.csv')
 
 # ── Build team_id → team_abbrev map from activity ─────────────────────────────
 team_abbrev_map = {}

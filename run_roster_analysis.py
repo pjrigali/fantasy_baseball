@@ -30,7 +30,7 @@ PACE_MULT    = 183 / days_played
 # reliably accumulate SVHD; Setup Men are included as a secondary tier.
 CLOSER_ROLES = {'Closer', 'Co-Closer', 'Closer Committee', 'Setup Man'}
 
-_fg_csv = os.path.join(BASE, f'closer_depth_fangraphs_{YEAR}.csv')
+_fg_csv = os.path.join(BASE, f'{YEAR}_fangraphs_closers_depth.csv')
 fg_role_lookup = {}   # lowercase player_name -> role string
 _fg_max_date   = 'N/A'
 if os.path.exists(_fg_csv):
@@ -87,16 +87,16 @@ my_rps     = [p for p in my_roster if 'RP' in p.eligibleSlots
               and not any(s in hitter_slots for s in p.eligibleSlots)]
 
 # ── Load CSVs ─────────────────────────────────────────────────────────────────
-with open(os.path.join(BASE, f'stats_mlb_boxscore_{YEAR}.csv'), encoding='utf-8') as f:
+with open(os.path.join(BASE, f'{YEAR}_mlb_stats_boxscore.csv'), encoding='utf-8') as f:
     mlb_rows = list(csv.DictReader(f))
 batter_rows  = [r for r in mlb_rows if r['b_or_p'] == 'batter']
 pitcher_rows = [r for r in mlb_rows if r['b_or_p'] == 'pitcher']
 
-with open(os.path.join(BASE, f'lineups_mlb_batters_{YEAR}.csv'), encoding='utf-8') as f:
+with open(os.path.join(BASE, f'{YEAR}_mlb_lineups_batters.csv'), encoding='utf-8') as f:
     all_lineups = list(csv.DictReader(f))
 
 rank_lookup = {}
-_rank_path = os.path.join(BASE, f'rankings_espn_daily_{YEAR}.csv')
+_rank_path = os.path.join(BASE, f'{YEAR}_espn_rankings_daily.csv')
 if os.path.exists(_rank_path):
     with open(_rank_path, encoding='utf-8') as f:
         _rank_rows = list(csv.DictReader(f))
@@ -572,7 +572,7 @@ for fa in fa_rps[:20]:
 
 # ── Z-Score Analysis (ESPN daily stats — league-wide relative ranking) ────────
 print('\nRunning z-score analysis...')
-espn_daily_path = os.path.join(BASE, f'stats_espn_daily_{YEAR}.csv')
+espn_daily_path = os.path.join(BASE, f'{YEAR}_espn_stats_daily.csv')
 zdf = pd.read_csv(espn_daily_path, low_memory=False)
 zdf['date'] = pd.to_datetime(zdf['date'])
 

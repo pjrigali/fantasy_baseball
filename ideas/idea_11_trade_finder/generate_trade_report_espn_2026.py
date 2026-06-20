@@ -2,7 +2,7 @@
 Trade Finder Report — ESPN Fantasy Baseball 2026
 
 Description:
-    Human-readable wrapper over analyze_trade_finder_espn_2026.csv.
+    Human-readable wrapper over 2026_local_trade_finder.csv.
     For each mutually beneficial trade, prints a formatted block showing:
       - Which player each team gives and receives
       - Key projected stats for each player
@@ -11,7 +11,7 @@ Description:
     Optionally filters by team name and limits the number of trades shown.
 
 Source Data:
-    data-lake/01_Bronze/fantasy_baseball/analyze_trade_finder_espn_2026.csv
+    data-lake/01_Bronze/fantasy_baseball/2026_local_trade_finder.csv
 
 Outputs:
     stdout  (pipe to a file to save)
@@ -46,7 +46,7 @@ def _csv_path(year):
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     for name in ('data-lake', 'data-lake'):
         p = os.path.join(root, name, '01_Bronze', 'fantasy_baseball',
-                         f'analyze_trade_finder_espn_{year}.csv')
+                         f'{year}_local_trade_finder.csv')
         if os.path.isfile(p):
             return p
     raise FileNotFoundError(f"Trade finder CSV not found in {root} (searched data-lake/data-lake)\n"

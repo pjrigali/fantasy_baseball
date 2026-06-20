@@ -25,9 +25,9 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 
-ACTIVITY_PATH = "data-lake/01_Bronze/fantasy_baseball/activity_espn_season_{year}.csv"
-STATS_PATH    = "data-lake/01_Bronze/fantasy_baseball/stats_espn_daily_{year}.csv"
-OUTPUT_PATH   = "data-lake/01_Bronze/fantasy_baseball/quick_lineup_bench_performances_{year}.csv"
+ACTIVITY_PATH = "data-lake/01_Bronze/fantasy_baseball/{year}_espn_activity_season.csv"
+STATS_PATH    = "data-lake/01_Bronze/fantasy_baseball/{year}_espn_stats_daily.csv"
+OUTPUT_PATH   = "data-lake/01_Bronze/fantasy_baseball/{year}_local_quick_lineup_bench.csv"
 
 BATTING_COUNTING  = ["R", "HR", "RBI", "SB"]
 PITCHING_COUNTING = ["QS", "SVHD"]

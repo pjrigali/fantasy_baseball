@@ -1,7 +1,7 @@
 """
 Description: Snapshots the current ESPN fantasy league roster for all teams.
 Source Data: ESPN Fantasy API (via mlb_processing.get_league_rosters).
-Outputs: data-lake/01_Bronze/fantasy_baseball/roster_espn_season_<YEAR>.csv
+Outputs: data-lake/01_Bronze/fantasy_baseball/<YEAR>_espn_roster_season.csv
 """
 
 import argparse
@@ -35,7 +35,7 @@ def main():
         return
 
     os.makedirs(mp.DATA_PATH, exist_ok=True)
-    save_path = os.path.join(mp.DATA_PATH, f"roster_espn_season_{year}.csv")
+    save_path = os.path.join(mp.DATA_PATH, f"{year}_espn_roster_season.csv")
 
     fieldnames = list({k for r in rosters for k in r.keys()})
     preferred_order = ['date', 'team_id', 'team_name', 'player_id', 'player_name',

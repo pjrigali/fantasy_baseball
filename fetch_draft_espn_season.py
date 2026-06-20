@@ -1,7 +1,7 @@
 """
 Description: Captures the ESPN fantasy league draft results for a given season.
 Source Data: ESPN Fantasy API (via mlb_processing.get_draft_recap).
-Outputs: data-lake/01_Bronze/fantasy_baseball/draft_results_espn_<YEAR>.csv
+Outputs: data-lake/01_Bronze/fantasy_baseball/<YEAR>_espn_draft_results.csv
 """
 
 import argparse
@@ -34,7 +34,7 @@ def main():
         return
 
     os.makedirs(mp.DATA_PATH, exist_ok=True)
-    save_path = os.path.join(mp.DATA_PATH, f"draft_results_espn_{year}.csv")
+    save_path = os.path.join(mp.DATA_PATH, f"{year}_espn_draft_results.csv")
     fieldnames = list({k for p in draft_picks for k in p.keys()})
     with open(save_path, 'w', encoding='utf-8', newline='') as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)

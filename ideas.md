@@ -31,9 +31,9 @@
 - Is there a threshold participation rate below which a team almost never wins the week?
 
 **Data sources:**
-- `stats_mlb_daily_2026.csv` — who actually played each day (game logs)
-- `stats_espn_daily_2026.csv` — which players are on which fantasy team, and their fantasy points
-- `lineups_mlb_batters_2026.csv` — batting order data to cross-reference active players
+- `2026_mlb_stats_daily.csv` — who actually played each day (game logs)
+- `2026_espn_stats_daily.csv` — which players are on which fantasy team, and their fantasy points
+- `2026_mlb_lineups_batters.csv` — batting order data to cross-reference active players
 
 **Possible output:** A daily participation rate per fantasy team (% of roster with a game log entry), plotted against fantasy points scored that day/week.
 
@@ -50,7 +50,7 @@
 2. **Team level** — within each fantasy team's roster, how dependent are they on a small number of players? A high intra-roster Gini means they live and die by 2–3 stars.
 3. **League capture** — which fantasy team "owns" the highest-scoring players? Does one team disproportionately hold the value-dense tail of the distribution?
 
-**Keeper angle:** The players sitting in the high-scoring tail of the Gini curve are the natural keeper candidates — they produce outsized value relative to replacement. Cross-reference against `activity_espn_season_2026.csv` to see how they were acquired (waiver, draft, trade) and whether they're likely to be retained.
+**Keeper angle:** The players sitting in the high-scoring tail of the Gini curve are the natural keeper candidates — they produce outsized value relative to replacement. Cross-reference against `2026_espn_activity_season.csv` to see how they were acquired (waiver, draft, trade) and whether they're likely to be retained.
 
 **Questions to answer:**
 - What is the league-wide Gini on cumulative season fantasy points?
@@ -59,9 +59,9 @@
 - Are the high-Gini players draftable keepers, or were they waiver pickups (suggesting volatility)?
 
 **Data sources:**
-- `stats_espn_daily_2026.csv` — daily fantasy points per player per team
-- `activity_espn_season_2026.csv` — acquisition history (drafted vs waiver vs trade)
-- `rankings_espn_daily_2026.csv` — ownership % and ADP as a proxy for perceived value
+- `2026_espn_stats_daily.csv` — daily fantasy points per player per team
+- `2026_espn_activity_season.csv` — acquisition history (drafted vs waiver vs trade)
+- `2026_espn_rankings_daily.csv` — ownership % and ADP as a proxy for perceived value
 
 **Possible output:** Lorenz curve per team and league-wide; ranked list of "value-dense" players flagged as keeper candidates with their acquisition type.
 
@@ -83,9 +83,9 @@
 - Which fantasy-rostered players are consistently hitting in high-value slots vs floating?
 
 **Data sources:**
-- `lineups_mlb_batters_2026.csv` — date, team, player, batting order slot
-- `stats_mlb_daily_2026.csv` — per-game hitting stats (AB, R, H, HR, RBI, SB, TB, BB, SO)
-- `stats_espn_daily_2026.csv` — fantasy points, to tie MLB output back to fantasy value
+- `2026_mlb_lineups_batters.csv` — date, team, player, batting order slot
+- `2026_mlb_stats_daily.csv` — per-game hitting stats (AB, R, H, HR, RBI, SB, TB, BB, SO)
+- `2026_espn_stats_daily.csv` — fantasy points, to tie MLB output back to fantasy value
 
 **Join key:** `(date, player_name)` or `(date, team_tricode + player_name)` — worth checking name formatting consistency across sources before joining.
 
@@ -109,9 +109,9 @@
 - Do high-variance batters cluster at specific roster positions or batting order slots?
 
 **Data sources:**
-- `stats_mlb_daily_2026.csv` — per-game H, AB, BB, HBP, SF (to compute game-level OBP)
-- `stats_espn_daily_2026.csv` — fantasy points and roster slot context
-- `lineups_mlb_batters_2026.csv` — to control for games where player sat out vs played and went hitless
+- `2026_mlb_stats_daily.csv` — per-game H, AB, BB, HBP, SF (to compute game-level OBP)
+- `2026_espn_stats_daily.csv` — fantasy points and roster slot context
+- `2026_mlb_lineups_batters.csv` — to control for games where player sat out vs played and went hitless
 
 **Key metric:** Game-level OBP distribution per player (mean, std dev, % of games with OBP = 0, % of games above .400). A "consistency score" could be mean / std_dev — higher is more reliable.
 
@@ -136,9 +136,9 @@
 - Do certain archetypes consistently over- or under-perform their ESPN scoring relative to their actual MLB contribution?
 
 **Data sources:**
-- `stats_mlb_daily_2026.csv` — full per-game stat vectors for batters and pitchers
-- `stats_espn_daily_2026.csv` — ESPN fantasy points (the scoring output to audit against)
-- `rankings_espn_daily_2026.csv` — ownership and ADP as a market proxy for perceived value
+- `2026_mlb_stats_daily.csv` — full per-game stat vectors for batters and pitchers
+- `2026_espn_stats_daily.csv` — ESPN fantasy points (the scoring output to audit against)
+- `2026_espn_rankings_daily.csv` — ownership and ADP as a market proxy for perceived value
 
 **Approach:**
 - Pearson correlation matrix across all numeric stat columns, split by batter/pitcher
@@ -163,7 +163,7 @@
 - Which drops were mistakes — players dropped who then outscored their replacement?
 - Is there a team consistently selling assets cheap (dropping players who bounce back)?
 
-**Data sources:** `activity_espn_season_2026.csv`, `stats_espn_daily_2026.csv`
+**Data sources:** `2026_espn_activity_season.csv`, `2026_espn_stats_daily.csv`
 
 **Possible output:** Per-team transaction ROI leaderboard; list of the worst drops of the season by value left on the table.
 
@@ -173,7 +173,7 @@
 
 **Status:** `Not Started`
 
-**Motivation:** The `rankings_espn_daily_2026.csv` captures both `pct_owned` and `pct_change` (the trending signal) on a daily basis. A player breaking out will show strong game-log stats before the ownership % moves. The lag between performance and market reaction is the window to act.
+**Motivation:** The `2026_espn_rankings_daily.csv` captures both `pct_owned` and `pct_change` (the trending signal) on a daily basis. A player breaking out will show strong game-log stats before the ownership % moves. The lag between performance and market reaction is the window to act.
 
 **Idea:** For each player, compare their rolling 7-day `stats_mlb_daily` performance against their ownership trend in `rankings_espn_daily`. Identify players where performance has materially outpaced ownership movement — the market hasn't caught up yet.
 
@@ -183,7 +183,7 @@
 - Are there position groups (e.g. RP, MI) where the market consistently lags longer?
 - Which of our league's teams are fastest to identify and acquire breakout players?
 
-**Data sources:** `stats_mlb_daily_2026.csv`, `rankings_espn_daily_2026.csv`, `activity_espn_season_2026.csv`
+**Data sources:** `2026_mlb_stats_daily.csv`, `2026_espn_rankings_daily.csv`, `2026_espn_activity_season.csv`
 
 **Possible output:** Daily "inefficiency" watchlist of underowned performers; ownership lag curve by position.
 
@@ -203,7 +203,7 @@
 - Is there a correlation between slot efficiency and weekly win rate?
 - Which teams have injury-exposed slots that are quietly costing them points?
 
-**Data sources:** `stats_espn_daily_2026.csv` — lineup slot, points per player per day
+**Data sources:** `2026_espn_stats_daily.csv` — lineup slot, points per player per day
 
 **Possible output:** Slot efficiency heatmap (teams × positions); per-slot league average as a benchmark; weekly slot efficiency trend per team.
 
@@ -223,7 +223,7 @@
 - Which single trade had the largest value swing in either direction?
 - Do winning trades correlate with winning records, or are teams trading well but still losing?
 
-**Data sources:** `activity_espn_season_2026.csv`, `stats_espn_daily_2026.csv`
+**Data sources:** `2026_espn_activity_season.csv`, `2026_espn_stats_daily.csv`
 
 **Possible output:** Trade-by-trade value ledger; net trade value gained/lost per team; league trade balance table.
 
@@ -245,10 +245,10 @@
 - Are there deals that look neutral on ADP/rankings but are actually win-win under this specific league's scoring weights?
 
 **Data sources:**
-- `stats_espn_daily_2026.csv` — current roster composition, lineup slots, and per-player fantasy points by team
-- `stats_mlb_daily_2026.csv` — YTD box score stats to compute position-adjusted value
-- `player_batter_projections_2026.csv` / `player_pitcher_projections_2026.csv` — rest-of-season projections to evaluate forward value, not just past performance
-- `rankings_espn_daily_2026.csv` — ownership % and positional rank as a sanity check on player value
+- `2026_espn_stats_daily.csv` — current roster composition, lineup slots, and per-player fantasy points by team
+- `2026_mlb_stats_daily.csv` — YTD box score stats to compute position-adjusted value
+- `2026_ext_projections_batter.csv` / `2026_ext_projections_pitcher.csv` — rest-of-season projections to evaluate forward value, not just past performance
+- `2026_espn_rankings_daily.csv` — ownership % and positional rank as a sanity check on player value
 
 **Approach:**
 1. Aggregate each team's fantasy points by positional slot YTD; compute delta vs league average per slot to get a surplus/deficit profile per team
@@ -276,7 +276,7 @@
 - Does a 7-day hot streak predict the following 7 days, or does regression to the mean dominate?
 - Are there players who run in consistent hot/cold cycles that could be exploited with buy-low timing?
 
-**Data sources:** `stats_espn_daily_2026.csv`, `rankings_espn_daily_2026.csv` (ownership context), `stats_mlb_daily_2026.csv` (raw game logs)
+**Data sources:** `2026_espn_stats_daily.csv`, `2026_espn_rankings_daily.csv` (ownership context), `2026_mlb_stats_daily.csv` (raw game logs)
 
 **Possible output:** Daily "temperature" leaderboard (hottest and coldest players); persistence analysis of streaks; streaming recommendation list of hot, low-owned free agents.
 
@@ -300,8 +300,8 @@
 **Data sources:**
 - [Baseball Savant Bat Tracking Leaderboard](https://baseballsavant.mlb.com/leaderboard/bat-tracking) — yearly swing speed, blast rate, squared-up %, attack angle per batter
 - Baseball Savant Statcast pitching leaderboards — spin rate, velocity, extension, movement profiles per pitcher
-- `stats_mlb_daily_2026.csv` / prior seasons — traditional box score stats for the prediction target
-- `rankings_espn_daily_2026.csv` — ESPN ADP and ownership as a proxy for market valuation (to find the gap between physical profile and perceived value)
+- `2026_mlb_stats_daily.csv` / prior seasons — traditional box score stats for the prediction target
+- `2026_espn_rankings_daily.csv` — ESPN ADP and ownership as a proxy for market valuation (to find the gap between physical profile and perceived value)
 
 **Approach:**
 - Scrape or download multi-year bat-tracking and pitching Statcast data (2020–present)
@@ -332,10 +332,10 @@
 - In draft value terms: which ADP ranges produce the most consistent projection beats vs busts?
 
 **Data sources:**
-- `player_batter_projections_2023.csv` / `2024.csv` / `2025.csv` / `2026.csv` — preseason projected stats per batter by year
-- `player_pitcher_projections_2023.csv` / `2024.csv` / `2025.csv` / `2026.csv` — preseason projected stats per pitcher by year
-- `stats_mlb_daily_2023.csv` through `stats_mlb_daily_2026.csv` — actual game-log stats aggregated to season totals for comparison
-- `rankings_espn_daily_2026.csv` — ADP and ownership % as a proxy for how much the market trusted each projection
+- `2023_ext_projections_batter.csv` / `2024.csv` / `2025.csv` / `2026.csv` — preseason projected stats per batter by year
+- `2023_ext_projections_pitcher.csv` / `2024.csv` / `2025.csv` / `2026.csv` — preseason projected stats per pitcher by year
+- `2023_mlb_stats_daily.csv` through `2026_mlb_stats_daily.csv` — actual game-log stats aggregated to season totals for comparison
+- `2026_espn_rankings_daily.csv` — ADP and ownership % as a proxy for how much the market trusted each projection
 
 **Approach:**
 1. Aggregate daily game logs to season totals per player per year (AB, HR, R, RBI, SB, AVG, OBP for batters; IP, ERA, WHIP, K, W, SV for pitchers)
@@ -392,7 +392,7 @@
 
 **Motivation:** Not every roster-building win happens at the draft. Waiver wire adds and free agent pickups can swing weekly matchups and shift league standings. By isolating all non-draft acquisitions and measuring each player's statistical contribution across all 10 scoring categories from the moment they were picked up, we can objectively rank the best in-season roster moves of the year.
 
-**Idea:** Filter `activity_espn_season_2026.csv` to adds that were not the result of the initial draft. For each add, record the acquisition date and compute that player's cumulative stats in the 5 batting categories (R, HR, RBI, SB, OPS) and 5 pitching categories (K/9, QS, SVHD, ERA, WHIP) from their pickup date through the end of the available data window. Rank pickups by their post-acquisition categorical value to surface the players who delivered the most real scoring-category impact after being claimed.
+**Idea:** Filter `2026_espn_activity_season.csv` to adds that were not the result of the initial draft. For each add, record the acquisition date and compute that player's cumulative stats in the 5 batting categories (R, HR, RBI, SB, OPS) and 5 pitching categories (K/9, QS, SVHD, ERA, WHIP) from their pickup date through the end of the available data window. Rank pickups by their post-acquisition categorical value to surface the players who delivered the most real scoring-category impact after being claimed.
 
 **Questions to answer:**
 - Which non-drafted players have contributed the most across the 5x5 categories since being picked up?
@@ -403,10 +403,10 @@
 - Is there a team that has consistently found high-value waiver adds throughout the season vs one that has made mostly low-return claims?
 
 **Data sources:**
-- `activity_espn_season_2026.csv` — acquisition type (waiver, free agent, trade) and date; used to isolate non-draft adds and set the post-acquisition start date
-- `stats_espn_daily_2026.csv` — daily stats per player to accumulate post-add totals for R, HR, RBI, SB, OPS
-- `stats_mlb_daily_2026.csv` — game-level box score data for pitching categories (K/9, QS, SVHD, ERA, WHIP) from the pickup date forward
-- `rankings_espn_daily_2026.csv` — ownership % at pickup date as a proxy for how overlooked the player was when claimed
+- `2026_espn_activity_season.csv` — acquisition type (waiver, free agent, trade) and date; used to isolate non-draft adds and set the post-acquisition start date
+- `2026_espn_stats_daily.csv` — daily stats per player to accumulate post-add totals for R, HR, RBI, SB, OPS
+- `2026_mlb_stats_daily.csv` — game-level box score data for pitching categories (K/9, QS, SVHD, ERA, WHIP) from the pickup date forward
+- `2026_espn_rankings_daily.csv` — ownership % at pickup date as a proxy for how overlooked the player was when claimed
 
 **Approach:**
 1. Filter activity log to adds where acquisition type is not "Draft" — include waiver claims and free agent adds
@@ -437,8 +437,8 @@
 - `ideas/idea_16_waiver_signals/analyze_waiver_signals_espn_2026.py` — signal analysis engine; Mann-Whitney rank-biserial correlation ranking across 19 batter / 15 pitcher features; F1-optimal thresholds; cross-year validation vs 2025
 - `ideas/idea_16_waiver_signals/analyze_best_pickups_espn_2025.py` — 2025 best-pickups engine using first-appearance detection as a proxy for pickup dates (no activity CSV available for 2025)
 - `ideas/idea_16_waiver_signals/reports/waiver_signals_2026.md` — full signal report with ranked feature table, prescriptive rules, retrospective audit, and 2025 cross-year validation
-- `watch_waiver_signals_espn.py` — daily watcher script; scores all healthy free agents against the derived thresholds; appends to `waiver_watchlist_espn_{YEAR}.csv`; runs as Step 7 of `fantasy-collect-all-data`
-- `data-lake/01_Bronze/fantasy_baseball/waiver_watchlist_espn_2026.csv` — live daily watchlist CSV, deduped on `(date, player_id)`
+- `watch_waiver_signals_espn.py` — daily watcher script; scores all healthy free agents against the derived thresholds; appends to `{YEAR}_espn_waiver_watchlist.csv`; runs as Step 7 of `fantasy-collect-all-data`
+- `data-lake/01_Bronze/fantasy_baseball/2026_espn_waiver_watchlist.csv` — live daily watchlist CSV, deduped on `(date, player_id)`
 
 **Top signals (2026, cross-validated vs 2025):**
 - *Batters:* `pct_owned_at_pickup ≥ 22.8` (r=0.70), `hr_per_game_7d ≥ 0.14` (r=0.48), `batting_slot_mode_7d ≤ 7` (r=−0.42)
@@ -446,7 +446,7 @@
 
 **Motivation:** Idea 15 identified *who* the best waiver pickups of 2026 were after the fact. This idea works backwards: given that ground truth, what could we have *known before* the acquisition date that predicted those players would be valuable? The goal is a set of prescriptive, threshold-based signals — concrete rules a manager can apply each week to identify the next Jordan Walker or Bryan Baker before someone else claims them.
 
-**Idea:** For every pickup in `best_pickups_espn_2026.csv`, build a pre-pickup feature profile using the 7, 14, and 21 days of game logs *before* the acquisition date. Separate the top-quartile pickups (high composite z) from the bottom-quartile pickups (low composite z). Measure which pre-pickup metrics differ most significantly between the two groups. Then translate those differences into prescriptive thresholds: "if a player shows X in the prior 7 days AND Y, they are a strong add candidate."
+**Idea:** For every pickup in `2026_espn_best_pickups.csv`, build a pre-pickup feature profile using the 7, 14, and 21 days of game logs *before* the acquisition date. Separate the top-quartile pickups (high composite z) from the bottom-quartile pickups (low composite z). Measure which pre-pickup metrics differ most significantly between the two groups. Then translate those differences into prescriptive thresholds: "if a player shows X in the prior 7 days AND Y, they are a strong add candidate."
 
 Cross-validate using prior seasons (2024, 2025) where the same data exists — signals that hold across multiple seasons are more robust than single-year artifacts.
 
@@ -476,9 +476,9 @@ Cross-validate using prior seasons (2024, 2025) where the same data exists — s
 - **Recent IP/G ≥ X for starters** — workload consistent with QS pace
 
 **Approach:**
-1. Load `best_pickups_espn_2026.csv` to get the labeled set — label each pickup as top-quartile (composite z ≥ 75th percentile within player type) or bottom-quartile (composite z ≤ 25th percentile)
-2. For each pickup, pull pre-pickup game logs from `stats_mlb_daily_2026.csv` and `stats_espn_daily_2026.csv` for the 7, 14, and 21 days before `acquisition_date`
-3. Compute pre-pickup feature vectors per player: rolling OPS/ERA/K9/WHIP, games played rate, batting order slot distribution, ownership trend slope from `rankings_espn_daily_2026.csv`
+1. Load `2026_espn_best_pickups.csv` to get the labeled set — label each pickup as top-quartile (composite z ≥ 75th percentile within player type) or bottom-quartile (composite z ≤ 25th percentile)
+2. For each pickup, pull pre-pickup game logs from `2026_mlb_stats_daily.csv` and `2026_espn_stats_daily.csv` for the 7, 14, and 21 days before `acquisition_date`
+3. Compute pre-pickup feature vectors per player: rolling OPS/ERA/K9/WHIP, games played rate, batting order slot distribution, ownership trend slope from `2026_espn_rankings_daily.csv`
 4. For each feature, compute the mean and distribution for top-quartile vs bottom-quartile pickups; use a simple t-test or Mann-Whitney U to rank features by discriminative power
 5. Translate the top features into threshold rules: find the cutoff value for each metric that maximizes separation between the two groups (similar to a single-feature decision boundary)
 6. Combine the top 3–4 signals into a composite "add score" per signal combination — score = number of signals triggered
@@ -486,12 +486,12 @@ Cross-validate using prior seasons (2024, 2025) where the same data exists — s
 8. Report the final ruleset as concrete, actionable thresholds — e.g., "Batter with 7-day OPS ≥ .820, AB/G ≥ 3.5, ownership < 30%, and batting order slot ≤ 3 in 5+ of last 7 games: strong add"
 
 **Data sources:**
-- `data-lake/01_Bronze/fantasy_baseball/best_pickups_espn_2026.csv` — ground truth labels from idea 15 (top vs bottom pickup performers)
-- `stats_mlb_daily_2026.csv` / `2025.csv` / `2024.csv` — pre-pickup game logs for feature construction
-- `stats_espn_daily_2026.csv` / `2025.csv` / `2024.csv` — lineup slot, ownership context, fantasy points in the pre-pickup window
-- `rankings_espn_daily_2026.csv` / `2025.csv` / `2024.csv` — ownership %, pct_change, ESPN rank trend before the pickup date
-- `activity_espn_season_2026.csv` / prior seasons — pickup dates and which team made the claim (to reproduce the same analysis for 2024/2025)
-- `lineups_mlb_batters_2026.csv` — batting order slot history in the pre-pickup window (batter signal only)
+- `data-lake/01_Bronze/fantasy_baseball/2026_espn_best_pickups.csv` — ground truth labels from idea 15 (top vs bottom pickup performers)
+- `2026_mlb_stats_daily.csv` / `2025.csv` / `2024.csv` — pre-pickup game logs for feature construction
+- `2026_espn_stats_daily.csv` / `2025.csv` / `2024.csv` — lineup slot, ownership context, fantasy points in the pre-pickup window
+- `2026_espn_rankings_daily.csv` / `2025.csv` / `2024.csv` — ownership %, pct_change, ESPN rank trend before the pickup date
+- `2026_espn_activity_season.csv` / prior seasons — pickup dates and which team made the claim (to reproduce the same analysis for 2024/2025)
+- `2026_mlb_lineups_batters.csv` — batting order slot history in the pre-pickup window (batter signal only)
 
 **Key metrics to derive:**
 - **Rolling 7/14-day OPS** (batters) — weighted by AB, same method as idea 15
@@ -606,7 +606,7 @@ Treat ownership % as a prediction market. The lag between performance and market
 Sometimes a player's add value isn't about their own stats — it's about a structural change in their opportunity.
 
 - **Batting order dependency** — for each MLB team, model which batting slots feed run-scoring opportunities to each other (e.g., leadoff OBP drives runs for the 2-3-4 hitters). When a high-OBP leadoff hitter gets injured and the 2-hole batter moves up, the 2-hole batter's R/RBI opportunity increases even if their own stats haven't changed yet
-- **Saves opportunity cascade** — when a team's closer goes to the IL, the SVHD opportunity flows to the next arm in the bullpen hierarchy. Map each team's closer depth (from `closer_depth_mlb_2026.csv`) and flag the next-in-line relievers as add candidates whenever a closer event (IL, poor ERA, blown saves) occurs
+- **Saves opportunity cascade** — when a team's closer goes to the IL, the SVHD opportunity flows to the next arm in the bullpen hierarchy. Map each team's closer depth (from `2026_mlb_closers_depth.csv`) and flag the next-in-line relievers as add candidates whenever a closer event (IL, poor ERA, blown saves) occurs
 - **Platoon detection** — identify players who are platooning (alternating starts vs LHP/RHP). A platoon partner going to the IL means the remaining player suddenly gets full-time at-bats — a structural opportunity increase not visible in their own recent stats
 
 ---
@@ -633,12 +633,12 @@ Frame the weekly waiver claim as a sequential decision problem under uncertainty
 **Connection to idea 16:** Idea 16 produces threshold rules from the supervised approach. Idea 17 produces signals from every other method class. A player who triggers an idea 16 threshold rule AND is flagged by 3+ idea 17 methods is the highest-confidence add. The combined signal count is the confidence score.
 
 **Data sources:** Same as idea 16.
-- `data-lake/01_Bronze/fantasy_baseball/best_pickups_espn_2026.csv` — post-pickup composite z for validation only
-- `stats_mlb_daily_2026.csv` / `2025.csv` / `2024.csv` — pre-pickup game logs
-- `stats_espn_daily_2026.csv` / `2025.csv` / `2024.csv` — lineup slot, ownership, fantasy points
-- `rankings_espn_daily_2026.csv` / `2025.csv` / `2024.csv` — ownership %, pct_change trend
-- `lineups_mlb_batters_2026.csv` — batting order slot history
-- `closer_depth_mlb_2026.csv` — bullpen hierarchy for saves opportunity cascade (section H)
+- `data-lake/01_Bronze/fantasy_baseball/2026_espn_best_pickups.csv` — post-pickup composite z for validation only
+- `2026_mlb_stats_daily.csv` / `2025.csv` / `2024.csv` — pre-pickup game logs
+- `2026_espn_stats_daily.csv` / `2025.csv` / `2024.csv` — lineup slot, ownership, fantasy points
+- `2026_espn_rankings_daily.csv` / `2025.csv` / `2024.csv` — ownership %, pct_change trend
+- `2026_mlb_lineups_batters.csv` — batting order slot history
+- `2026_mlb_closers_depth.csv` — bullpen hierarchy for saves opportunity cascade (section H)
 
 **Possible output:**
 - Per-method validation table: precision, recall, and cross-season stability score for each of sections A–I

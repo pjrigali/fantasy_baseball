@@ -2,7 +2,7 @@
 Description: Evaluates weekly roster checkpoints for a target team by comparing each
              rostered player's trailing 28-day z-score value against available free agents.
              Flags players where a significantly better FA exists (value delta > 0.75).
-Source Data: stats_mlb_daily_{YEAR}.csv, roster_history_{YEAR}.csv, player_map.csv
+Source Data: {YEAR}_mlb_stats_daily.csv, {YEAR}_espn_roster_history.csv, player_map.csv
 Outputs:     fantasy_baseball/reports/roster_analysis_report_{YEAR}.md
 """
 
@@ -31,8 +31,8 @@ print(f"Running Analysis for {SEASON}")
 print(f"Data Path: {BASE_PATH}")
 
 # Define File Paths
-roster_path = os.path.join(BASE_PATH, f'roster_history_{SEASON}.csv')
-stats_path = os.path.join(BASE_PATH, f'stats_mlb_boxscore_{SEASON}.csv')
+roster_path = os.path.join(BASE_PATH, f'{SEASON}_espn_roster_history.csv')
+stats_path = os.path.join(BASE_PATH, f'{SEASON}_mlb_stats_boxscore.csv')
 map_path = os.path.join(BASE_PATH, 'player_map.csv')
 
 # Validation: Check if season data exists

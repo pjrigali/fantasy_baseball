@@ -10,7 +10,7 @@ Description: Scrapes the FanGraphs Roster Resource Closer Depth Chart and
 Source Data: FanGraphs Roster Resource
              https://www.fangraphs.com/roster-resource/closer-depth-chart
 
-Outputs: data-lake/01_Bronze/fantasy_baseball/closer_depth_fangraphs_{year}.csv
+Outputs: data-lake/01_Bronze/fantasy_baseball/{year}_fangraphs_closers_depth.csv
          Columns: date_scraped, team, player_name, throws, role,
                   era, sv, hld, sd, md, k9, swstr_pct, k_pct, bb_pct,
                   hot_seat, on_rise
@@ -353,7 +353,7 @@ def main():
     args = parser.parse_args()
 
     today_str = date.today().strftime('%Y-%m-%d')
-    output_file = os.path.join(mp.DATA_PATH, f'closer_depth_fangraphs_{args.year}.csv')
+    output_file = os.path.join(mp.DATA_PATH, f'{args.year}_fangraphs_closers_depth.csv')
 
     print(f'=== FanGraphs Closer Depth Chart — {today_str} ===')
     print(f'URL: {URL}')

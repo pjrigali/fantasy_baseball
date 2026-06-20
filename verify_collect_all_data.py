@@ -6,13 +6,13 @@ Description:
     /fantasy-collect-all-data workflow.
 
 Source Data:
-    - data-lake/01_Bronze/fantasy_baseball/stats_espn_daily_<YEAR>.csv
-    - data-lake/01_Bronze/fantasy_baseball/activity_espn_season_<YEAR>.csv
-    - data-lake/01_Bronze/fantasy_baseball/lineups_mlb_batters_<YEAR>.csv
-    - data-lake/01_Bronze/fantasy_baseball/stats_mlb_boxscore_<YEAR>.csv
-    - data-lake/01_Bronze/fantasy_baseball/skipped_mlb_daily_<YEAR>.csv
-    - data-lake/01_Bronze/fantasy_baseball/rankings_espn_daily_<YEAR>.csv
-    - data-lake/01_Bronze/fantasy_baseball/closer_depth_mlb_<YEAR>.csv
+    - data-lake/01_Bronze/fantasy_baseball/<YEAR>_espn_stats_daily.csv
+    - data-lake/01_Bronze/fantasy_baseball/<YEAR>_espn_activity_season.csv
+    - data-lake/01_Bronze/fantasy_baseball/<YEAR>_mlb_lineups_batters.csv
+    - data-lake/01_Bronze/fantasy_baseball/<YEAR>_mlb_stats_boxscore.csv
+    - data-lake/01_Bronze/fantasy_baseball/<YEAR>_mlb_stats_daily_skipped.csv
+    - data-lake/01_Bronze/fantasy_baseball/<YEAR>_espn_rankings_daily.csv
+    - data-lake/01_Bronze/fantasy_baseball/<YEAR>_mlb_closers_depth.csv
 
 Outputs:
     Prints a verification summary to stdout. No files written.
@@ -36,13 +36,13 @@ else:
     BASE = os.path.join(root, 'data-lake', '01_Bronze', 'fantasy_baseball')
 
 FILES = {
-    'ESPN Daily Stats': f'stats_espn_daily_{YEAR}.csv',
-    'ESPN Activity':    f'activity_espn_season_{YEAR}.csv',
-    'MLB Lineups':      f'lineups_mlb_batters_{YEAR}.csv',
-    'MLB Game Logs':    f'stats_mlb_boxscore_{YEAR}.csv',
-    'MLB Skipped':      f'skipped_mlb_daily_{YEAR}.csv',
-    'ESPN Rankings':    f'rankings_espn_daily_{YEAR}.csv',
-    'MLB Closer Depth': f'closer_depth_mlb_{YEAR}.csv',
+    'ESPN Daily Stats': f'{YEAR}_espn_stats_daily.csv',
+    'ESPN Activity':    f'{YEAR}_espn_activity_season.csv',
+    'MLB Lineups':      f'{YEAR}_mlb_lineups_batters.csv',
+    'MLB Game Logs':    f'{YEAR}_mlb_stats_boxscore.csv',
+    'MLB Skipped':      f'{YEAR}_mlb_stats_daily_skipped.csv',
+    'ESPN Rankings':    f'{YEAR}_espn_rankings_daily.csv',
+    'MLB Closer Depth': f'{YEAR}_mlb_closers_depth.csv',
 }
 
 DATE_COL_OVERRIDES = {

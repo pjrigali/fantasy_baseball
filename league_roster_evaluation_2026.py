@@ -3,8 +3,8 @@ Description: Pre-draft league roster evaluation using projected stats. Ranks all
              by projected total z-score across 5x5 H2H categories, identifies each team's
              categorical strengths and weaknesses, and flags best/worst projected players
              per roster.
-Source Data: player_batter_projections_2026.csv, player_pitcher_projections_2026.csv,
-             draft_results_espn_2026.csv (data-lake/01_Bronze/fantasy_baseball)
+Source Data: 2026_ext_projections_batter.csv, 2026_ext_projections_pitcher.csv,
+             2026_espn_draft_results.csv (data-lake/01_Bronze/fantasy_baseball)
 Outputs:     fantasy_baseball/league_roster_evaluation_2026.md
 """
 
@@ -63,9 +63,9 @@ def calculate_z_scores(df, categories, invert_categories=None):
 
 def main():
     bronze_path = r"c:\Users\peter\Desktop\vscode\main\data-lake\01_bronze\fantasy_baseball"
-    batters_path = os.path.join(bronze_path, "player_batter_projections_2026.csv")
-    pitchers_path = os.path.join(bronze_path, "player_pitcher_projections_2026.csv")
-    draft_path = os.path.join(bronze_path, "draft_results_espn_2026.csv")
+    batters_path = os.path.join(bronze_path, "2026_ext_projections_batter.csv")
+    pitchers_path = os.path.join(bronze_path, "2026_ext_projections_pitcher.csv")
+    draft_path = os.path.join(bronze_path, "2026_espn_draft_results.csv")
     out_md_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "league_roster_evaluation_2026.md")
     
     if not (os.path.exists(batters_path) and os.path.exists(pitchers_path) and os.path.exists(draft_path)):

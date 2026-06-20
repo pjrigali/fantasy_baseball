@@ -6,12 +6,12 @@ Description:
     result. Used as Step 8 of the /fantasy-collect-all-data workflow.
 
 Source Data:
-    - data-lake/01_Bronze/fantasy_baseball/stats_espn_daily_<YEAR>.csv
-    - data-lake/01_Bronze/fantasy_baseball/activity_espn_season_<YEAR>.csv
-    - data-lake/01_Bronze/fantasy_baseball/lineups_mlb_batters_<YEAR>.csv
-    - data-lake/01_Bronze/fantasy_baseball/stats_mlb_boxscore_<YEAR>.csv
-    - data-lake/01_Bronze/fantasy_baseball/rankings_espn_daily_<YEAR>.csv
-    - data-lake/01_Bronze/fantasy_baseball/closer_depth_mlb_<YEAR>.csv
+    - data-lake/01_Bronze/fantasy_baseball/<YEAR>_espn_stats_daily.csv
+    - data-lake/01_Bronze/fantasy_baseball/<YEAR>_espn_activity_season.csv
+    - data-lake/01_Bronze/fantasy_baseball/<YEAR>_mlb_lineups_batters.csv
+    - data-lake/01_Bronze/fantasy_baseball/<YEAR>_mlb_stats_boxscore.csv
+    - data-lake/01_Bronze/fantasy_baseball/<YEAR>_espn_rankings_daily.csv
+    - data-lake/01_Bronze/fantasy_baseball/<YEAR>_mlb_closers_depth.csv
     - data-lake/00_Logs/fantasy_baseball/fantasy-collect-all-data.jsonl (prior entry)
 
 Outputs:
@@ -41,12 +41,12 @@ else:
 LOG_PATH = os.path.join(LOG_DIR, 'fantasy-collect-all-data.jsonl')
 
 STEP_FILES = {
-    'espn_stats':    f'stats_espn_daily_{YEAR}.csv',
-    'espn_activity': f'activity_espn_season_{YEAR}.csv',
-    'mlb_lineups':   f'lineups_mlb_batters_{YEAR}.csv',
-    'mlb_boxscore':  f'stats_mlb_boxscore_{YEAR}.csv',
-    'espn_rankings': f'rankings_espn_daily_{YEAR}.csv',
-    'mlb_closers':   f'closer_depth_mlb_{YEAR}.csv',
+    'espn_stats':    f'{YEAR}_espn_stats_daily.csv',
+    'espn_activity': f'{YEAR}_espn_activity_season.csv',
+    'mlb_lineups':   f'{YEAR}_mlb_lineups_batters.csv',
+    'mlb_boxscore':  f'{YEAR}_mlb_stats_boxscore.csv',
+    'espn_rankings': f'{YEAR}_espn_rankings_daily.csv',
+    'mlb_closers':   f'{YEAR}_mlb_closers_depth.csv',
 }
 
 # ---------------------------------------------------------------------------

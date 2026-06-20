@@ -9,8 +9,8 @@ Description: Deep-dive RP replacement analysis. Calculates SVHD, WHIP, ERA,
              replacements by the league's RP priority order:
              SVHD desc → WHIP asc → ERA asc.
 
-Source Data: data-lake/01_Bronze/fantasy_baseball/stats_mlb_boxscore_{year}.csv
-             data-lake/01_Bronze/fantasy_baseball/closer_depth_fangraphs_{year}.csv
+Source Data: data-lake/01_Bronze/fantasy_baseball/{year}_mlb_stats_boxscore.csv
+             data-lake/01_Bronze/fantasy_baseball/{year}_fangraphs_closers_depth.csv
              ESPN API (roster, FA list, injury status)
 
 Outputs: fantasy_baseball/reports/rp_analysis_{YYYY-MM-DD}.md
@@ -66,7 +66,7 @@ my_rps = [
 # ---------------------------------------------------------------------------
 # FanGraphs role lookup (latest snapshot)
 # ---------------------------------------------------------------------------
-fg_path = os.path.join(BASE, f'closer_depth_fangraphs_{YEAR}.csv')
+fg_path = os.path.join(BASE, f'{YEAR}_fangraphs_closers_depth.csv')
 fg_role_lookup = {}
 fg_date = 'N/A'
 if os.path.exists(fg_path):
@@ -84,7 +84,7 @@ def get_role(name):
 # ---------------------------------------------------------------------------
 # Load boxscore — pitcher rows only
 # ---------------------------------------------------------------------------
-box_path = os.path.join(BASE, f'stats_mlb_boxscore_{YEAR}.csv')
+box_path = os.path.join(BASE, f'{YEAR}_mlb_stats_boxscore.csv')
 with open(box_path, encoding='utf-8') as f:
     all_pitcher_rows = [r for r in csv.DictReader(f) if r['b_or_p'] == 'pitcher']
 
@@ -365,7 +365,7 @@ else:
         a('')
 
 a('---')
-a(f'*Generated {TODAY_STR} | Source: stats_mlb_boxscore_{YEAR}.csv + FanGraphs ({fg_date}) + ESPN API*')
+a(f'*Generated {TODAY_STR} | Source: {YEAR}_mlb_stats_boxscore.csv + FanGraphs ({fg_date}) + ESPN API*')
 
 # ── Write report ───────────────────────────────────────────────────────────
 os.makedirs(REPORTS_DIR, exist_ok=True)

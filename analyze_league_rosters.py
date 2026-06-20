@@ -4,7 +4,7 @@ Description: Post-season league-wide roster management analysis. Computes the op
              team churn rate (adds per week), roster patience (avg days held before dropping),
              and total value generated per team. Generates a markdown report with Mermaid
              charts comparing each team's management style vs the top performers.
-Source Data: roster_history_2025.csv, stats_mlb_daily_2025.csv, player_map.csv
+Source Data: 2025_espn_roster_history.csv, 2025_mlb_stats_daily.csv, player_map.csv
              (BASE_PATH below — update to current data lake path before running)
 Outputs:     OUTPUT_PATH below (markdown report with Mermaid charts)
 """
@@ -18,8 +18,8 @@ BASE_PATH = r'c:\Users\peter\Desktop\vscode\main\data-lake\01_Bronze\fantasy_bas
 OUTPUT_PATH = r'c:\Users\peter\.gemini\antigravity\brain\ad8af236-c6c6-4f16-8110-5d46378f456d\league_analysis_report.md'
 
 print("Loading data...")
-roster_df = pd.read_csv(f'{BASE_PATH}\\roster_history_2025.csv')
-stats_df = pd.read_csv(f'{BASE_PATH}\\stats_mlb_daily_2025.csv')
+roster_df = pd.read_csv(f'{BASE_PATH}\\2025_espn_roster_history.csv')
+stats_df = pd.read_csv(f'{BASE_PATH}\\2025_mlb_stats_daily.csv')
 player_map_df = pd.read_csv(f'{BASE_PATH}\\player_map.csv')
 
 # Preprocess

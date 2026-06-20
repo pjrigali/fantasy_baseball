@@ -2,8 +2,8 @@
 Description: Analyzes whether treating saves and holds as separate dimensions
              (sv_rate, hld_rate) gives better role separation than combined svhd_rate
              for MLB relief pitchers.
-Source Data: closer_depth_fangraphs_2026.csv (snapshot 2026-06-01),
-             stats_mlb_boxscore_2026.csv (full season, relief appearances only)
+Source Data: 2026_fangraphs_closers_depth.csv (snapshot 2026-06-01),
+             2026_mlb_stats_boxscore.csv (full season, relief appearances only)
 Outputs: Printed tables answering 5 analytical questions.
 """
 import csv
@@ -12,7 +12,7 @@ from collections import defaultdict
 # ── 1. Load FanGraphs snapshot 2026-06-01 ──────────────────────────────────────
 TARGET_ROLES = {"Closer", "Closer Committee", "Setup Man", "Middle Reliever"}
 fg = {}
-with open(r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\closer_depth_fangraphs_2026.csv") as f:
+with open(r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\2026_fangraphs_closers_depth.csv") as f:
     for row in csv.DictReader(f):
         if row["date_scraped"] == "2026-06-01" and row["role"] in TARGET_ROLES:
             name = row["player_name"].strip().lower()
@@ -26,7 +26,7 @@ print("By role:", dict(role_counts))
 
 # ── 2. Aggregate boxscore stats ────────────────────────────────────────────────
 stats = defaultdict(lambda: {"games": 0, "total_sv": 0, "total_hld": 0, "total_outs": 0})
-with open(r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\stats_mlb_boxscore_2026.csv") as f:
+with open(r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\2026_mlb_stats_boxscore.csv") as f:
     for row in csv.DictReader(f):
         if row["b_or_p"] != "pitcher":
             continue

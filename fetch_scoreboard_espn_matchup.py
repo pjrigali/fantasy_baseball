@@ -1,7 +1,7 @@
 """
 Description: Captures the ESPN fantasy league matchup scoreboard for the current matchup period.
 Source Data: ESPN Fantasy API (via mlb_processing.get_matchup_scoreboard).
-Outputs: data-lake/01_Bronze/fantasy_baseball/scoreboard_espn_matchup_<YEAR>.csv
+Outputs: data-lake/01_Bronze/fantasy_baseball/<YEAR>_espn_scoreboard_matchup.csv
 """
 
 import argparse
@@ -40,7 +40,7 @@ def main():
             row['awayTeamParams'] = team_map.get(row.get('awayTeamId'))
 
     os.makedirs(mp.DATA_PATH, exist_ok=True)
-    save_path = os.path.join(mp.DATA_PATH, f"scoreboard_espn_matchup_{year}.csv")
+    save_path = os.path.join(mp.DATA_PATH, f"{year}_espn_scoreboard_matchup.csv")
     fieldnames = list({k for r in scoreboard_data for k in r.keys()})
     with open(save_path, 'w', encoding='utf-8', newline='') as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)

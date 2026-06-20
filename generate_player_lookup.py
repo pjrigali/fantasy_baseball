@@ -1,14 +1,14 @@
 """
 Description:
     Builds player_lookup.csv by cross-referencing player_map.csv (ESPN names / IDs)
-    against stats_mlb_daily_2026_archive.csv (accent-encoded archive names).
+    against 2026_mlb_stats_daily_archive.csv (accent-encoded archive names).
     Normalizes both sides via accent-stripping + lowercase, then emits one row per
     matched player with both the ESPN name and the archive name. Unmatched players
     from each side are appended as partial rows so nothing is silently dropped.
 
 Source Data:
     - data-lake/01_Bronze/fantasy_baseball/player_map.csv
-    - data-lake/01_Bronze/fantasy_baseball/stats_mlb_daily_2026_archive.csv
+    - data-lake/01_Bronze/fantasy_baseball/2026_mlb_stats_daily_archive.csv
 
 Outputs:
     - data-lake/01_Bronze/fantasy_baseball/player_lookup.csv
@@ -21,7 +21,7 @@ import os
 
 BASE = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball"
 MAP_PATH = os.path.join(BASE, "player_map.csv")
-ARCHIVE_PATH = os.path.join(BASE, "stats_mlb_daily_2026_archive.csv")
+ARCHIVE_PATH = os.path.join(BASE, "2026_mlb_stats_daily_archive.csv")
 OUT_PATH = os.path.join(BASE, "player_lookup.csv")
 
 

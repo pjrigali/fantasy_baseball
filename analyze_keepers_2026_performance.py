@@ -5,13 +5,13 @@ Description:
     and produces a per-player verdict (Exceeding / On Track / Underperforming / Injured).
 
 Source Data:
-    - data-lake/01_Bronze/fantasy_baseball/actual_keepers_2026.csv
-    - data-lake/01_Bronze/fantasy_baseball/projected_keepers_2026.csv
-    - data-lake/01_Bronze/fantasy_baseball/stats_mlb_daily_2026_archive.csv
+    - data-lake/01_Bronze/fantasy_baseball/2026_local_keepers_actual.csv
+    - data-lake/01_Bronze/fantasy_baseball/2026_local_keepers_projected.csv
+    - data-lake/01_Bronze/fantasy_baseball/2026_mlb_stats_daily_archive.csv
 
 Outputs:
     Prints a formatted keeper performance report to stdout.
-    Writes data-lake/01_Bronze/fantasy_baseball/keeper_performance_2026.csv
+    Writes data-lake/01_Bronze/fantasy_baseball/2026_local_keepers_performance.csv
 """
 
 import csv
@@ -160,9 +160,9 @@ def fmt_pitcher(s):
 
 
 def main():
-    keepers_raw    = load_csv("actual_keepers_2026.csv")
-    projections    = load_csv("projected_keepers_2026.csv")
-    daily          = load_csv("stats_mlb_daily_2026_archive.csv")
+    keepers_raw    = load_csv("2026_local_keepers_actual.csv")
+    projections    = load_csv("2026_local_keepers_projected.csv")
+    daily          = load_csv("2026_mlb_stats_daily_archive.csv")
 
     proj_lookup = {}
     for row in projections:
@@ -275,7 +275,7 @@ def main():
         pct = sc / max(mx, 1) * 100
         print(f"  {t:<36s} {sc:>4d}/{mx:<2d}  {pct:>4.0f}%  {exc:>4d}  {under:>5d}  {inj:>4d}")
 
-    out_path = os.path.join(BASE, "keeper_performance_2026.csv")
+    out_path = os.path.join(BASE, "2026_local_keepers_performance.csv")
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=[
             "team_id","team","owner","player","type","cost_round","adp_round",

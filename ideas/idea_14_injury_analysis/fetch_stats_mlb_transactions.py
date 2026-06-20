@@ -2,7 +2,7 @@
 Description: Fetch player status changes (Injured List placements and activations) from the MLB Stats API
              for a given year and save to the Bronze layer of the data lake.
 Source Data: statsapi.mlb.com/api/v1/transactions
-Outputs: c:/Users/peter/Desktop/vscode/main/data-lake/01_Bronze/fantasy_baseball/stats_mlb_season_transactions_{year}.csv
+Outputs: c:/Users/peter/Desktop/vscode/main/data-lake/01_Bronze/fantasy_baseball/{year}_mlb_transactions_season.csv
 """
 import os
 import csv
@@ -94,7 +94,7 @@ def fetch_transactions_for_year(year):
     
     # Write to Bronze CSV
     os.makedirs(DATA_PATH, exist_ok=True)
-    csv_file = os.path.join(DATA_PATH, f"stats_mlb_season_transactions_{year}.csv")
+    csv_file = os.path.join(DATA_PATH, f"{year}_mlb_transactions_season.csv")
     
     fieldnames = ["date", "player_id", "player_name", "team_id", "team_name", "description"]
     

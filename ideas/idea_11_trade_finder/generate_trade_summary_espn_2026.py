@@ -2,11 +2,11 @@
 Trade Summary Report — ESPN Fantasy Baseball 2026
 
 Description:
-    Reads analyze_trade_finder_espn_2026.csv and writes a markdown file
+    Reads 2026_local_trade_finder.csv and writes a markdown file
     with the top 5 mutually beneficial trades for each team.
 
 Source Data:
-    data-lake/01_Bronze/fantasy_baseball/analyze_trade_finder_espn_2026.csv
+    data-lake/01_Bronze/fantasy_baseball/2026_local_trade_finder.csv
 
 Outputs:
     fantasy_baseball/reports/trade_summary_espn_2026_{DATE}.md
@@ -33,13 +33,13 @@ def _paths(year):
     csv_in = None
     for name in ('data-lake', 'data-lake'):
         p = os.path.join(root, name, '01_Bronze', 'fantasy_baseball',
-                         f'analyze_trade_finder_espn_{year}.csv')
+                         f'{year}_local_trade_finder.csv')
         if os.path.isfile(p):
             csv_in = p
             break
     if not csv_in:
         csv_in = os.path.join(root, 'data-lake', '01_Bronze', 'fantasy_baseball',
-                              f'analyze_trade_finder_espn_{year}.csv')
+                              f'{year}_local_trade_finder.csv')
     md_out  = os.path.join(script_dir, f'trade_summary_espn_{year}_{date.today()}.md')
     return csv_in, md_out
 
@@ -192,7 +192,7 @@ def main():
 
     lines = []
     lines.append(f"# Mutually Beneficial Trade Summary — {year} ESPN Fantasy Baseball")
-    lines.append(f"*Generated: {date.today()}  |  Source: analyze_trade_finder_espn_{year}.csv*")
+    lines.append(f"*Generated: {date.today()}  |  Source: {year}_local_trade_finder.csv*")
     lines.append(f"*Top {TOP_N} trades per team, sorted by net category gain for that team.*")
     lines.append("")
     lines.append("---")

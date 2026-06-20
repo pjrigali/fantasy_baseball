@@ -2,8 +2,8 @@
 import csv, datetime
 from collections import defaultdict
 
-FG_FILE = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\closer_depth_fangraphs_2026.csv"
-BOX_FILE = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\stats_mlb_boxscore_2026.csv"
+FG_FILE = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\2026_fangraphs_closers_depth.csv"
+BOX_FILE = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\2026_mlb_stats_boxscore.csv"
 
 def safe_int(v, d=0):
     try:

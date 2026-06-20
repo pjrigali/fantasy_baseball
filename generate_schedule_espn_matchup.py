@@ -3,7 +3,7 @@ Description: Generates a scoring-period <-> matchup-period <-> calendar-date map
              for the ESPN fantasy league. Uses league settings + a heuristic
              even-distribution of scoring periods across matchups.
 Source Data: ESPN Fantasy API (league settings via mlb_processing).
-Outputs: data-lake/01_Bronze/fantasy_baseball/schedule_espn_matchup_<YEAR>.csv
+Outputs: data-lake/01_Bronze/fantasy_baseball/<YEAR>_espn_schedule_matchup.csv
 """
 
 import argparse
@@ -85,7 +85,7 @@ def main():
         r['matchup_end_date'] = max(dates)
 
     os.makedirs(mp.DATA_PATH, exist_ok=True)
-    save_path = os.path.join(mp.DATA_PATH, f"schedule_espn_matchup_{year}.csv")
+    save_path = os.path.join(mp.DATA_PATH, f"{year}_espn_schedule_matchup.csv")
     fieldnames = ['matchup_period', 'scoring_period', 'date', 'matchup_start_date', 'matchup_end_date']
     with open(save_path, 'w', encoding='utf-8', newline='') as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)

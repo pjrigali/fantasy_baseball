@@ -1,7 +1,7 @@
 # Waiver Wire Signal Detection — Pre-Pickup Indicator Analysis (2026)
 
 **Analysis date:** 2026-06-19  
-**Ground truth source:** `best_pickups_espn_2026.csv` (Idea 15)  
+**Ground truth source:** `2026_espn_best_pickups.csv` (Idea 15)  
 **Total pickups:** 256 (134 batters, 122 pitchers)  
 **Archive coverage:** 72% of batters, 83% of pitchers had pre-pickup game log data  
 
@@ -10,7 +10,7 @@
 ## Methodology
 
 1. **Label quartiles** — top-quartile: composite_z ≥ 75th pct (within player type); bottom-quartile: composite_z ≤ 25th pct; middle excluded from testing
-2. **Build pre-pickup features** — 7-day and 14-day rolling windows before `acquisition_date` from `stats_mlb_daily_2026_archive`, `rankings_espn_daily`, and `lineups_mlb_batters`
+2. **Build pre-pickup features** — 7-day and 14-day rolling windows before `acquisition_date` from `2026_mlb_stats_daily_archive`, `espn_rankings_daily`, and `mlb_lineups_batters`
 3. **Rank features** — Mann-Whitney U rank-biserial correlation r ∈ [−1, 1]: |r| near 1 means the feature consistently separates top from bottom pickups
 4. **Find thresholds** — single-feature decision boundary that maximises F1 score (top-quartile = positive class)
 
@@ -146,7 +146,7 @@ Which of the top 6 signals were already firing in the pre-pickup window for each
 
 ## Cross-Year Validation — 2026 vs 2025 (Game-Log Features Only)
 
-2025 signals use only `stats_mlb_daily_2025.csv` (no ownership or batting-order data).
+2025 signals use only `2025_mlb_stats_daily.csv` (no ownership or batting-order data).
 Features that show **consistent direction and similar |r|** across both seasons are the most robust.
 
 ### Batters
@@ -188,7 +188,7 @@ Features that show **consistent direction and similar |r|** across both seasons 
 - **Sample size:** ~30–35 players per quartile group per type — effect sizes are directional, not definitive.
 - **2025 cross-validation:** Game-log features only — no prior-year ownership or batting-order data in the lake.
 - **Name coverage:** Players without a `player_lookup.csv` entry have no archive features.
-- **Archive gaps:** `stats_mlb_daily_2026_archive.csv` is the legacy per-player fetcher; bench players not included.
+- **Archive gaps:** `2026_mlb_stats_daily_archive.csv` is the legacy per-player fetcher; bench players not included.
 
 **Next steps:**
 1. Build the weekly runtime watchlist script that applies these thresholds to the current available player pool

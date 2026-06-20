@@ -6,9 +6,9 @@ Description:
     SVHD rate (high-leverage frequency), SV rate, HLD rate, and total appearances.
 
 Source Data:
-    - C:/Users/peter.rigali/Desktop/acn_repo/data-lake/01_Bronze/fantasy_baseball/closer_depth_fangraphs_2026.csv
+    - C:/Users/peter.rigali/Desktop/acn_repo/data-lake/01_Bronze/fantasy_baseball/2026_fangraphs_closers_depth.csv
       (Most recent snapshot: max date_scraped = 2026-06-01)
-    - C:/Users/peter.rigali/Desktop/acn_repo/data-lake/01_Bronze/fantasy_baseball/stats_mlb_boxscore_2026.csv
+    - C:/Users/peter.rigali/Desktop/acn_repo/data-lake/01_Bronze/fantasy_baseball/2026_mlb_stats_boxscore.csv
       (Full 2026 season, relief appearances only: b_or_p=pitcher, did_play=1, GS=0)
 
 Outputs:
@@ -22,8 +22,8 @@ from collections import defaultdict
 # ---------------------------------------------------------------------------
 # 1. Load FanGraphs — use most recent snapshot (max date_scraped)
 # ---------------------------------------------------------------------------
-FG_FILE = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\closer_depth_fangraphs_2026.csv"
-BOX_FILE = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\stats_mlb_boxscore_2026.csv"
+FG_FILE = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\2026_fangraphs_closers_depth.csv"
+BOX_FILE = r"C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball\2026_mlb_stats_boxscore.csv"
 
 # Find max date_scraped
 all_dates = set()

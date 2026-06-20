@@ -4,7 +4,7 @@ League Position Analysis — Steps 1-5.
 Description: Computes league-wide positional averages by lineup slot, compares my team
              against those averages with slot coverage metrics, ranks all league members
              across the 5x5 scoring categories, and projects current matchup winners.
-Source Data: data-lake/01_Bronze/fantasy_baseball/stats_espn_daily_<year>.csv
+Source Data: data-lake/01_Bronze/fantasy_baseball/<year>_espn_stats_daily.csv
 Outputs:     fantasy_baseball/_league_pos_results.json
 """
 import sys, csv, os, json, math, datetime
@@ -16,7 +16,7 @@ from fantasy_baseball import mlb_processing as mp
 
 YEAR = 2026
 BASE = r'C:\Users\peter.rigali\Desktop\acn_repo\data-lake\01_Bronze\fantasy_baseball'
-CSV_PATH = os.path.join(BASE, f'stats_espn_daily_{YEAR}.csv')
+CSV_PATH = os.path.join(BASE, f'{YEAR}_espn_stats_daily.csv')
 NUM_TEAMS = 12
 
 BATTING_SLOTS  = {'C', '1B', '1B/3B', '2B', '2B/SS', '3B', 'SS', 'OF', 'UTIL', 'DH'}

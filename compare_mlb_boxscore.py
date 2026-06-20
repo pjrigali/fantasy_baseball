@@ -1,12 +1,12 @@
 """
 compare_mlb_boxscore.py
 ========================
-Description: Compares stats_mlb_daily_{year}.csv against stats_mlb_boxscore_{year}.csv
+Description: Compares {year}_mlb_stats_daily.csv against {year}_mlb_stats_boxscore.csv
              for a given date and team. Reports players only in one source, players in
              both, and any stat-level differences.
 
-Source Data: data-lake/01_Bronze/fantasy_baseball/stats_mlb_daily_{year}.csv
-             data-lake/01_Bronze/fantasy_baseball/stats_mlb_boxscore_{year}.csv
+Source Data: data-lake/01_Bronze/fantasy_baseball/{year}_mlb_stats_daily.csv
+             data-lake/01_Bronze/fantasy_baseball/{year}_mlb_stats_boxscore.csv
 
 Outputs: Printed comparison report to stdout.
 """
@@ -41,8 +41,8 @@ def main():
     parser.add_argument('--year', type=int, default=2026)
     args = parser.parse_args()
 
-    daily_path    = os.path.join(mp.DATA_PATH, f'stats_mlb_daily_{args.year}.csv')
-    boxscore_path = os.path.join(mp.DATA_PATH, f'stats_mlb_boxscore_{args.year}.csv')
+    daily_path    = os.path.join(mp.DATA_PATH, f'{args.year}_mlb_stats_daily.csv')
+    boxscore_path = os.path.join(mp.DATA_PATH, f'{args.year}_mlb_stats_boxscore.csv')
 
     daily    = load(daily_path,    args.date, args.team)
     boxscore = load(boxscore_path, args.date, args.team)

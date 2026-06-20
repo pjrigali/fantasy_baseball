@@ -10,9 +10,9 @@ Description:
   files are all fresh.
 
 Source Data:
-  - data-lake/01_Bronze/fantasy_baseball/rankings_espn_daily_{YEAR}.csv
-  - data-lake/01_Bronze/fantasy_baseball/stats_mlb_boxscore_{YEAR}.csv
-  - data-lake/01_Bronze/fantasy_baseball/lineups_mlb_batters_{YEAR}.csv
+  - data-lake/01_Bronze/fantasy_baseball/{YEAR}_espn_rankings_daily.csv
+  - data-lake/01_Bronze/fantasy_baseball/{YEAR}_mlb_stats_boxscore.csv
+  - data-lake/01_Bronze/fantasy_baseball/{YEAR}_mlb_lineups_batters.csv
   - data-lake/01_Bronze/fantasy_baseball/player_lookup.csv
 
 Outputs:
@@ -201,7 +201,7 @@ def load_player_lookup(year):
 
 def load_mlb_archive(year):
     """Load boxscore (daily-updated) into dict: normalize_name -> sorted rows."""
-    path = os.path.join(DATA_DIR, f'stats_mlb_boxscore_{year}.csv')
+    path = os.path.join(DATA_DIR, f'{year}_mlb_stats_boxscore.csv')
     by_player = defaultdict(list)
     with open(path, encoding='utf-8', errors='replace') as f:
         for row in csv.DictReader(f):
@@ -219,7 +219,7 @@ def load_mlb_archive(year):
 
 def load_rankings(year):
     """Load rankings into dict: player_id -> sorted rows."""
-    path = os.path.join(DATA_DIR, f'rankings_espn_daily_{year}.csv')
+    path = os.path.join(DATA_DIR, f'{year}_espn_rankings_daily.csv')
     by_player = defaultdict(list)
     with open(path, encoding='utf-8', errors='replace') as f:
         for row in csv.DictReader(f):
@@ -237,7 +237,7 @@ def load_rankings(year):
 
 def load_lineups(year):
     """Load lineups into dict: normalize_name -> sorted rows."""
-    path = os.path.join(DATA_DIR, f'lineups_mlb_batters_{year}.csv')
+    path = os.path.join(DATA_DIR, f'{year}_mlb_lineups_batters.csv')
     by_player = defaultdict(list)
     with open(path, encoding='utf-8', errors='replace') as f:
         for row in csv.DictReader(f):
@@ -440,7 +440,7 @@ def build_rows(available, ref_date):
 
 
 def write_csv(rows, year, dry_run=False):
-    out_path = os.path.join(DATA_DIR, f'waiver_watchlist_espn_{year}.csv')
+    out_path = os.path.join(DATA_DIR, f'{year}_espn_waiver_watchlist.csv')
     existing_keys = set()
     file_exists = os.path.exists(out_path)
 

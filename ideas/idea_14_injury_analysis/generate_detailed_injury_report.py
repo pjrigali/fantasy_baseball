@@ -1,7 +1,7 @@
 """
 Description: Generate a detailed markdown report analyzing player injury durations across 2023-2026
              broken down by injury category, estimated day category (IL type), position, and MLB team.
-Source Data: stats_mlb_season_transactions_{year}.csv, player_map.csv, stats_espn_daily_{year}.csv
+Source Data: {year}_mlb_transactions_season.csv, player_map.csv, {year}_espn_stats_daily.csv
 Outputs: c:/Users/peter/Desktop/vscode/main/reports/detailed_injury_duration_report.md
 """
 import os
@@ -106,7 +106,7 @@ def load_player_positions():
 
     # Load ESPN daily stats positions for 2025 and 2026
     for year in [2025, 2026]:
-        espn_file = os.path.join(DATA_PATH, f"stats_espn_daily_{year}.csv")
+        espn_file = os.path.join(DATA_PATH, f"{year}_espn_stats_daily.csv")
         if os.path.exists(espn_file):
             try:
                 with open(espn_file, "r", encoding="utf-8-sig") as f:
@@ -117,12 +117,12 @@ def load_player_positions():
                         if name and pos:
                             player_positions[normalize_name(name)] = pos
             except Exception as e:
-                log_event(f"Error reading stats_espn_daily_{year}.csv: {e}")
+                log_event(f"Error reading {year}_espn_stats_daily.csv: {e}")
                 
     return player_positions
 
 def reconstruct_stints(year):
-    csv_file = os.path.join(DATA_PATH, f"stats_mlb_season_transactions_{year}.csv")
+    csv_file = os.path.join(DATA_PATH, f"{year}_mlb_transactions_season.csv")
     if not os.path.exists(csv_file):
         log_event(f"Transactions file not found for {year}: {csv_file}")
         return []

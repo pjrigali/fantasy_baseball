@@ -43,7 +43,7 @@ def main():
         return
 
     os.makedirs(mp.DATA_PATH, exist_ok=True)
-    filename = f"activity_espn_season_{target_year}.csv"
+    filename = f"{target_year}_espn_activity_season.csv"
     save_path = os.path.join(mp.DATA_PATH, filename)
 
     since_epoch = None

@@ -18,8 +18,8 @@ Source Data: MLB Stats API
                /api/v1/schedule?startDate=...&endDate=...&sportId=1&gameType=R
                /api/v1/game/{gamePk}/boxscore
 
-Outputs: data-lake/01_Bronze/fantasy_baseball/stats_mlb_boxscore_{year}.csv
-         Columns match stats_mlb_daily_{year}.csv plus a did_play flag.
+Outputs: data-lake/01_Bronze/fantasy_baseball/{year}_mlb_stats_boxscore.csv
+         Columns match {year}_mlb_stats_daily.csv plus a did_play flag.
          Deduplicates on (date, player_id, b_or_p). Safe to re-run.
 """
 
@@ -256,7 +256,7 @@ def main():
     else:
         target_date = date.today().strftime('%Y-%m-%d')
 
-    output_file = os.path.join(mp.DATA_PATH, f'stats_mlb_boxscore_{season}.csv')
+    output_file = os.path.join(mp.DATA_PATH, f'{season}_mlb_stats_boxscore.csv')
 
     # Load existing rows to determine start date and dedup keys
     existing_keys = set()

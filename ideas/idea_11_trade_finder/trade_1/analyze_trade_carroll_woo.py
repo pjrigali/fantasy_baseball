@@ -7,9 +7,9 @@ Description:
     projections.
 
 Source Data:
-    - data-lake/01_Bronze/fantasy_baseball/stats_mlb_daily_{year}.csv  (2023-2026)
-    - data-lake/01_Bronze/fantasy_baseball/player_batter_projections_2026.csv
-    - data-lake/01_Bronze/fantasy_baseball/player_pitcher_projections_2026.csv
+    - data-lake/01_Bronze/fantasy_baseball/{year}_mlb_stats_daily.csv  (2023-2026)
+    - data-lake/01_Bronze/fantasy_baseball/2026_ext_projections_batter.csv
+    - data-lake/01_Bronze/fantasy_baseball/2026_ext_projections_pitcher.csv
 
 Outputs:
     Printed multi-year summary table to console.
@@ -61,18 +61,18 @@ def get_player_id(row):
     return row.get("playerId") or row.get("player_id", "")
 
 # ---------------------------------------------------------------------------
-# Aggregate yearly stats from stats_mlb_daily_{year}.csv
+# Aggregate yearly stats from {year}_mlb_stats_daily.csv
 # ---------------------------------------------------------------------------
 
 BATTER_COLS  = ["TB", "B_BB", "R", "RBI", "SB", "SO"]
 PITCHER_COLS = ["OUTS", "ER", "W", "L", "SV", "K", "P_H", "P_BB", "QS", "HLD"]
 
 def aggregate_year(year):
-    path = f"{BASE}\\stats_mlb_daily_{year}.csv"
+    path = f"{BASE}\\{year}_mlb_stats_daily.csv"
     if not os.path.exists(path):
-        path = f"{BASE}\\stats_mlb_boxscore_{year}.csv"
+        path = f"{BASE}\\{year}_mlb_stats_boxscore.csv"
     if not os.path.exists(path):
-        path = f"{BASE}\\stats_mlb_daily_{year}_archive.csv"
+        path = f"{BASE}\\{year}_mlb_stats_daily_archive.csv"
     if not os.path.exists(path):
         return defaultdict(float), defaultdict(float)
 
@@ -103,7 +103,7 @@ def aggregate_year(year):
 # ---------------------------------------------------------------------------
 
 def load_carroll_proj():
-    with open(f"{BASE}\\player_batter_projections_2026.csv", encoding="utf-8-sig") as f:
+    with open(f"{BASE}\\2026_ext_projections_batter.csv", encoding="utf-8-sig") as f:
         for row in csv.DictReader(f):
             if "Carroll" in row.get("Player", "").replace("\xa0", " "):
                 h   = safe(row["H"])
@@ -122,7 +122,7 @@ def load_carroll_proj():
     return {}
 
 def load_woo_proj():
-    with open(f"{BASE}\\player_pitcher_projections_2026.csv", encoding="utf-8-sig") as f:
+    with open(f"{BASE}\\2026_ext_projections_pitcher.csv", encoding="utf-8-sig") as f:
         for row in csv.DictReader(f):
             name = row.get("Player", "").replace("\xa0", " ")
             if "Woo" in name and "Bryan" in name:

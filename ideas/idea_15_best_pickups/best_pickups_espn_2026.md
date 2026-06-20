@@ -174,4 +174,4 @@ The near-absence of wasted pickups is a positive league-wide signal — when man
 
 ---
 
-*Full data: `data-lake/01_Bronze/fantasy_baseball/best_pickups_espn_2026.csv` (256 rows — one per unique player-team combination, with multi-stint stats combined, held_ranges, z-scores, and utilization fields)*
+*Full data: `data-lake/01_Bronze/fantasy_baseball/2026_espn_best_pickups.csv` (256 rows — one per unique player-team combination, with multi-stint stats combined, held_ranges, z-scores, and utilization fields)*

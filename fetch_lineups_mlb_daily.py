@@ -6,7 +6,7 @@ them to the Bronze data lake CSV. Automatically detects and backfills any
 gap between the last recorded date and today — no need to run daily.
 
 Output file:
-  data-lake/01_Bronze/fantasy_baseball/lineups_mlb_batters_<YEAR>.csv
+  data-lake/01_Bronze/fantasy_baseball/<YEAR>_mlb_lineups_batters.csv
 
 Primary keys (deduplication):
   batters  — (date, team_tricode, player_name, batting_order)
@@ -157,7 +157,7 @@ def main():
         end_date = None  # handled per-branch below
 
     os.makedirs(DATA_PATH, exist_ok=True)
-    batter_path = os.path.join(DATA_PATH, f'lineups_mlb_batters_{year}.csv')
+    batter_path = os.path.join(DATA_PATH, f'{year}_mlb_lineups_batters.csv')
     existing_keys = load_existing_batter_keys(batter_path)
 
     total_written = 0

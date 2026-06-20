@@ -7,7 +7,7 @@ Description: Deep-dive SP replacement analysis. Calculates QS, WHIP, and K/9
              Flags underperforming rostered SPs and ranks FA replacements by
              the league's priority stat order: QS desc → WHIP asc → K/9 desc.
 
-Source Data: data-lake/01_Bronze/fantasy_baseball/stats_mlb_boxscore_{year}.csv
+Source Data: data-lake/01_Bronze/fantasy_baseball/{year}_mlb_stats_boxscore.csv
              ESPN API (roster, FA list, injury status)
 
 Outputs: fantasy_baseball/reports/sp_analysis_{YYYY-MM-DD}.md
@@ -63,7 +63,7 @@ my_sps = [
 # ---------------------------------------------------------------------------
 # Load boxscore — pitcher rows only
 # ---------------------------------------------------------------------------
-box_path = os.path.join(BASE, f'stats_mlb_boxscore_{YEAR}.csv')
+box_path = os.path.join(BASE, f'{YEAR}_mlb_stats_boxscore.csv')
 with open(box_path, encoding='utf-8') as f:
     all_pitcher_rows = [
         r for r in csv.DictReader(f)
@@ -350,7 +350,7 @@ else:
         a('')
 
 a('---')
-a(f'*Generated {TODAY_STR} | Source: stats_mlb_boxscore_{YEAR}.csv + ESPN API*')
+a(f'*Generated {TODAY_STR} | Source: {YEAR}_mlb_stats_boxscore.csv + ESPN API*')
 
 # ── Write report ───────────────────────────────────────────────────────────
 os.makedirs(REPORTS_DIR, exist_ok=True)

@@ -1,5 +1,5 @@
 # Mutually Beneficial Trade Summary — 2026 ESPN Fantasy Baseball
-*Generated: 2026-06-10  |  Source: analyze_trade_finder_espn_2026.csv*
+*Generated: 2026-06-10  |  Source: 2026_local_trade_finder.csv*
 *Top 5 trades per team, sorted by net category gain for that team.*
 
 ---

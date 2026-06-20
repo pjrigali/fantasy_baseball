@@ -1,7 +1,7 @@
 """
 Description: Analyze historical MLB injury transaction logs (2023-2026) and ESPN fantasy rosters (2025-2026)
              to track injury durations, frequencies, types, and impact on fantasy team lineups.
-Source Data: stats_mlb_season_transactions_{year}.csv, stats_espn_daily_{year}.csv, player_map.csv
+Source Data: {year}_mlb_transactions_season.csv, {year}_espn_stats_daily.csv, player_map.csv
 Outputs: c:/Users/peter/Desktop/vscode/main/reports/injury_analysis_report.md
 """
 import os
@@ -129,7 +129,7 @@ def parse_il_duration(description):
 
 def reconstruct_mlb_stints(year):
     """Reads transactions CSV and reconstructs Completed and Ongoing IL stints."""
-    csv_file = os.path.join(DATA_PATH, f"stats_mlb_season_transactions_{year}.csv")
+    csv_file = os.path.join(DATA_PATH, f"{year}_mlb_transactions_season.csv")
     if not os.path.exists(csv_file):
         log_event(f"[WARN] Transactions file not found for {year}: {csv_file}")
         return []
@@ -210,7 +210,7 @@ def reconstruct_mlb_stints(year):
 
 def load_espn_rosters(year):
     """Loads daily ESPN roster database for 2025/2026."""
-    csv_file = os.path.join(DATA_PATH, f"stats_espn_daily_{year}.csv")
+    csv_file = os.path.join(DATA_PATH, f"{year}_espn_stats_daily.csv")
     if not os.path.exists(csv_file):
         log_event(f"[WARN] ESPN daily stats file not found for {year}: {csv_file}")
         return {}
@@ -294,7 +294,7 @@ def analyze_injuries():
                     player_positions[normalize_name(name)] = pos
 
     # Load 2026 ESPN roster positions
-    espn_2026_file = os.path.join(DATA_PATH, "stats_espn_daily_2026.csv")
+    espn_2026_file = os.path.join(DATA_PATH, "2026_espn_stats_daily.csv")
     if os.path.exists(espn_2026_file):
         with open(espn_2026_file, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)

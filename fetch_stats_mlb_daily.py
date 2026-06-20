@@ -9,9 +9,9 @@ Description: Fetches per-game hitting and pitching stats for all MLB players
 Source Data: MLB Stats API — /api/v1/people/{id}/stats?stats=gameLog
              Player roster pulled from mlb_processing.scrape_mlb_stats().
 
-Outputs: data-lake/01_Bronze/fantasy_baseball/stats_mlb_daily_{year}.csv
+Outputs: data-lake/01_Bronze/fantasy_baseball/{year}_mlb_stats_daily.csv
          Deduplicates on (date, player_id, b_or_p). Safe to re-run.
-         data-lake/01_Bronze/fantasy_baseball/skipped_mlb_daily_{year}.csv
+         data-lake/01_Bronze/fantasy_baseball/{year}_mlb_stats_daily_skipped.csv
          Players whose game logs could not be fetched (SSL errors, etc.).
          Deduplicates on (date_ran, player_id, group). Safe to re-run.
 """
@@ -160,7 +160,7 @@ def main():
     else:
         target_date = date.today().strftime('%Y-%m-%d')
 
-    output_file = os.path.join(mp.DATA_PATH, f'stats_mlb_daily_{season}.csv')
+    output_file = os.path.join(mp.DATA_PATH, f'{season}_mlb_stats_daily.csv')
     season_start = date(season, 3, 23)
 
     def get_scoring_period_local(game_date_str):
@@ -232,7 +232,7 @@ def main():
         time.sleep(0.5)
 
     # Write skipped players log
-    skipped_file = os.path.join(mp.DATA_PATH, f'skipped_mlb_daily_{season}.csv')
+    skipped_file = os.path.join(mp.DATA_PATH, f'{season}_mlb_stats_daily_skipped.csv')
     skipped_headers = ['date_ran', 'player_id', 'player_name', 'group', 'error']
     if skipped_players and not args.dry_run:
         existing_skipped = []

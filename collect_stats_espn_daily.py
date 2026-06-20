@@ -10,7 +10,7 @@ Inputs:
                            --year NNNN        (defaults to 2026)
 
 Outputs:
-  - data-lake/01_bronze/fantasy_baseball/stats_espn_daily_{year}.csv
+  - data-lake/01_bronze/fantasy_baseball/{year}_espn_stats_daily.csv
     Appended with one row per player per team for the target date.
     Duplicate rows (same date + team_id + player_id) are skipped.
 
@@ -383,7 +383,7 @@ def main():
         # Auto-detect gaps: find the last recorded date in the CSV and backfill
         # from the day after it through end_date. Falls back to yesterday/today
         # if the file doesn't exist yet.
-        csv_path_check = os.path.join(DATA_PATH, f"stats_espn_daily_{year}.csv")
+        csv_path_check = os.path.join(DATA_PATH, f"{year}_espn_stats_daily.csv")
         last_recorded = None
         if os.path.exists(csv_path_check):
             with open(csv_path_check, 'r', newline='', encoding='utf-8') as f:
@@ -415,7 +415,7 @@ def main():
         return
 
     os.makedirs(DATA_PATH, exist_ok=True)
-    csv_path = os.path.join(DATA_PATH, f"stats_espn_daily_{year}.csv")
+    csv_path = os.path.join(DATA_PATH, f"{year}_espn_stats_daily.csv")
     existing_keys = load_existing_keys(csv_path)
 
     total_written = 0

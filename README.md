@@ -25,15 +25,15 @@ flowchart TD
     end
 
     subgraph Bronze["Bronze Data Lake — data-lake/01_Bronze/fantasy_baseball/"]
-        B1["stats_espn_daily_YEAR.csv\ndedup: (date, team_id, player_id)"]
-        B2["activity_espn_season_YEAR.csv\ndedup: (date_epoch, player_id, action_id, team_id)"]
-        B3["rankings_espn_daily_YEAR.csv\ndedup: (date, player_id)"]
-        B4["stats_mlb_daily_YEAR.csv\ndedup: (date, player_id, b_or_p)"]
-        B5["lineups_mlb_batters_YEAR.csv\ndedup: (date, team_tricode, player_name, batting_order)"]
-        B6["draft_results_espn_YEAR.csv"]
-        B7["roster_espn_season_YEAR.csv"]
-        B8["scoreboard_espn_matchup_YEAR.csv"]
-        B9["schedule_espn_matchup_YEAR.csv"]
+        B1["YEAR_espn_stats_daily.csv\ndedup: (date, team_id, player_id)"]
+        B2["YEAR_espn_activity_season.csv\ndedup: (date_epoch, player_id, action_id, team_id)"]
+        B3["YEAR_espn_rankings_daily.csv\ndedup: (date, player_id)"]
+        B4["YEAR_mlb_stats_daily.csv\ndedup: (date, player_id, b_or_p)"]
+        B5["YEAR_mlb_lineups_batters.csv\ndedup: (date, team_tricode, player_name, batting_order)"]
+        B6["YEAR_espn_draft_results.csv"]
+        B7["YEAR_espn_roster_season.csv"]
+        B8["YEAR_espn_scoreboard_matchup.csv"]
+        B9["YEAR_espn_schedule_matchup.csv"]
     end
 
     subgraph Analysis["Analysis & Reporting"]
@@ -48,7 +48,7 @@ flowchart TD
         R1["reports/roster_analysis_YYYY-MM-DD.md\n(batter/SP/RP stats, z-score scorecard,\nFA recs, add/drop recommendations)"]
         R2["reports/league_position_analysis_YYYY-MM-DD.md\n(slot averages, team rankings,\nmatchup projections)"]
         R3["17_Fantasy_Baseball_Dashboard.html\n(published to GitHub Pages)"]
-        R4["quick_lineup_bench_performances_YEAR.csv\n(quick-lineup impact report)"]
+        R4["YEAR_local_quick_lineup_bench.csv\n(quick-lineup impact report)"]
     end
 
     ESPN --> S1 & S2 & S3 & S6 & S7 & S8

@@ -4,18 +4,18 @@ Description:
     by post-add categorical contribution. Because no activity log exists for 2025, pickups
     are inferred from first-appearance detection: any (player, team) pair whose first
     scoring period > 1 is treated as a waiver/FA add with acquisition_date derived from
-    schedule_espn_matchup_2025.csv. Multiple stints (player dropped and re-added to the
+    2025_espn_schedule_matchup.csv. Multiple stints (player dropped and re-added to the
     same team) are detected by gaps in scoring periods and treated as separate windows.
     Stat aggregation, z-score logic, and output format are identical to the 2026 version.
 
 Source Data:
-    - data-lake/01_Bronze/fantasy_baseball/stats_espn_daily_2025.csv
-    - data-lake/01_Bronze/fantasy_baseball/schedule_espn_matchup_2025.csv
-    - data-lake/01_Bronze/fantasy_baseball/teams_espn_season_2025.csv
+    - data-lake/01_Bronze/fantasy_baseball/2025_espn_stats_daily.csv
+    - data-lake/01_Bronze/fantasy_baseball/2025_espn_schedule_matchup.csv
+    - data-lake/01_Bronze/fantasy_baseball/2025_espn_teams_season.csv
 
 Outputs:
     - stdout — top 15 batters, top 15 pitchers, per-team leaderboard
-    - data-lake/01_Bronze/fantasy_baseball/best_pickups_espn_2025.csv
+    - data-lake/01_Bronze/fantasy_baseball/2025_espn_best_pickups.csv
 """
 
 import csv
@@ -30,10 +30,10 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 
 import mlb_processing as mp
 
-STATS_FILE    = os.path.join(mp.DATA_PATH, 'stats_espn_daily_2025.csv')
-SCHEDULE_FILE = os.path.join(mp.DATA_PATH, 'schedule_espn_matchup_2025.csv')
-TEAMS_FILE    = os.path.join(mp.DATA_PATH, 'teams_espn_season_2025.csv')
-OUTPUT_FILE   = os.path.join(mp.DATA_PATH, 'best_pickups_espn_2025.csv')
+STATS_FILE    = os.path.join(mp.DATA_PATH, '2025_espn_stats_daily.csv')
+SCHEDULE_FILE = os.path.join(mp.DATA_PATH, '2025_espn_schedule_matchup.csv')
+TEAMS_FILE    = os.path.join(mp.DATA_PATH, '2025_espn_teams_season.csv')
+OUTPUT_FILE   = os.path.join(mp.DATA_PATH, '2025_espn_best_pickups.csv')
 
 # ---------------------------------------------------------------------------
 # Helpers (identical to 2026 version)
@@ -124,7 +124,7 @@ def load_teams():
 
 def load_stats(sp_to_date, team_names):
     """
-    Reads stats_espn_daily_2025.csv, normalises column names to match 2026 format,
+    Reads 2025_espn_stats_daily.csv, normalises column names to match 2026 format,
     and resolves scoring_period → date. Returns dict: player_id -> [normalised rows].
     """
     stats = defaultdict(list)
