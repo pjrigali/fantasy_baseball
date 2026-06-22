@@ -1,6 +1,9 @@
 """
-Fetch ESPN Fantasy Baseball league activity (adds, drops, trades, waivers)
-and save/append to the Bronze data lake layer.
+Description: Fetch ESPN Fantasy Baseball league activity (adds, drops, trades,
+             waivers) for the season and append to the Bronze data lake.
+Source Data: ESPN Fantasy API (via mlb_processing / config.ini credentials).
+Outputs: data-lake/01_Bronze/fantasy_baseball/{year}_espn_activity_season.csv
+         (deduped on (date_epoch, player_id, action_id, team_id); safe to re-run)
 
 Usage:
     python fetch_activity_espn_season.py [--year 2026] [--max-pages 20]

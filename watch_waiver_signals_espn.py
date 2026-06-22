@@ -16,6 +16,7 @@ Source Data:
   - data-lake/01_Bronze/fantasy_baseball/player_map.csv (canonical identity; was player_lookup.csv)
 
 Outputs:
+  - data-lake/01_Bronze/fantasy_baseball/{YEAR}_espn_waiver_watchlist.csv (appended daily, deduped on (date, player_id))
   - fantasy_baseball/ideas/idea_16_waiver_signals/reports/waiver_watchlist_{DATE}.md
 
 Usage:

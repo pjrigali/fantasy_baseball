@@ -17,6 +17,13 @@ Methodology:
 
 All grouping uses team_id (not team_name) to handle mid-season renames.
 Display names use the most recent name seen per team_id.
+
+Source Data:
+    - data-lake/01_Bronze/fantasy_baseball/{year}_espn_activity_season.csv
+    - data-lake/01_Bronze/fantasy_baseball/{year}_espn_stats_daily.csv
+Outputs:
+    - data-lake/01_Bronze/fantasy_baseball/{year}_local_quick_lineup_analysis.csv (per-team QL impact)
+    - data-lake/01_Bronze/fantasy_baseball/{year}_local_quick_lineup_bench.csv (per-bench-player detail)
 """
 
 import argparse
