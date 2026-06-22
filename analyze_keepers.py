@@ -9,7 +9,7 @@ Source Data: 2025_espn_stats_daily.csv, 2025_espn_roster_season.csv, 2025_espn_t
              2026_ext_adp_season.csv, 2025_espn_draft_results.csv, 2026_local_keepers_actual.csv,
              2026_espn_draft_order.csv (data-lake/01_Bronze/fantasy_baseball)
 Outputs:     data-lake/01_Bronze/fantasy_baseball/2026_local_keepers_projected.csv
-             data-lake/01_Bronze/fantasy_baseball/keeper_report_2026.txt
+             fantasy_baseball/reports/keeper_report_2026.txt
 """
 
 import sys
@@ -515,8 +515,10 @@ def main():
     results_df.to_csv(csv_path, index=False)
     print(f"\n📊 CSV saved: {csv_path}")
 
-    # Text report
-    report_path = os.path.join(mp.DATA_PATH, 'keeper_report_2026.txt')
+    # Text report -> reports/ (report artifacts must not live in the data lake)
+    reports_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'reports')
+    os.makedirs(reports_dir, exist_ok=True)
+    report_path = os.path.join(reports_dir, 'keeper_report_2026.txt')
     with open(report_path, 'w', encoding='utf-8') as f:
         f.write(report)
     print(f"📋 Report saved: {report_path}")

@@ -1,0 +1,174 @@
+========================================================================
+  KEEPER ANALYSIS — 2026 DRAFT
+  Generated: 2026-03-23 11:19
+  Blend: 40% 2025 Actuals + 60% 2026 Projections
+  5x5 H2H: R/HR/RBI/SB/OPS × ERA/WHIP/K9/QS/SVHD
+========================================================================
+
+────────────────────────────────────────────────────────────────────────
+  Fresh Prince of Bueh Ler (BHill4894)
+────────────────────────────────────────────────────────────────────────
+  #   Player                   Pos   2025Z  ProjZ  Blend   ADP  Cost  Surplus  Note
+  ─── ──────────────────────── ──── ────── ────── ────── ───── ───── ────────  ───────────────
+  ►1  Cade Smith               PIT    +3.0   +7.9   +5.9    R7   R21 +14 rnds  ← STRONG KEEP
+  ►2  Junior Caminero          BAT    +5.5   +5.5   +5.5    R2   R13 +11 rnds  ← STRONG KEEP
+  ►3  Fernando Tatis Jr.       BAT    +3.6   +6.1   +5.1    R2    R5  +3 rnds  ← GOOD KEEP
+  ►4  Pete Alonso              BAT    +4.9   +5.1   +5.0    R3    R2  -1 rnds  ← NO SURPLUS
+  ►5  Brent Rooker             BAT    +3.7   +5.1   +4.5    R5    R3  -2 rnds  ← NO SURPLUS
+   6  Byron Buxton             BAT    +5.4   +3.3   +4.2    R8    --       --  
+   7  Zach Neto                BAT    +3.6   +4.1   +3.9    R4   R20 +16 rnds  
+   8  George Springer          BAT    +4.7   +2.5   +3.4    R8   R19 +11 rnds  
+
+  ✓ Balance: 4B / 1P
+
+────────────────────────────────────────────────────────────────────────
+  Datalickmyballs (ESPNFAN4881371836) ★ YOUR TEAM
+  Round 1 Pick: #6
+────────────────────────────────────────────────────────────────────────
+  #   Player                   Pos   2025Z  ProjZ  Blend   ADP  Cost  Surplus  Note
+  ─── ──────────────────────── ──── ────── ────── ────── ───── ───── ────────  ───────────────
+  ►1  Jhoan Duran              PIT    +1.3   +6.7   +4.6    R7   R10  +3 rnds  ← GOOD KEEP
+  ►2  Jazz Chisholm Jr.        BAT    +3.9   +4.4   +4.2    R3    R7  +4 rnds  ← GOOD KEEP
+  ►3  Trea Turner              BAT    +4.4   +2.9   +3.5    R3    R1  -2 rnds  ← NO SURPLUS
+  ►4  Bryce Harper             BAT    +1.8   +4.4   +3.3    R4    R4  +0 rnds  ← NO SURPLUS
+  ►5  Manny Machado            BAT    +3.2   +2.6   +2.8    R3    R2  -1 rnds  ← NO SURPLUS
+   6  Cody Bellinger           BAT    +3.9   +1.7   +2.6    R6   R14  +8 rnds  
+   7  Taylor Ward              BAT    +3.4   +1.8   +2.4   R12   R17  +5 rnds  
+   8  Geraldo Perdomo          BAT    +3.4   +0.9   +1.9    R7    --       --  
+
+  ✓ Balance: 4B / 1P
+
+────────────────────────────────────────────────────────────────────────
+  Midnight Muncy's (Hans-Robert)
+  Round 1 Pick: #3
+────────────────────────────────────────────────────────────────────────
+  #   Player                   Pos   2025Z  ProjZ  Blend   ADP  Cost  Surplus  Note
+  ─── ──────────────────────── ──── ────── ────── ────── ───── ───── ────────  ───────────────
+  ►1  Juan Soto                BAT    +8.3  +10.2   +9.4    R1    R1  +0 rnds  ← NO SURPLUS
+  ►2  Vladimir Guerrero Jr.    BAT    +2.9   +5.9   +4.7    R2    R1  -1 rnds  ← NO SURPLUS
+  ►3  Devin Williams           PIT    +0.5   +6.6   +4.2   R10    R5  -5 rnds  ← NO SURPLUS
+  ►4  Riley Greene             BAT    +3.4   +2.9   +3.1    R7   R11  +4 rnds  ← GOOD KEEP
+  ►5  Yoshinobu Yamamoto       PIT    +1.8   +2.2   +2.0    R3    R4  +1 rnds  
+   6  Vinnie Pasquantino       BAT    +1.4   +2.1   +1.8    R8    R9  +1 rnds  
+   7  Ryan Walker              PIT    -0.8   +3.3   +1.7   R21    R8 -13 rnds  
+   8  Spencer Torkelson        BAT    +0.7   +1.2   +1.0   R18    --       --  
+
+  ✓ Balance: 3B / 2P
+
+────────────────────────────────────────────────────────────────────────
+  Honey Nut Chourios (Mikeaffourtit)
+  Round 1 Pick: #8
+────────────────────────────────────────────────────────────────────────
+  #   Player                   Pos   2025Z  ProjZ  Blend   ADP  Cost  Surplus  Note
+  ─── ──────────────────────── ──── ────── ────── ────── ───── ───── ────────  ───────────────
+  ►1  Corbin Carroll           BAT    +6.1   +7.1   +6.7    R2    R6  +4 rnds  ← GOOD KEEP
+  ►2  Kyle Tucker              BAT    +4.9   +6.8   +6.0    R2    R1  -1 rnds  ← NO SURPLUS
+  ►3  Tarik Skubal             PIT    +4.5   +5.9   +5.3    R1    R8  +7 rnds  ← STRONG KEEP
+  ►4  Nick Kurtz               BAT    +4.4   +5.9   +5.3    R2   R15 +13 rnds  ← STRONG KEEP
+  ►5  Garrett Crochet          PIT    +2.9   +4.3   +3.7    R2   R12 +10 rnds  ← STRONG KEEP
+   6  Jackson Chourio          BAT    +2.2   +4.0   +3.3    R3   R13 +10 rnds  
+   7  Abner Uribe              PIT     n/a   +3.6   +2.2   R20    --       --  
+   8  Hunter Brown             PIT    +2.7   +1.0   +1.7    R4    R9  +5 rnds  
+
+  ✓ Balance: 3B / 2P
+
+────────────────────────────────────────────────────────────────────────
+  I Shota the sheriff (dorton31)
+────────────────────────────────────────────────────────────────────────
+  #   Player                   Pos   2025Z  ProjZ  Blend   ADP  Cost  Surplus  Note
+  ─── ──────────────────────── ──── ────── ────── ────── ───── ───── ────────  ───────────────
+  ►1  Kyle Schwarber           BAT   +10.5   +7.2   +8.5    R3    R4  +1 rnds  
+  ►2  Cal Raleigh              BAT    +9.7   +6.1   +7.6    R2    R8  +6 rnds  ← STRONG KEEP
+  ►3  Josh Hader               PIT    +5.0   +7.9   +6.7   R12    R5  -7 rnds  ← NO SURPLUS
+  ►4  Matt Olson               BAT    +1.7   +3.6   +2.8    R4    R1  -3 rnds  ← NO SURPLUS
+  ►5  Raisel Iglesias          PIT    +0.5   +3.6   +2.3   R12    R7  -5 rnds  ← NO SURPLUS
+   6  Yandy Diaz               BAT    +1.2   +0.9   +1.0   R13   R19  +6 rnds  
+   7  Matt Chapman             BAT    -0.5   +1.5   +0.7   R14   R10  -4 rnds  
+   8  Ian Happ                 BAT    -0.1   +1.1   +0.6   R15   R11  -4 rnds  
+
+  ✓ Balance: 3B / 2P
+
+────────────────────────────────────────────────────────────────────────
+  Drill ya mama (Keryon My Wayward Sony)
+  Round 1 Pick: #1
+────────────────────────────────────────────────────────────────────────
+  #   Player                   Pos   2025Z  ProjZ  Blend   ADP  Cost  Surplus  Note
+  ─── ──────────────────────── ──── ────── ────── ────── ───── ───── ────────  ───────────────
+  ►1  Mason Miller             PIT     n/a  +11.5   +6.9    R5    R5  +0 rnds  ← NO SURPLUS
+  ►2  Gunnar Henderson         BAT    +1.2   +6.0   +4.1    R2    R1  -1 rnds  ← NO SURPLUS
+  ►3  James Wood               BAT    +3.8   +3.6   +3.7    R4   R22 +18 rnds  ← STRONG KEEP
+  ►4  Freddie Freeman          BAT    +1.9   +3.3   +2.7    R6    R2  -4 rnds  ← NO SURPLUS
+  ►5  Wyatt Langford           BAT    +1.6   +3.4   +2.7    R5    R3  -2 rnds  ← NO SURPLUS
+   6  Jeff Hoffman             PIT    -0.5   +3.8   +2.1   R14   R13  -1 rnds  
+   7  CJ Abrams                BAT    +2.5   +1.7   +2.0    R7    R4  -3 rnds  
+   8  Jarren Duran             BAT    +2.1   +1.8   +1.9    R6   R14  +8 rnds  
+
+  ✓ Balance: 4B / 1P
+
+────────────────────────────────────────────────────────────────────────
+  All Rise (chadcherry214)
+  Round 1 Pick: #7
+────────────────────────────────────────────────────────────────────────
+  #   Player                   Pos   2025Z  ProjZ  Blend   ADP  Cost  Surplus  Note
+  ─── ──────────────────────── ──── ────── ────── ────── ───── ───── ────────  ───────────────
+  ►1  Aaron Judge              BAT   +11.0  +12.5  +11.9    R1    R1  +0 rnds  ← NO SURPLUS
+  ►2  Bobby Witt Jr.           BAT    +5.5   +8.3   +7.2    R1   R15 +14 rnds  ← STRONG KEEP
+  ►3  Elly De La Cruz          BAT    +5.2   +6.3   +5.9    R1    R8  +7 rnds  ← STRONG KEEP
+  ►4  Julio Rodriguez          BAT    +4.9   +6.2   +5.7    R2    R3  +1 rnds  
+  ►5  Pete Crow-Armstrong      BAT    +5.9   +4.1   +4.8    R4   R11  +7 rnds  ← STRONG KEEP
+   6  Ronald Acuna Jr.         BAT    -0.2   +7.7   +4.6    R1    R2  +1 rnds  
+   7  Randy Arozarena          BAT    +4.2   +2.2   +3.0    R9   R13  +4 rnds  
+   8  Trevor Megill            PIT     n/a   +3.7   +2.2   R16   R16  +0 rnds  
+
+  ⚠️  Balance: 5B / 0P — consider swapping a batter for a pitcher
+
+────────────────────────────────────────────────────────────────────────
+  Big Papi (tedphillips627)
+  Round 1 Pick: #9
+────────────────────────────────────────────────────────────────────────
+  #   Player                   Pos   2025Z  ProjZ  Blend   ADP  Cost  Surplus  Note
+  ─── ──────────────────────── ──── ────── ────── ────── ───── ───── ────────  ───────────────
+  ►1  Aroldis Chapman          PIT    +7.2   +7.4   +7.3    R9   R23 +14 rnds  ← STRONG KEEP
+  ►2  Andres Munoz             PIT    +3.6   +7.3   +5.9    R6    R8  +2 rnds  ← GOOD KEEP
+  ►3  Eugenio Suarez           BAT    +6.2   +3.2   +4.4    R9   R10  +1 rnds  
+  ►4  Ketel Marte              BAT    +2.5   +3.9   +3.3    R3    R2  -1 rnds  ← NO SURPLUS
+  ►5  Zack Wheeler             PIT    +3.8   +2.9   +3.3   R13    R2 -11 rnds  ← NO SURPLUS
+   6  Yordan Alvarez           BAT     n/a   +5.1   +3.1    R4    R1  -3 rnds  
+   7  Josh Naylor              BAT    +2.4   +2.1   +2.2    R6    R6  +0 rnds  
+   8  Hunter Greene            PIT    +1.3   +2.0   +1.7   R13    R9  -4 rnds  
+
+  ✓ Balance: 2B / 3P
+
+────────────────────────────────────────────────────────────────────────
+  DEVERSity: an old wooden ship (ESPNFAN6799833945)
+  Round 1 Pick: #2
+────────────────────────────────────────────────────────────────────────
+  #   Player                   Pos   2025Z  ProjZ  Blend   ADP  Cost  Surplus  Note
+  ─── ──────────────────────── ──── ────── ────── ────── ───── ───── ────────  ───────────────
+  ►1  Paul Skenes              PIT    +3.3   +4.9   +4.3    R1   R17 +16 rnds  ← STRONG KEEP
+  ►2  Rafael Devers            BAT    +3.5   +3.7   +3.6    R5    R1  -4 rnds  ← NO SURPLUS
+  ►3  David Bednar             PIT     n/a   +5.9   +3.5    R9   R18  +9 rnds  ← STRONG KEEP
+  ►4  Seiya Suzuki             BAT    +2.7   +2.4   +2.5   R10   R11  +1 rnds  
+  ►5  Jacob deGrom             PIT    +1.9   +2.4   +2.2    R6   R25 +19 rnds  ← STRONG KEEP
+   6  Willy Adames             BAT    +2.1   +2.1   +2.1   R12   R13  +1 rnds  
+   7  Emilio Pagan             PIT     n/a   +2.5   +1.5   R15    --       --  
+   8  William Contreras        BAT    +1.0   +0.9   +1.0    R6    R3  -3 rnds  
+
+  ✓ Balance: 2B / 3P
+
+────────────────────────────────────────────────────────────────────────
+  Shohei Me the Money (msokul5)
+  Round 1 Pick: #4
+────────────────────────────────────────────────────────────────────────
+  #   Player                   Pos   2025Z  ProjZ  Blend   ADP  Cost  Surplus  Note
+  ─── ──────────────────────── ──── ────── ────── ────── ───── ───── ────────  ───────────────
+  ►1  Edwin Diaz               PIT    +4.2   +8.9   +7.0    R5    R5  +0 rnds  ← NO SURPLUS
+  ►2  Jose Ramirez             BAT    +5.9   +6.8   +6.4    R1    R1  +0 rnds  ← NO SURPLUS
+  ►3  Shohei Ohtani            BAT   +10.9   +2.9   +6.1    R9    R2  -7 rnds  ← NO SURPLUS
+  ►4  Francisco Lindor         BAT    +4.9   +4.1   +4.4    R3    R2  -1 rnds  ← NO SURPLUS
+  ►5  Bryan Abreu              PIT    +4.3   +3.7   +3.9   R24   R21  -3 rnds  ← NO SURPLUS
+   6  Christian Yelich         BAT    +4.6   +1.2   +2.5   R10    R8  -2 rnds  
+   7  Robert Suarez            PIT    +2.0   +1.3   +1.6   R21   R12  -9 rnds  
+   8  Joe Ryan                 PIT    +1.6   +1.1   +1.3    R8    R9  +1 rnds  
+
+  ✓ Balance: 3B / 2P
