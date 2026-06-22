@@ -4,6 +4,21 @@
 
 ---
 
+## Working an Idea — Conventions (follow these going forward)
+
+When building out an idea, leave it in a state where a future agent can re-open the folder and immediately understand the full lineage. Concretely:
+
+1. **Idea folder** (`ideas/idea_NN_<slug>/`) contains:
+   - `PROMPT.md` — execution spec (objective, scope, **exact** data-lake file names, approach, deliverables, definition of done).
+   - the analysis script(s) — top docstring with **Description / Source Data / Outputs**.
+   - `README.md` — a **lineage manifest**: a table mapping every script and every data-lake file (raw inputs, derived outputs, the report) to its producer, plus the join key. (See `idea_12_bat_tracking/README.md` for the pattern.)
+2. **Recurring data collection is promoted, not buried.** If an idea needs data pulled on an ongoing basis, move the fetch script from the idea folder to the repo root (`fantasy_baseball/`) as a first-class collector named `{Verb}_{Object}_{Source}_{Modifier}.py`, and wire it into `/fantasy-collect-all-data` (agent harness) at the right cadence — daily (incremental), weekly (self-gated), or 3x/week. Collectors must be **incremental and deduped** (resume from the last collected date; never re-grab the whole history except an explicit `--backfill`).
+3. **Data-lake hygiene — no loose CSVs.** Every CSV in `data-lake/01_Bronze/fantasy_baseball/` must trace to a producer script and follow the naming convention: raw pulls carry a source tag (`mlb`/`espn`/`ext`), computed outputs use `local`. Reports (`.md`) go to `fantasy_baseball/reports/`, never the lake. Logs and backups go to `data-lake/00_Logs/`, never the Bronze data folder. Don't leave renamed/temp/scratch CSVs behind.
+4. **Identity joins by id, not name.** Join MLB/Savant ↔ ESPN through `player_map.csv` on `mlbam_player_id`; regenerate it with `/fantasy-rebuild-player-map` when players are missing or mislinked (it disambiguates same-name players by team).
+5. **Keep status in sync.** Flip the idea's **Status** below (Not Started → In Progress → Complete) and update the **Future Analysis** table in `README.md` (per the maintenance note above).
+
+---
+
 ## Status Categories
 
 | Status | Meaning |
