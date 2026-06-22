@@ -122,6 +122,34 @@ def normalize(s):
     return n
 
 
+# ── Team abbreviation normalization ────────────────────────────────────────────
+# ESPN and the MLB Stats API disagree on a handful of abbreviations and on case
+# (ESPN "Sea"/"Oak"/"ChW" vs MLB "SEA"/"ATH"/"CWS"). Without canonicalizing both
+# sides, the namesake pro_team tiebreaker in bridge() never fires and same-name
+# players (e.g. the two Julio Rodriguezes) get assigned by recency guess. Map both
+# sides to a common token; "FA"/blank collapse to "" so they never count as a match.
+_TEAM_ALIAS = {
+    "CHW": "CWS", "CWS": "CWS",
+    "OAK": "ATH", "ATH": "ATH",
+    "AZ": "ARI", "ARI": "ARI",
+    "WSN": "WSH", "WSH": "WSH",
+    "SDP": "SD", "SFG": "SF", "TBR": "TB", "KCR": "KC",
+}
+
+
+def normalize_team(t):
+    u = (t or "").strip().upper()
+    if u in ("", "FA", "--", "N/A", "NA", "NONE"):
+        return ""
+    return _TEAM_ALIAS.get(u, u)
+
+
+def team_match(espn_rec, mlb_rec):
+    a = normalize_team(espn_rec.get("pro_team"))
+    b = normalize_team(mlb_rec.get("pro_team"))
+    return bool(a) and a == b
+
+
 def detect_encoding(path):
     for enc in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
         try:
@@ -459,8 +487,34 @@ def bridge(universe, lineup_only, espn_by_norm, espn_by_statcast, espn_by_id, of
         if espn and espn["espn_player_id"] not in matched_espn:
             attach(rec, espn, "direct")
 
-    # 2. NAME MATCH with namesake disambiguation (b_or_p then pro_team then recency).
+    # 2. NAME MATCH with namesake disambiguation. Two passes so that team-confirmed
+    #    assignments are locked in GLOBALLY before any greedy fallback can grab a
+    #    shared ESPN id. (A single per-mlbam greedy loop lets a wrong-team namesake
+    #    that happens to be processed first claim an ESPN id that belongs to a
+    #    team-matching player processed later -- the Luis Garcia HOU/MIN failure mode.)
     #    Each ESPN id is claimed at most once -> guarantees espn_player_id uniqueness.
+
+    def borp_ok(e, rec):
+        return (not rec["b_or_p"]) or rec["b_or_p"] == "both" or _espn_borp(e) == rec["b_or_p"]
+
+    # 2a. TEAM-CONFIRMED pass: assign only where the ESPN player's team matches the
+    #     MLB player's team (and b_or_p is compatible). This is the high-confidence
+    #     signal and resolves namesakes (Julio Rodriguez SEA, the two Luis Garcias).
+    for mlbam, rec in universe.items():
+        if rec["espn_player_id"]:
+            continue
+        cands = [e for e in cand_by_norm.get(rec["normalized_name"], [])
+                 if e["espn_player_id"] not in matched_espn
+                 and team_match(e, rec) and borp_ok(e, rec)]
+        if not cands:
+            continue
+        # almost always 1; if a team genuinely has two same-name same-hand players,
+        # prefer the one whose b_or_p matches, else just take the first.
+        cands.sort(key=lambda e: 1 if _espn_borp(e) == rec["b_or_p"] else 0, reverse=True)
+        attach(rec, cands[0], "name_match")
+
+    # 2b. FALLBACK pass: for still-unmatched players, take a unique-name match, or a
+    #     b_or_p-matched namesake ranked by team (normalized) then recency.
     for mlbam, rec in universe.items():
         if rec["espn_player_id"]:
             continue
@@ -477,7 +531,7 @@ def bridge(universe, lineup_only, espn_by_norm, espn_by_statcast, espn_by_id, of
                 continue
             last_year = max(rec.get("years") or {0})
             matching.sort(key=lambda e: (
-                1 if (e["pro_team"] and rec["pro_team"] and e["pro_team"] == rec["pro_team"]) else 0,
+                1 if team_match(e, rec) else 0,
                 last_year,
             ), reverse=True)
             best = matching[0]
@@ -647,6 +701,21 @@ def main():
         r = idx.get(mlbam)
         log(f"    {label:14s} mlbam={mlbam}: " +
             (f"espn={r['espn_player_id']!r} borp={r['b_or_p']} src={r['id_source']}" if r else "MISSING"))
+
+    # Namesake disambiguation regression checks (the 2026-06-22 mislink fixes).
+    # expected espn id (or "" for "should be blank — true id absent from ESPN feeds").
+    log("\n  Namesake disambiguation checks (expected espn_player_id):")
+    namesakes = [
+        ("Julio Rodriguez (SEA OF)", "677594", "41044"),
+        ("Will Smith (LAD C)", "669257", "38309"),
+        ("Luis Garcia Jr. (WSH)", "671277", "40459"),
+        ("Luis Garcia (MIN RP)", "472610", "33089"),
+    ]
+    for label, mlbam, expected in namesakes:
+        r = idx.get(mlbam)
+        got = r["espn_player_id"] if r else "MISSING"
+        flag = "OK" if got == expected else "*** MISMATCH ***"
+        log(f"    {label:26s} mlbam={mlbam}: espn={got!r} (expected {expected!r})  {flag}")
     chap = [r for r in rows if "chapman" in r["normalized_name"] and "aroldis" in r["normalized_name"]]
     for r in chap:
         log(f"    Aroldis Chapman mlbam={r['mlbam_player_id']}: b_or_p={r['b_or_p']!r} "

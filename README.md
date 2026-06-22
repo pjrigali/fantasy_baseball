@@ -163,7 +163,7 @@ Ideas and investigations being tracked in [`ideas.md`](ideas.md). See that file 
 | 9 | Trade Value Audit — Who Is Winning the League's Trades? | Score every trade by comparing post-trade fantasy output of all players exchanged to determine who won each deal. | `Not Started` |
 | 10 | Hot Hand Detection — Rolling Performance Windows for Streaming Decisions | Compute rolling 7/14-day fantasy point windows to flag players running hot or cold relative to their season average. | `Not Started` |
 | 11 | Mutually Beneficial Trade Finder — Identifying Win-Win Deals Within the League | Proactively scan all team rosters to find specific player swaps that simultaneously improve both sides of a trade. | `Complete` |
-| 12 | Bat Tracking Metrics as Batter Predictors — Year-Over-Year Carry-Forward | Correlate Statcast bat-tracking and pitching metrics year-over-year to find physical leading indicators of fantasy performance. | `Not Started` |
+| 12 | Bat Tracking Metrics as Batter Predictors — Year-Over-Year Carry-Forward | Statcast bat-tracking breakout finder (2026) + batting YoY carry-forward (2023→24, 2024→25); pitching same-season stuff↔results baseline. Predictive pitching YoY deferred. | `In Progress` |
 | 13 | Projection Accuracy Tracking — Actual vs Preseason Performance Over Multiple Years | Measure preseason projection accuracy across multiple years to find systematic biases exploitable at draft time. | `Not Started` |
 | 14 | Player Injury Data Analysis — Duration, Frequency, and Predictability | Track and analyze player injuries to determine duration, frequency per position, player propensity, and historical trends. | `Complete` |
 

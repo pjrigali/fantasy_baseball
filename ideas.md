@@ -304,7 +304,9 @@
 
 ## 12. Bat Tracking Metrics as Batter Predictors — Year-Over-Year Carry-Forward
 
-**Status:** `Not Started`
+**Status:** `In Progress`
+
+> **Execution prompt:** [`ideas/idea_12_bat_tracking/PROMPT.md`](ideas/idea_12_bat_tracking/PROMPT.md)
 
 **Motivation:** MLB's Statcast bat-tracking leaderboard (https://baseballsavant.mlb.com/leaderboard/bat-tracking) publishes per-season metrics like swing speed, squared-up rate, blast rate, and attack angle for every batter. These are physical attributes that change slowly and may be more predictive of the following year's performance than traditional rate stats, which are subject to BABIP noise and strand-rate variance.
 
