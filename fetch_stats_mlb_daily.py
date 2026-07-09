@@ -11,9 +11,6 @@ Source Data: MLB Stats API — /api/v1/people/{id}/stats?stats=gameLog
 
 Outputs: data-lake/01_Bronze/fantasy_baseball/{year}_mlb_stats_daily.csv
          Deduplicates on (date, player_id, b_or_p). Safe to re-run.
-         data-lake/01_Bronze/fantasy_baseball/{year}_mlb_stats_daily_skipped.csv
-         Players whose game logs could not be fetched (SSL errors, etc.).
-         Deduplicates on (date_ran, player_id, group). Safe to re-run.
 """
 
 import requests

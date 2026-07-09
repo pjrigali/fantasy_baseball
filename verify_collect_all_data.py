@@ -10,7 +10,6 @@ Source Data:
     - data-lake/01_Bronze/fantasy_baseball/<YEAR>_espn_activity_season.csv
     - data-lake/01_Bronze/fantasy_baseball/<YEAR>_mlb_lineups_batters.csv
     - data-lake/01_Bronze/fantasy_baseball/<YEAR>_mlb_stats_boxscore.csv
-    - data-lake/01_Bronze/fantasy_baseball/<YEAR>_mlb_stats_daily_skipped.csv
     - data-lake/01_Bronze/fantasy_baseball/<YEAR>_espn_rankings_daily.csv
     - data-lake/01_Bronze/fantasy_baseball/<YEAR>_mlb_closers_depth.csv
 
@@ -40,13 +39,11 @@ FILES = {
     'ESPN Activity':    f'{YEAR}_espn_activity_season.csv',
     'MLB Lineups':      f'{YEAR}_mlb_lineups_batters.csv',
     'MLB Game Logs':    f'{YEAR}_mlb_stats_boxscore.csv',
-    'MLB Skipped':      f'{YEAR}_mlb_stats_daily_skipped.csv',
     'ESPN Rankings':    f'{YEAR}_espn_rankings_daily.csv',
     'MLB Closer Depth': f'{YEAR}_mlb_closers_depth.csv',
 }
 
 DATE_COL_OVERRIDES = {
-    'MLB Skipped':      'date_ran',
     'MLB Closer Depth': 'date_scraped',
 }
 
